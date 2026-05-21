@@ -1,7 +1,0 @@
-
-
-Root primer Module:  https://root.cern.ch/root/htmldoc/guides/primer/ROOTPrimer.html
-
-Root class:   file:///C:/Users/plewi/AppData/Roaming/Claude/local-agent-mode-sessions/4ff70c91-da33-4bd7-90dd-0358af364e97/8a0f1de9-af5e-42c1-becb-6a57884334fd/local_61e5df42-21ae-4822-b417-7d0909c54f2e/outputs/ROOT-Course/index.html#m3
-
-
