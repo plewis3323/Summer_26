@@ -1,0 +1,69 @@
+
+                                               Summer #1 May 6th - July 11th Self/Learning Planner & Content 
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+* AI and ML Self Learning: (10 hrs.: 3-hr Personal Claude,  4-hr Codecadamy, & 3-hr Anthropic courses (Thurs-Sat))
+
+- Personal Claude Classes: ()
+   - Months: 1-2 Modules 
+
+- Codecadamy: ()
+   - AI Engineer Career Path 
+   - ML/AI engineer Career Path 
+   - Building ML module skills path 
+   - Data Scientist: Machine Learning Career Path 
+
+
+- Anthropic Modules: () 
+   - AI Capabilities and Limitations
+   - AI Fluency: Framework & Foundations
+   - Claude 101
+   - Introduction to Claude Cowork
+   - Claude Code 101
+   - Claude Code in Action
+   - Building with the Claude API
+   - Introduction to agent skills
+   - Introduction to subagents
+   - Introduction to Model Context Protocol
+   - Model Context Protocol: Advanced Topics
+
+
+
+** Each week add 1-2 exercise or Project elements & Big Project element at very end ** 
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+* Physics Review for Nuclear 1-2: (10 hrs.:  (Mon-Wed))
+
+- Syllabus Information: file:///C:/Users/plewi/OneDrive%20-%20Ohio%20University/Fall_2025_Spring_26/Summer_Directory/Nuc1_Nuc2/May_July_2026_Nuclear_Study_Plan.pdf  ()
+
+** 6-hrs on reading and 4-5 hrs on exercise ** 
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+* C++ and Root Coding Learning session: (5 hrs.: (Mon-Wed))
+
+- Codecadamy: () 
+  - Intermediate and advanced C++ Modules 
+  - C++ HEP Module: https://hsf-training.github.io/hsf-training-cpp-webpage/
+
+- ROOT Primer & ROOT personal Claude Modules () 
+
+** 3-hrs on modules and 2-hrs doing specific exercise ** 
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+
+* sPHENIX Software/Framework & Simulations: (5 hrs.: (Thurs-Sat))  ()
+
+** 1.5 hrs. on sPHENIX Software/Framework Modules, 1.5 hrs. on simulations, and 1-3 exercises 2-hrs, big Project at end ** 
+
+
+
+
+
+
+
