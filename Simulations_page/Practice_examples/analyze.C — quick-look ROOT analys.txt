@@ -1,0 +1,61 @@
+// analyze.C — quick-look ROOT analysis for calo.root
+// Run with:  root -b -l -q analyze.C
+// Produces: plots/edep_scint.png, plots/edep_total.png, plots/sampling.png
+
+void analyze(const char* fname = "calo.root") {
+  gSystem->Exec("mkdir -p plots");
+
+  TFile* f = TFile::Open(fname);
+  if (!f || f->IsZombie()) {
+    printf("[analyze] cannot open %s\n", fname);
+    return;
+  }
+  TTree* t = (TTree*)f->Get("calo");
+  if (!t) {
+    printf("[analyze] no TTree 'calo' in %s\n", fname);
+    return;
+  }
+
+  Long64_t n = t->GetEntries();
+  printf("[analyze] %lld events\n", n);
+
+  // Histograms ---------------------------------------------------------------
+  TH1F* hSci = new TH1F("hSci", "Scintillator E_{dep};E_{scint} [GeV];events",
+                       100, 0, 5);
+  TH1F* hAbs = new TH1F("hAbs", "Absorber E_{dep};E_{abs} [GeV];events",
+                       100, 0, 30);
+  TH1F* hTot = new TH1F("hTot", "Total E_{dep};E_{tot} [GeV];events",
+                       100, 0, 30);
+  TH1F* hSF  = new TH1F("hSF",  "Sampling fraction;E_{scint}/E_{tot};events",
+                       100, 0, 0.2);
+
+  double eSci, eAbs, eTot;
+  t->SetBranchAddress("edepScint_GeV", &eSci);
+  t->SetBranchAddress("edepAbs_GeV",   &eAbs);
+  t->SetBranchAddress("edepTot_GeV",   &eTot);
+  for (Long64_t i = 0; i < n; ++i) {
+    t->GetEntry(i);
+    hSci->Fill(eSci);
+    hAbs->Fill(eAbs);
+    hTot->Fill(eTot);
+    if (eTot > 0.01) hSF->Fill(eSci / eTot);
+  }
+
+  // Print summary ------------------------------------------------------------
+  printf("\n--- Summary ---\n");
+  printf("  <E_scint>  = %.3f GeV\n", hSci->GetMean());
+  printf("  <E_abs>    = %.3f GeV\n", hAbs->GetMean());
+  printf("  <E_tot>    = %.3f GeV\n", hTot->GetMean());
+  printf("  <samp.fr>  = %.3f\n",     hSF->GetMean());
+
+  // Save plots ---------------------------------------------------------------
+  TCanvas c("c","c", 800, 600);
+  c.SetLogy();
+  hSci->Draw();    c.SaveAs("plots/edep_scint.png");
+  hAbs->Draw();    c.SaveAs("plots/edep_abs.png");
+  hTot->Draw();    c.SaveAs("plots/edep_total.png");
+  c.SetLogy(0);
+  hSF->Draw();     c.SaveAs("plots/sampling.png");
+
+  printf("[analyze] plots written to ./plots/\n");
+}

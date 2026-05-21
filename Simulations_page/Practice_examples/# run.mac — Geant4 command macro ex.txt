@@ -1,0 +1,16 @@
+# run.mac — Geant4 command macro executed by calo_sim
+# ------------------------------------------------------------------
+# The HepMC3Reader primary generator pulls events from events.hepmc.
+# It stops the run when the file is exhausted, so the /run/beamOn
+# number below is an upper bound.
+
+/run/verbose 0
+/event/verbose 0
+/tracking/verbose 0
+
+/run/initialize
+/run/printProgress 500
+
+# Ask for more events than the HepMC file contains; the reader aborts
+# the run on EOF automatically.
+/run/beamOn 1000000

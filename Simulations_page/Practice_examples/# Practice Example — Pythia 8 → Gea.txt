@@ -1,0 +1,96 @@
+# Practice Example — Pythia 8 → Geant4 → ROOT
+
+This is the capstone practice example for the 10-week sPHENIX Simulation course.
+It runs on **any** Linux / macOS / WSL2 machine that has Pythia 8, Geant4 11.x,
+HepMC3, and ROOT 6.26+ installed, **or** inside the sPHENIX Singularity container
+where all four are provided.
+
+## What it does
+
+1. **`pythia_to_hepmc`** — generates N events of Pythia 8 `SoftQCD:all` at
+   √s = 200 GeV p+p collisions and writes them to `events.hepmc` in HepMC3
+   ASCII format.
+2. **`calo_sim`** — a Geant4 application that reads `events.hepmc`, transports
+   every final-state particle (within |η| < 1.1) through a 20-layer
+   Pb(2 mm) / plastic-scintillator(4 mm) sampling calorimeter using the
+   `FTFP_BERT` physics list, and writes one ntuple row per event containing
+   total deposited energy in the scintillator and in the absorber.
+3. **`analyze.C`** — a ROOT macro that fills pT / η / energy-deposit histograms
+   and prints summary numbers.
+
+## Prerequisites
+
+Either:
+
+- **Option A (sPHENIX container or SDCC login):** `source` the usual
+  `sphenix_setup.sh`. All environment variables (`$PYTHIA8`, `$G4INSTALL`,
+  `$ROOTSYS`, `$HEPMC3_DIR`) are then defined.
+
+- **Option B (personal machine):** build the four dependencies per the
+  accompanying Software Setup Guide, then `source ~/sphenix_course_env.sh`.
+
+Verify with:
+
+```bash
+pythia8-config --version
+geant4-config --version
+root --version
+HepMC3-config --version
+```
+
+## Build & run
+
+```bash
+make                  # builds pythia_to_hepmc and calo_sim
+./run_example.sh 5000 # runs full chain on 5000 events
+```
+
+`run_example.sh` does:
+
+```
+./pythia_to_hepmc 5000 events.hepmc
+./calo_sim run.mac          # reads events.hepmc, writes calo.root
+root -b -l -q analyze.C
+```
+
+Outputs:
+
+- `events.hepmc` — the generator record
+- `calo.root` — ntuple with per-event `edepScint`, `edepAbs`, `nChgFinal`
+- `plots/*.png` — summary plots
+
+## HIJING variant (optional)
+
+If you built HIJING in Module 5, replace step 1 with:
+
+```bash
+./hijing < hijing_aa.in                          # writes hijing_out.dat
+./hijing_to_hepmc hijing_out.dat events.hepmc    # converter from Module 5
+./calo_sim run.mac
+```
+
+The Geant4 stage and analysis remain identical — this is the classic
+"swap the generator" exercise.
+
+## Expected numbers (sanity check)
+
+For 5000 SoftQCD events at 200 GeV, within |η| < 1.1, you should see:
+
+| Quantity | Rough expected value |
+|---|---|
+| Mean charged multiplicity / event | 2–3 |
+| Mean scintillator Edep / event | 0.3–0.8 GeV |
+| Sampling fraction (scint / (scint+abs)) | 2–3% |
+
+If you fire a 10 GeV e⁻ through the calorimeter with the particle gun
+(uncomment the gun block in `calo_sim.cc`), you should get σ(E)/E ≈ 13%/√E ⊕ 2%.
+
+## Troubleshooting
+
+| Symptom | Likely cause |
+|---|---|
+| `undefined reference to HepMC3::…` | HepMC3 not in `LD_LIBRARY_PATH` |
+| Geant4 hangs at `initialize` | missing physics data — `source $G4INSTALL/bin/geant4.sh` |
+| `pythia8-config: command not found` | `$PYTHIA8/bin` not in `PATH` |
+| Seg-fault reading `events.hepmc` | HepMC3 version mismatch between Pythia and calo_sim |
+| Zero Edep in scintillator | SD not attached; check `SetSensitiveDetector` line |

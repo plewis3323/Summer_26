@@ -1,0 +1,412 @@
+
+
+
+
+                                                                                         ** Pandas Modules ** 
+                                                                                         
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+** (5/18/25: ) ** 
+
+
+Creating, Loading, and Selecting Data with Pandas: 
+
+         - Create a DataFrame 1: 
+         
+         
+         
+Here are the main points for the “Create a DataFrame 1” section:
+
+ * Understand that a DataFrame stores data in rows and columns, similar to a spreadsheet.
+
+* Learn how to create a DataFrame using a dictionary, where keys are column names and values are lists of data.
+
+* Make sure all columns have the same number of items.
+
+* Practice adding multiple columns to a DataFrame at once.
+
+
+ex (first pandas object)
+
+import codecademylib3
+import pandas as pd
+
+df1 = pd.DataFrame({
+  'Product ID': [1, 2, 3, 4],
+  # add Product Name and Color here
+  'Product Name': ['t-shirt', 't-shirt', 'skirt', 'skirt'],
+  'Color': ['blue', 'green', 'red', 'black']
+})
+
+print(df1)
+
+
+
+
+- Creating a Dataframe II: 
+
+
+For this section, focus on these points:
+
+* Create a DataFrame using a list of lists, where each inner list is a row.
+
+* Use the columns argument to set the column names and their order.
+
+* Each row should match the order of the column names.
+
+* Remember to separate each row with a comma
+
+
+
+
+ex) (Dataframe with lists)
+
+import codecademylib3
+import pandas as pd
+
+df2 = pd.DataFrame([
+  [1, 'San Diego', 100],
+  [2, 'Los Angeles', 120],
+  [3, 'San Francisco', 90],
+  [4, 'Sacramento', 115],
+  # Fill in rows 3 and 4
+],
+  columns=['Store ID', 'Location', 'Number of Employees'])
+
+print(df2)
+
+
+
+
+- Comma Separated Values (CSV): 
+
+* Comma Separated Values (CSV)” section, here are the main bullet points:
+
+CSV is a common text format for storing tabular data.  
+
+The first row contains column headers, separated by commas.
+
+Each following row contains data values, also separated by commas.
+
+No spaces are used between commas.
+
+CSV files can be created or exported from many tools like Excel, Google Sheets, or SQL.
+
+
+
+ex (csv file structure) 
+name,cake_flavor,frosting_flavor,topping
+Chocolate Cake,chocolate,chocolate,chocolate shavings
+Birthday Cake,vanilla,vanilla,rainbow sprinkles
+Carrot Cake,carrot,cream cheese,almonds
+
+
+** (5/19/25: ) ** 
+
+- Loading and Saving CSVs: 
+
+* Use pd.read_csv(‘filename.csv’) to load data from a CSV file into a DataFrame.
+
+* Use df.to_csv(‘filename.csv’) to save a DataFrame to a CSV file.
+
+* The file name is passed as a string argument.
+
+* By default, files are loaded from or saved to the current directory.
+
+* These methods make it easy to move data between Pandas and other tools.
+
+ex.) (Reading into csv data) 
+
+import codecademylib3
+import pandas as pd
+
+df = pd.read_csv('sample.csv')
+print(df)
+
+
+- Inspect a dataframe: 
+
+
+* Use print(df) to display the whole DataFrame if it is small.
+Use df.head() to see the first 5 rows of the DataFrame.
+Pass a number to df.head(n) to see the first n rows.
+Use df.info() to get summary statistics and details about each column, such as data type and number of non-null values.
+
+
+ex.) (smaller print statement and info())
+
+import codecademylib3
+import pandas as pd
+#load the CSV below:
+df = pd.read_csv('imdb.csv')
+print(df.head())
+print(df.info())
+
+
+- Select Columns: 
+
+* Select a single column using df[‘column_name’] or df.column_name if the name has no spaces or special characters.
+The result of selecting one column is a Series, not a DataFrame.
+Selecting columns helps focus on specific data for analysis or visualization.
+Use this to work with only the data you need from a larger DataFrame
+
+
+
+ex.) 
+
+import codecademylib3
+import pandas as pd
+
+df = pd.DataFrame([
+  ['January', 100, 100, 23, 100],
+  ['February', 51, 45, 145, 45],
+  ['March', 81, 96, 65, 96],
+  ['April', 80, 80, 54, 180],
+  ['May', 51, 54, 54, 154],
+  ['June', 112, 109, 79, 129]],
+  columns=['month', 'clinic_east',
+           'clinic_north', 'clinic_south',
+           'clinic_west']
+)
+
+clinic_north = df['clinic_north']
+#selecting 1-column represents series
+print(type(clinic_north))
+
+
+
+
+- Select Multiple Columns:
+
+* Select two or more columns by passing a LIST of column names inside square brackets: df[['col1', 'col2']]
+
+* Note the double brackets — the inner [ ] is a Python list of column names, the outer [ ] does the selection.
+
+* The result of selecting multiple columns is a DataFrame (not a Series, unlike selecting a single column).
+
+* The order of names in the list sets the column order in the new DataFrame.
+
+* Useful when you only need a few columns out of a larger DataFrame for analysis or plotting.
+
+
+ex.) (selecting multiple columns -> DataFrame)
+
+import codecademylib3
+import pandas as pd
+
+df = pd.DataFrame([
+  ['January', 100, 100, 23, 100],
+  ['February', 51, 45, 145, 45],
+  ['March', 81, 96, 65, 96],
+  ['April', 80, 80, 54, 180],
+  ['May', 51, 54, 54, 154],
+  ['June', 112, 109, 79, 129]],
+  columns=['month', 'clinic_east',
+           'clinic_north', 'clinic_south',
+           'clinic_west']
+)
+
+clinic_north_south = df[['clinic_north', 'clinic_south']]
+#selecting multiple columns represents a DataFrame
+print(type(clinic_north_south))
+
+
+(ex. Select Rows:)
+
+import codecademylib3
+import pandas as pd
+
+df = pd.DataFrame([
+  ['January', 100, 100, 23, 100],
+  ['February', 51, 45, 145, 45],
+  ['March', 81, 96, 65, 96],
+  ['April', 80, 80, 54, 180],
+  ['May', 51, 54, 54, 154],
+  ['June', 112, 109, 79, 129]],
+  columns=['month', 'clinic_east',
+           'clinic_north', 'clinic_south',
+           'clinic_west'])
+march = df.iloc[2]
+
+
+- Selecting Multiple Rows:
+
+Use df.iloc[start:end] to select rows by index, from start up to but not including end.
+Use df.iloc[:n] to select the first n rows.
+Use df.iloc[-n:] to select the last n rows.
+DataFrames are zero-indexed, so counting starts at 0.
+Selecting multiple rows helps analyze specific time periods or data ranges.
+
+
+ex.) import codecademylib3
+import pandas as pd
+
+df = pd.DataFrame([
+  ['January', 100, 100, 23, 100],
+  ['February', 51, 45, 145, 45],
+  ['March', 81, 96, 65, 96],
+  ['April', 80, 80, 54, 180],
+  ['May', 51, 54, 54, 154],
+  ['June', 112, 109, 79, 129]],
+  columns=['month', 'clinic_east',
+           'clinic_north', 'clinic_south',
+           'clinic_west']
+)
+
+april_may_june = df.iloc[3:7]
+print(april_may_june)
+
+
+
+- Select Rows with Logic I: 
+
+ex.) 
+
+import codecademylib3
+import pandas as pd
+
+df = pd.DataFrame([
+  ['January', 100, 100, 23, 100],
+  ['February', 51, 45, 145, 45],
+  ['March', 81, 96, 65, 96],
+  ['April', 80, 80, 54, 180],
+  ['May', 51, 54, 54, 154],
+  ['June', 112, 109, 79, 129]],
+  columns=['month', 'clinic_east',
+           'clinic_north', 'clinic_south',
+           'clinic_west'])
+
+january = df[df.month == 'January']
+print(january)
+
+
+- Select Rows with Logic II: 
+
+
+
+* Combine multiple logical statements using parentheses for each condition.
+Use & for “and” (both conditions must be true).
+Use | for “or” (at least one condition must be true).
+Place the combined logic inside the DataFrame brackets: df[(condition1) & (condition2)]
+Useful for filtering rows based on complex criteria.
+
+
+ex.) 
+
+import codecademylib3
+import pandas as pd
+
+df = pd.DataFrame([
+  ['January', 100, 100, 23, 100],
+  ['February', 51, 45, 145, 45],
+  ['March', 81, 96, 65, 96],
+  ['April', 80, 80, 54, 180],
+  ['May', 51, 54, 54, 154],
+  ['June', 112, 109, 79, 129]],
+  columns=['month', 'clinic_east',
+           'clinic_north', 'clinic_south',
+           'clinic_west'])
+
+march_april = df[(df.month == 'March') | (df.month == 'April')]
+print(march_april)
+
+
+
+- Select Rows with Logic III: 
+* Use the isin method to check if column values match any value in a list.
+Syntax: df[df.column.isin([value1, value2, value3])]
+Returns rows where the column matches any value in the list.
+Useful for selecting multiple specific values without writing many conditions.
+
+
+ex.) 
+
+import codecademylib3
+import pandas as pd
+
+df = pd.DataFrame([
+  ['January', 100, 100, 23, 100],
+  ['February', 51, 45, 145, 45],
+  ['March', 81, 96, 65, 96],
+  ['April', 80, 80, 54, 180],
+  ['May', 51, 54, 54, 154],
+  ['June', 112, 109, 79, 129]],
+  columns=['month', 'clinic_east',
+           'clinic_north', 'clinic_south',
+           'clinic_west'])
+
+january_february_march = df[df.month.isin(['January', 'February', 'March'])]
+
+print(january_february_march)
+
+
+- Setting indices: 
+
+Use .reset_index() to reset DataFrame indices to default integers.
+By default, old indices become a new column called ‘index’.
+Add drop=True to remove the old index column.
+Add inplace=True to modify the DataFrame directly.
+Resetting indices helps when working with filtered or reordered data.
+Copy
+
+
+ex.)
+
+import codecademylib3
+import pandas as pd
+
+df = pd.DataFrame([
+  ['January', 100, 100, 23, 100],
+  ['February', 51, 45, 145, 45],
+  ['March', 81, 96, 65, 96],
+  ['April', 80, 80, 54, 180],
+  ['May', 51, 54, 54, 154],
+  ['June', 112, 109, 79, 129]],
+  columns=['month', 'clinic_east',
+           'clinic_north', 'clinic_south',
+           'clinic_west']
+)
+
+df2 = df.loc[[1, 3, 5]]
+print(df2)
+df3 = df2.reset_index()
+print(df3)
+df2.reset_index(inplace=True, drop=True)
+print(df2)
+
+
+- Review: 
+
+ex.)
+
+import codecademylib3
+import pandas as pd
+
+#step 1.
+orders = pd.read_csv('shoefly.csv')
+#step2. 
+print(orders.head())
+#step3.
+emails = orders['email']
+#step4.
+frances_palmer = orders[orders.first_name == 'Frances']
+#step 5.
+comfy_shoes = orders[(orders.shoe_type == 'clogs') | (orders.shoe_type == 'boots') | (orders.shoe_type == 'ballet flats')]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

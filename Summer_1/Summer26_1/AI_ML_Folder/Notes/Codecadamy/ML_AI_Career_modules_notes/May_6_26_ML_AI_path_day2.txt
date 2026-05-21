@@ -1,0 +1,198 @@
+
+
+
+                                                                               # Day #2 ML/AI Engineer Path 5/7/26
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+* Standardizing data: 
+
+- Excellent work with centering the age feature from our dataset! Now we’ll take that concept one step further and discuss standardizing our data. Standardization (also known as Z-Score normalization) is when we center our data, then divide it by the standard deviation. Once we do that, our entire data set will have a 
+ mean of zero and a standard deviation of one. This allows all of our features to be on the same scale. How cool is that?
+ (essentially -> data - mean/stdv) 
+ 
+
+- classifcation and feature: 
+A feature is a column or variable in your dataset. Each feature describes one aspect of the data, like age, income, or distance to a store.
+Classification is a type of machine learning problem where the goal is to sort data into categories or classes. For example, predicting 
+if an email is spam or not spam is a classification task.
+
+
+ex) 
+
+import pandas as pd
+import numpy as np
+
+coffee = pd.read_csv('starbucks_customers.csv')
+ages = coffee['age']
+
+## add code below
+## set up your variables
+mean_age = np.mean(ages)
+std_dev_age = np.std(ages)
+
+## standardize ages
+ages_standardized = (ages - mean_age)/std_dev_age 
+
+
+
+## print the results 
+print(np.mean(ages_standardized))
+print(np.std(ages_standardized))
+
+
+
+* Standardizing our Data with Sklearn: 
+
+- A StandardScaler is a tool that changes data so each feature has a mean of 0 and a standard deviation of 1. This process is called standardization. 
+It helps machine learning models work better by making sure all features are on the same scale, so no feature dominates because of its size.
+
+- Now that we understand the mathematics behind a standard scaler let’s quickly implement it with the sklearn library. We will begin by importing our StandardScaler library from sklearn.preprocessing.
+
+ex) 
+
+mport pandas as pd
+import numpy as np
+from sklearn.preprocessing import StandardScaler 
+
+coffee = pd.read_csv('starbucks_customers.csv')
+ages = coffee['age']
+
+## add code below
+scaler = StandardScaler() 
+ages_reshaped = np.array(ages).reshape(-1,1)
+ages_scaled = scaler.fit_transform(ages_reshaped)
+print(np.mean(ages_scaled))
+print(np.std(ages_scaled))
+
+
+* Min & Max normalization: 
+
+- Another form of scaling your data is to use a min-max normalization process. The name says it all, we find the minimum and maximum data point in our entire data set and set each of those to 0 and 1, respectively. Then the rest of the data points will transform to a number between 0 and 1, depending on its distance between the minimum and maximum number. We find that transformed number by taking the data point subtracting it from the minimum point, then dividing by the value of our maximum minus minimum.
+
+
+ X_norm = (X - X_min)/(X_max - X_min)
+
+ex.) 
+
+import pandas as pd
+import numpy as np
+
+coffee = pd.read_csv('starbucks_customers.csv')
+
+
+## add code below
+## get spent feature
+spent = coffee['spent']
+
+
+#find the max spent
+max_spent = np.max(spent)
+
+
+#find the min spent
+min_spent = np.min(spent)
+
+
+#find the difference
+spent_range = (max_spent - min_spent)
+print(spent_range)
+
+
+#normalize your spent feature
+spent_normalized = (spent - min_spent)/spent_range
+
+
+#print your results
+print(spent_normalized)
+
+
+
+
+ex.) 
+
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+
+coffee = pd.read_csv('starbucks_customers.csv')
+spent = coffee['spent']
+
+## write your code below
+mmscaler = MinMaxScaler()
+spent_reshaped = np.array(spent).reshape(-1,1) 
+reshaped_scaled = mmscaler.fit_transform(spent_reshaped)
+print(np.min(reshaped_scaled))
+print(np.max(reshaped_scaled))
+
+
+
+
+* Binning our Data: 
+
+
+Yes, here are the key bullet points for binning:
+-Binning divides continuous data into groups or intervals.
+-Helps reduce noise and highlight patterns.
+-Bin size matters: too small keeps noise, too large hides patterns.
+-Useful for making data easier for models to understand.
+
+
+This code does two things:
+- It creates a new column called binned_distance by splitting the nearest_starbucks values into groups (bins) using the bins list. 
+The right = False part means each bin includes the lower value but not the upper value.
+It prints the first 3 rows (head = 3), showing both the new bin each value falls into and the original distance.
+
+
+ex) 
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import codecademylib3_seaborn 
+
+coffee = pd.read_csv('starbucks_customers.csv')
+ages = coffee['age']
+print(np.min(ages))
+print(np.max(ages))
+age_bins = [12, 20, 30, 40, 71]
+#this is the panda column object conversion getting 
+#rid of upper bound 
+coffee['binned_ages'] = pd.cut(coffee['age'], age_bins, right = False)
+
+print(coffee['binned_ages'].head(10))
+
+# Plot the bar graph of binned ages
+coffee['binned_ages'].value_counts().plot(kind='bar')
+ 
+# Label the bar graph 
+plt.title('Starbucks Ages Distribution')
+plt.xlabel('Ages')
+plt.ylabel('Count') 
+ 
+# Show the bar graph 
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

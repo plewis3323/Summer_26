@@ -1,0 +1,175 @@
+================================================================================
+NOTES -- Mann sec 3.1.4  "Multiplication Tables"
+Plain-language explainer (companion to Mann Ch.3)
+================================================================================
+
+
+THE ONE-LINE IDEA
+-----------------
+A "multiplication table" for a group is just a grid that lists the result of
+combining every pair of elements.  Pick a row, pick a column, the cell at
+their intersection is the answer.  This grid contains the ENTIRE group --
+every relation, every rule -- and nothing else.
+
+
+1.  THE FAMILIAR ANALOGY (NUMBERS)
+----------------------------------
+The grade-school times table is the prototype.  Pick x (left column),
+pick y (top row), the cell is x*y:
+
+         |  1   2   3
+       --+--------------
+       1 |  1   2   3
+       2 |  2   4   6
+       3 |  3   6   9
+
+For a GROUP we do the same thing -- except instead of "*" we use the group
+combining operation (Mann calls it "o" or "."), and the entries aren't
+numbers but group ELEMENTS.
+
+
+2.  A REAL GROUP TABLE  (Z_3 = integers mod 3 under +)
+------------------------------------------------------
+Take G = {0, 1, 2} with operation "+ mod 3" (clock arithmetic, 3 hours).
+
+  Identity: 0
+  Inverses: 0<->0,  1<->2,  2<->1
+
+Multiplication table (here "multiplication" = the group operation, which
+happens to be addition mod 3):
+
+         |  0   1   2
+       --+--------------
+       0 |  0   1   2
+       1 |  1   2   0
+       2 |  2   0   1
+
+How to read it: row 2, column 1 -> 2 + 1 mod 3 = 0.
+
+Things you can READ OFF this table without any extra work:
+
+  (a) CLOSURE -- every cell is in {0,1,2}.  Nothing escapes the group.
+
+  (b) IDENTITY -- row 0 (and col 0) is just a copy of the header.  That's
+      the fingerprint of the identity element.
+
+  (c) INVERSES -- find the identity (0) in each row.  In row 1, 0 sits in
+      column 2 -> so 1's inverse is 2.  In row 2, 0 sits in column 1 ->
+      so 2's inverse is 1.
+
+  (d) ABELIAN? -- the table is SYMMETRIC across the main diagonal, so
+      a + b = b + a for every pair.  Z_3 is abelian (commutative).
+
+  (e) LATIN-SQUARE PROPERTY -- every group element appears EXACTLY ONCE in
+      each row and each column.  This is true for every group table and is
+      a great sanity check when you build one.
+
+
+3.  WHY MANN INTRODUCES THIS HERE
+---------------------------------
+Two reasons:
+
+  - Tables are an honest, complete description of a finite group.  They
+    "know everything" about how elements combine.
+
+  - Tables are only PRACTICAL for small finite groups.  For huge or
+    infinite groups (e.g. the rotation group SO(3), or the Lie groups
+    Mann is heading toward in 3.2), you'd need an infinite table.  So
+    tables motivate the question: "how do we describe groups when the
+    table is too big to write down?"  Answer (coming up): use GENERATORS
+    and ALGEBRAS.
+
+
+4.  POWERS OF A SINGLE ELEMENT  (the cyclic-subgroup observation)
+-----------------------------------------------------------------
+Now Mann asks: what happens if you take ONE element x and keep combining
+it with itself?
+
+      x,  x^2 = x.x,  x^3 = x.x.x,  x^4,  ...
+
+CLAIM: in a finite group this sequence eventually CYCLES, and -- crucially
+-- the first time it repeats, it repeats by returning to x itself.
+
+That is: there exists some n such that
+
+      x^(n+1) = x        equivalently        x^n = e  (the identity).
+
+The smallest such n is called the ORDER of the element x.
+
+So every element of a finite group has a finite order, and its powers
+trace out a little "cycle" that loops back to the identity:
+
+      e  ->  x  ->  x^2  ->  ...  ->  x^(n-1)  ->  e  ->  x  ->  ...
+
+
+5.  WHY THE FIRST REPEAT MUST BE x ITSELF  (Mann's tiny argument, decoded)
+-------------------------------------------------------------------------
+Mann writes this very compactly.  Here it is unpacked.
+
+Suppose the sequence x, x^2, x^3, ... first repeats at position p, with
+the repeat happening after q+1 steps.  In symbols:
+
+      x^(q+1) = x^p     with     p <= q+1                            (*)
+
+We want to prove p = 1.  Multiply both sides of (*) on the LEFT by x^(-1):
+
+      x^(-1) . x^(q+1) = x^(-1) . x^p
+      x^q              = x^(p-1)
+
+Now look at what this says: x^q equals x^(p-1).  But the LEFT side, x^q,
+appears EARLIER in the sequence than x^(q+1) did.  And the RIGHT side,
+x^(p-1), appears EARLIER than x^p did.
+
+Recall: p was supposed to be the FIRST place a repeat happens.  So a
+repeat cannot occur before position p.  The equation x^q = x^(p-1) is
+itself a repeat -- so for it not to contradict our "first repeat is at p"
+assumption, we need p-1 = 0, i.e.
+
+      p = 1.
+
+Plug back in: x^(q+1) = x^1 = x,  so  x^q = e.  Done.
+
+MORAL: the powers of x can't "fall into" a cycle that skips the identity.
+The cycle ALWAYS goes through e.  Every element generates a clean cyclic
+subgroup {e, x, x^2, ..., x^(n-1)}.
+
+(Geometric picture: imagine the powers of x as beads on a string.  This
+result says the string can't form a lasso -- it must form a closed loop
+that comes back to the starting bead e.)
+
+
+6.  CONCRETE CHECK
+------------------
+In Z_3 above, take x = 1:
+
+      1,  1+1=2,  1+1+1=0=e.
+
+So 1^3 = e -- the order of 1 is 3.  The cycle  e -> 1 -> 2 -> e  passes
+through every element of the group.  An element whose powers generate the
+ENTIRE group is called a GENERATOR; a group with such an element is
+called CYCLIC.  Z_3 is cyclic; 1 is a generator.
+
+
+7.  WHERE THIS POINTS NEXT
+--------------------------
+The "element + its powers + the rule they loop back to e" idea is the
+finite-group baby version of what becomes, in continuous (Lie) groups,
+"a generator T and the exponential map e^(i*theta*T) tracing out a
+one-parameter subgroup."  Section 3.2 (Lie Groups) is where this gets
+upgraded from finite cycles to smooth curves.
+
+
+SUMMARY (5 BULLETS)
+-------------------
+  - A multiplication table is a complete encoding of a finite group.
+  - The table makes closure, identity, inverses, and abelian-ness visible
+    at a glance; every row/column is a permutation of the elements
+    (Latin-square property).
+  - Tables are impractical for big/infinite groups -> motivates generators
+    and Lie algebras later.
+  - Powers of any element x in a finite group cycle back to the identity
+    after finitely many steps; the smallest such count is the ORDER of x.
+  - The cycle ALWAYS includes the identity (Mann's short proof) -- the
+    powers of x form a cyclic subgroup {e, x, x^2, ..., x^(n-1)}.
+
+================================================================================

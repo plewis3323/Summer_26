@@ -1,0 +1,222 @@
+
+import codecademylib3_seaborn
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn import linear_model
+
+df = pd.read_csv("https://content.codecademy.com/programs/data-science-path/linear_regression/honeyproduction.csv")
+
+#.head is a method that can be used to display content of pandas data
+#frame 
+#step 1.) 
+print(df.head())
+
+#step 2.) 
+prod_per_year = df.groupby('year').totalprod.mean().reset_index() 
+
+"""
+
+- Unknown code step2.: (Look up what they are and learn)
+    Panda Methods -> 
+    1.) groupby() ?
+    1a.) groupby.totalprod.mean()?
+    1b.) groupby.totalprod.mean().reset_index() ? 
+    
+    
+  Questions to prompt: 
+   1.) Explain just a few sentences what this line (prod_per_year = df.groupby('year').totalprod.mean().reset_index()) does and functions? (Display answer where I can copy and paste in txt file) 
+   2.) Explain and be consice of 1.), 1a.) and 1b.) ? (Display answer where I can copy and paste in txt file) 
+    
+  Answers: 
+  1:    
+  
+    prod_per_year = df.groupby('year').totalprod.mean().reset_index()
+
+  1. df.groupby('year') splits the DataFrame into groups, one group per
+     unique value in the 'year' column.  (Ex. 1998 is a group and has features within 1998 "row of 1998")
+
+  2. .totalprod selects the 'totalprod' column from each of those groups. (totalprod column from each year group is selected)
+
+  3. .mean() computes the average value of 'totalprod' within each year
+     group, returning a Series indexed by 'year'. (Ex. 1998 could be index 0)
+
+  4. .reset_index() converts that Series back into a clean DataFrame with
+     two columns: 'year' and 'totalprod' (the mean), instead of leaving
+     'year' as the index. (year is acolumn and total_prod is a colum leaving free indexes displayed on leftmost side)
+
+  In short: it calculates the average total honey production for each
+  year and stores the result in a new DataFrame called prod_per_year,
+  with one row per year.
+  
+  
+  2: 
+  
+    1.)  groupby('year')
+       Splits df into separate groups - one group per unique year.
+       By itself it does no math; it just defines "which rows belong
+       together." Returns a GroupBy object (a grouping plan).
+
+  1a.) groupby('year').totalprod.mean()
+       Takes those groups, picks the 'totalprod' column, and computes
+       the average within each year. Result = a Series: the index is
+       the year, the value is that year's mean total production.
+
+  1b.) groupby('year').totalprod.mean().reset_index()
+       Takes that Series and turns it back into a tidy DataFrame with
+       two normal columns: 'year' and 'totalprod'. 'year' moves from
+       being the index to being a regular column.
+
+  Summary of the pipeline:
+     groupby   -> split rows into year groups
+     .mean()   -> one average per group  (Series)
+     reset_index -> reshape into a clean 2-column DataFrame
+
+
+ """
+  
+  
+
+  #step 3)
+  X = prod_per_year['year']
+  X = X.values.reshape(-1,1)
+
+
+"""
+  Line 1: X = prod_per_year['year']
+     Grabs just the 'year' column from prod_per_year.
+     Right now X is a pandas Series (a 1D list of years).
+
+  Line 2: X = X.values.reshape(-1,1)
+     .values   -> converts the Series into a plain NumPy array.
+     .reshape(-1,1) -> reshapes it into a 2D column:
+                       one column, and -1 means "figure out the
+                       number of rows automatically."
+
+     Before: [1998, 1999, 2000, ...]        shape (n,)   -> 1D
+     After:  [[1998], [1999], [2000], ...]  shape (n, 1) -> 2D
+
+  WHY reshape?
+     scikit-learn's LinearRegression expects the input features (X)
+     to be a 2D array: rows = samples, columns = features.
+     A plain 1D Series would cause an error, so we reshape it into
+     a single-feature column.
+
+  So yes, this is the right code for step 3 — the reshape is required so the data is in the 2D shape scikit-learn needs.
+
+"""
+
+#step 4) 
+y = prod_per_year['totalprod']
+
+
+
+#step 5) 
+plt.scatter(X,y)
+#plt.show()
+
+
+
+
+#step 6) 
+regr = linear_model.LinearRegression()
+
+#step 7-8) #no fit line yet #trains the model
+#print out slope and intercept
+regr.fit(X, y)
+print(regr.coef_[0])
+print(regr.intercept_)
+
+
+
+
+#step 9) 
+y_predict = regr.predict(X)
+
+#step 10) 
+plt.plot(X, y_predict)
+#plt.show()
+
+
+#step 11) numpy array for new points and reshape in 2D array
+X_future = np.array(range(2013, 2050))
+X_future = X_future.reshape(-1, 1)
+
+#step 12) 
+future_predict = regr.predict(X_future)
+
+#step 13)
+plt.plot(X_future, future_predict)
+plt.tight_layout()
+plt.show() 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

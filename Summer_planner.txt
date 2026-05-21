@@ -1,0 +1,186 @@
+
+
+
+                                                              Summer26 Self/Learning Planner & Content (**later involving Fall_Spring 26-27**)
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+* AI and ML Self Learning: (10 hrs.: 3-hr Personal Claude,  4-hr Codecadamy, & 3-hr Anthropic courses (Mon-Wed))
+
+- Personal Claude Classes: () (**)
+   - Months: 1-3 Modules 
+
+- Codecadamy: () (**)
+   - AI Engineer Career Path 
+   - ML/AI engineer Career Path 
+   - Building ML module skills path 
+   - Data Scientist: Machine Learning Career Path 
+   (** All other AI/ML Modules attempt **) 
+   
+   
+   
+- Anthropic Modules: () 
+   - AI Capabilities and Limitations
+   - AI Fluency: Framework & Foundations
+   - Claude 101
+   - Introduction to Claude Cowork
+   - Claude Code 101
+   - Claude Code in Action
+   - Building with the Claude API
+   - Introduction to agent skills
+   - Introduction to subagents
+   - Introduction to Model Context Protocol
+   - Model Context Protocol: Advanced Topics
+
+
+
+** Each week add 1-2 exercise or Project elements & Big Project element at very end ** 
+** Useful textbooks: https://github.com/meerilahi/Books-Collection/blob/main/AI%20Russell%20Norvig.pdf **
+
+
+*** Period May 15th - Aug 20th ***
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+* Physics Master Syllabus: (15 hrs.:   (Mon-Wed: 1.5 hrs each) (Thurs-Sat)) (20 hrs. Fall-Spring 26-27)
+
+- Syllabus Information: file:///C:/Users/plewi/OneDrive%20-%20Ohio%20University/Summer26_Spring27_master_physics_syllabus/Master_Syllabus_2026-27.pdf
+
+
+Physics Learning periods: 
+Summer #1 (May 15 - July 15th):
+- Nuc #2, Stat mech, exp HEP Part #1
+Summer #2 (July 22nd - Aug 18th): 
+- Nuc #1, exp HEP Part 2
+--------------------------
+Fall #1 (Sep-Oct): 
+- Quantum , RHI & Jets, E&M
+Fall #2 (Nov - Dec): 
+- QFT #1 & Classical part #1
+----------------------------
+Spring #1 (Jan-Feb): 
+- QFT #2 & Cassical Part 2
+Spring #2 (March - May):
+Astro & Nuclear; Optics  
+----------------------------
+
+Physics to Go Over and Review: 
+1.) Nuc #1 
+2.) Nuc #2 
+3.) stat Mech 
+4.) Quantum 
+5.) E&M 
+6.) Classical 
+7.) QFT #1 
+8.) QFT #2 
+9.) RHI & Jets 
+10.) exp HEP 
+11.) Astro & Nuclear Astro 
+12.) Optics 
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+* Java, C++, and Root Coding Learning session: (5 hrs.: (Mon-Wed))
+
+- Codecadamy: () 
+  - Intermediate and advanced C++ Modules 
+  - Any Supp ML/AI subskills that will be helpful (*Start with pandas and SQl review*) 
+  
+- C++ HEP Module: https://hsf-training.github.io/hsf-training-cpp-webpage/
+- ROOT Primer & ROOT personal Claude Modules () 
+
+
+*** Period May 15th - Aug 20th ***
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+
+* sPHENIX Software/Framework & Simulations: (5 hrs.: (Thurs-Sat))  ()
+
+*** Period May 15th - Aug 20th *** 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

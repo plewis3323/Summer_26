@@ -1,0 +1,435 @@
+
+
+                                                                                   # Day #3 ML/AI Engineer Path 5/9/26
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+* Log transforms:  
+
+
+-  Data transformations are steps that change or adjust data to make it more useful for analysis or machine learning. 
+   Examples include scaling values, encoding categories, binning continuous data, and handling missing values. 
+   These changes help models understand the data better and improve performance.
+   
+
+- Log transformation helps with right-skewed data and large outliers.
+- It makes data closer to a normal distribution.
+- It reduces the range of values, making features easier for models to handle.
+- Log transformation is not suitable for negative values or left-skewed data.
+- After log transformation, relationships in models may become multiplicative instead of additive.
+   
+   
+   
+
+ex.)  
+
+import pandas as pd 
+import numpy as np
+import matplotlib.pyplot as plt
+import codecademylib3_seaborn 
+
+## add code below
+## read in csv file
+cars = pd.read_csv('cars.csv')
+prices = cars['sellingprice']
+
+#plt.hist(prices, bins = 150)
+#plt.show()
+
+log_prices = np.log(prices)
+
+plt.hist(log_prices, bins = 150)
+plt.show()
+
+
+#* Encoding Categorical Variables 
+
+- Categorical data can be nominal (no order) or ordinal (ordered).
+- Many machine learning models require categorical data to be converted to numbers.
+- Ordinal encoding assigns numbers based on order or hierarchy.
+- Label encoding assigns a unique number to each category, but can create false order.
+- One-hot encoding creates a new column for each category, using 1s and 0s.
+- Binary encoding reduces the number of columns by using binary numbers.
+- Hashing encoding maps categories to a fixed number of columns, but can cause collisions.
+- Target encoding replaces categories with the mean of the target variable for each category.
+- Date-time features can be split into parts like year, month, or day for analysis.
+  Copy
+
+
+ex.)   import pandas as pd
+
+# import data
+cars = pd.read_csv('cars.csv')
+
+# check variable types
+print(cars.dtypes)
+## OUTPUT
+# year              int64
+# make             object
+# model            object
+# trim             object
+# body             object
+# transmission     object
+# vin              object
+# state            object
+# condition        object
+# odometer        float64
+# color            object
+# interior         object
+# seller           object
+# mmr               int64
+# sellingprice      int64
+# saledate         object
+
+
+- key ideas is that Ml models really only can learn from numbers so converting to text is 
+  a priority.  
+  
+ 
+ 
+* Ordinal Encoding 
+
+- reminders: 
+
+ conditions -> is a feature(column) in the data set that describes the state or quality 
+               of something.  
+               
+ value_counts() -> pd method that describes how many counts appear in column that's unique.  
+ 
+ 
+ex.)  
+
+print(cars['condition'].value_counts())
+# #OUTPUT
+# New          2881
+# Like New     2860
+# Good         2027
+# Fair          753
+# Excellent     186
+
+
+
+ex.) (condition mapping) 
+
+# create dictionary of label:values in order
+rating_dict = {'Excellent':5, 'New':4, 'Like New':3, 'Good':2, 'Fair':1}
+
+#create a new column 
+cars['condition_rating'] = cars['condition'].map(rating_dict)
+
+
+
+
+ex.) (condition mapping) (scikit example) 
+
+# using scikit-learn
+from sklearn.preprocessing import OrdinalEncoder
+
+# create encoder and set category order
+encoder = OrdinalEncoder(categories=[['Excellent', 'New', 'Like New', 'Good', 'Fair']])
+
+# reshape our feature
+condition_reshaped = cars['condition'].values.reshape(-1,1)
+
+# create new variable with assigned numbers
+cars['condition_rating'] = encoder.fit_transform(condition_reshaped)
+
+
+
+* label Encoding 
+
+
+ex.) (1st example of label encoding) 
+
+print(cars['color'].nunique())
+# #OUTPUT 
+# 19
+
+print(cars['color'].value_counts()[:5])
+# #OUTPUT
+# black     2015
+# white     1931
+# gray      1506
+# silver    1503
+# blue       869
+
+
+
+ex.) (object -> Categories) 
+
+
+# convert feature to category type
+cars['color'] = cars['color'].astype('category')
+
+# save new version of category codes
+cars['color'] = cars['color'].cat.codes
+
+# print to see transformation
+print(cars['color'].value_counts()[:5])
+# #OUTPUT
+# 2     2015
+# 18    1931
+# 8     1506
+# 15    1503
+# 3      869
+
+
+
+ex.) (object -> categories using label encoder to not have misread of model) 
+
+from sklearn.preprocessing import LabelEncoder
+
+# create encoder
+encoder = LabelEncoder()
+
+# create new variable with assigned numbers
+cars['color'] = encoder.fit_transform(cars['color'])
+
+
+ex (Running a label encoder, pandas way) 
+
+import pandas as pd
+cars = pd.read_csv('cars.csv')
+from sklearn.preprocessing import LabelEncoder
+
+# convert 'make' feature to category type
+cars['make'] = cars['make'].astype('category')
+
+
+# save new version of category codes
+cars['make'] = cars['make'].cat.codes
+
+# print to see transformation
+print(cars['make'].value_counts()[:5])
+
+
+
+*One-hot encoding 
+
+- One-hot encoding is when we create a dummy variable for each value of our categorical feature, 
+and a dummy variable is defined as a numeric variable with two values: 1 and 0. 
+We will continue to talk about our color feature from our used car dataset.
+
+
+ex.) (one-hot encoding) 
+
+# use pandas .get_dummies method to create one new column for each color
+ohe = pd.get_dummies(cars['color'])
+
+# join the new columns back onto our cars dataframe
+cars = cars.join(ohe)
+
+
+
+ex.) (coding question; One-hot encoding) 
+
+import pandas as pd
+cars = pd.read_csv('cars.csv')
+
+## one hot encode the feature
+## label this variable ohe
+ohe = pd.get_dummies(cars['body'])
+
+## print the column names
+print(ohe.columns)
+
+## check out one of your new columns
+## print the 'suv' column
+print(ohe['suv'])
+
+
+* Binary Encoding 
+- A sparse matrix is a matrix where most of the elements are zero (or some other default value).
+
+ex.) 
+
+from category_encoders import BinaryEncoder
+
+#this will create a new data frame with the color column removed and replaced with our 5 new binary feature columns
+colors = BinaryEncoder(cols = ['color'], drop_invariant = True).fit_transform(cars)
+
+
+* Hashing
+
+- Another option we have available to us is an encoding technique called hashing. 
+This process is similar to one-hot encoding where it will create new binary columns, but within the parameters, 
+you can decide how many features to output. A huge advantage is reduced dimensionality, but a large disadvantage 
+is that some categories will be mapped to the same values. That is called collision.
+
+ex.) 
+
+from category_encoders import HashingEncoder
+
+# instantiate our encoder
+encoder = HashingEncoder(cols='color', n_components=5)
+
+# do a fit transform on our color column and set to a new variable
+hash_results = encoder.fit_transform(cars['color'])
+
+
+* Target encoding 
+
+- hashing process but takes the mean when it comes to values setting for dummy features 
+
+
+ex.) 
+from category_encoders import TargetEncoder
+
+# instantiate our encoder
+encoder = TargetEncoder(cols = 'color')
+
+# set the results of our fit_transform to a variable 
+# the output will be its own pandas series
+encoder_results = encoder.fit_transform(cars['color'], cars['sellingprice'])
+
+print(encoder_results.head())
+#   color
+# 0 11761.881473
+# 1 18007.276995
+# 2 8458.251232
+# 3 14769.292595
+# 4 12691.099747
+
+
+ex.) 
+
+# print all 19 unique values
+print(np.sort(encoder_results['color'].unique()))
+# OUTPUT 
+# [ 3054.12209927  8088.87434555  8458.25123153  9276.78571429
+#   9867.50002121  9885.8093167  11043.90243902 11247.82608763
+#  11761.88147296 11805.06187625 12124.83443709 12376.19047882
+#  12691.09974747 13912.83399734 14769.29259451 15496.72704715
+#  17174.36440678 17176.25931731 18007.27699531 18048.52540833]
+
+
+
+*  Encoding date-time variables
+
+- Every data analyst or scientist will have to work with date-time objects at some point in their career. 
+There is so much information to be gained from date-time objects. We will work with the saledate feature 
+- yay, a new column to explore! The very first thing we need to do is convert this to a date-time object.
+
+ex.)  
+
+print(cars['saledate'].dtypes)
+# # OUTPUT
+# dtype('O')
+
+cars['saledate'] = pd.to_datetime(cars['saledate'])
+# #OUTPUT
+# datetime64[ns, tzlocal()]
+
+
+
+ex.) 
+
+# create new variable for month
+cars['month'] = cars['saledate'].dt.month
+
+# create new variable for day of the week
+cars['dayofweek'] = cars['saledate'].dt.day
+
+# create new variable for difference between cars model year and year sold
+cars['yearbuild_sold'] = cars['saledate'].dt.year - cars['year']
+
+
+
+note (have claude make latex pdf with all of these concepts repeated next time): 
+
+1. Ordinal encoding
+2. Label encoding
+3. One-hot encoding
+4. Binary encoding
+5. Hashing
+6. Target encoding
+7. Date-time encoding
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

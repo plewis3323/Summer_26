@@ -1,0 +1,220 @@
+# Day #1 ML/AI Engineer Path 5/6/26
+
+"""
+#regression script 
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import LinearRegression
+
+# Load the data
+housing_data = pd.read_csv('housing_data.csv')
+X = housing_data[['Sq ft', 'Burglaries']]
+y = housing_data['Rent']
+
+# Create the model
+reg = LinearRegression()
+
+# Train the model
+reg.fit(X, y)
+
+square_footage = 1250
+number_of_burglaries = 2
+
+y_pred = reg.predict(np.array([square_footage, number_of_burglaries]).reshape(1, 2))
+
+print(y_pred)
+
+"""
+
+
+#classification script
+
+"""
+
+
+mport numpy as np
+import pandas as pd
+from sklearn.neighbors import KNeighborsClassifier
+
+# Load the data
+photo_id_times = pd.read_csv('photo_id_times.csv')
+
+# Separate the data into independent and dependent variables
+X = np.array(photo_id_times['Time to id photo']).reshape(-1, 1)
+y = photo_id_times['Class']
+
+# Create a model and fit it to the data
+neigh = KNeighborsClassifier(n_neighbors=3)
+neigh.fit(X, y)
+
+time_to_identify_picture = 5
+
+# Make a prediction based on how long it takes to identify a picture
+y_pred = neigh.predict(np.array(time_to_identify_picture).reshape(1, -1))
+
+if y_pred == 1:
+    print("We think you're a robot.")
+else:
+    print("Welcome, human!")
+
+
+
+"""
+
+
+#Clustering Unserpervised learning example 
+
+"""
+
+mport numpy as np
+import pandas as pd
+from sklearn.cluster import KMeans
+import codecademylib3
+from plot import plot_clusters
+
+# Load the data
+media_usage = pd.read_csv('media_usage.csv')
+
+# Create the model
+kmeans = KMeans(n_clusters=3)
+
+# Fit the model to the data
+kmeans.fit(media_usage)
+
+labels = kmeans.predict(media_usage)
+
+# Plot the clusters
+plot_clusters(media_usage, labels)
+
+
+"""
+
+
+#--------------------------------------------------------------------------------------------------------------------
+
+# * Feature engineering module: 
+
+
+"""
+
+*Data Transformations: 
+
+Data transformations are steps used to change or adjust data before using it in a machine learning model. These steps can include:
+
+Changing values to a common scale (scaling or standardizing)
+Grouping values into bins (binning)
+Turning text or categories into numbers (encoding)
+Fixing missing or incorrect values
+These changes help models understand the data better and make more accurate predictions.
+
+* This process is called numerical transformation, 
+when we take our numerical data and change it into another numerical value. 
+This is meant to change the scale of our values or even adjust the skewness of our data.
+
+
+* (ex1) example of inputing, screening and outputting data: 
+import pandas as pd 
+
+#Load the data (starbucks info)
+coffee = pd.read_csv('starbucks_customers.csv')
+
+#Print the data 
+print(coffee)
+
+#Be speciifc about looking at certain features
+print(coffee.info())
+
+
+
+* Data centering involves subtracting the mean of a data set from each data point so that the new mean is 0. 
+This process helps us understand how far above or below each of our data points is from the mean.
+
+ex.) Centering your data example: 
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt 
+import codecademylib3_seaborn 
+
+#Pandas object
+coffee = pd.read_csv('starbucks_customers.csv')
+
+#define feature of speciifc column
+ages = coffee['age']
+
+#minimum age feature 
+min_age = np.min(ages)
+print(min_age)
+
+#maximum age feature 
+max_age = np.max(ages)
+print(max_age)
+
+#difference in ages 
+diff = max_age - min_age 
+print(diff) 
+
+#mean of data 
+mean_age = np.mean(ages)
+print(mean_age)
+
+
+#centering the data 
+centered_ages = ages - mean_age 
+print(centered_ages)
+
+#display results as histogram 
+plt.hist(centered_ages)
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

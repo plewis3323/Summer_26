@@ -1,0 +1,5 @@
+
+
+C++ Training:  https://hsf-training.github.io/hsf-training-cpp-webpage/
+
+C++ Codecademy: (Do their advanced C++ class) 

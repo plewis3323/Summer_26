@@ -1,0 +1,215 @@
+
+
+
+
+                                                                                     ** Java Notes Day-1 May-11-26  ** 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+                                                                                    
+- Programming languages are composed of syntax, the specific instructions which Java understands. We write syntax in 
+  filesPreview: Docs Java provides a number of different classes and methods for utilizing files and the file system.
+  to create programs, which are executed by the computer to perform the desired task.
+  Let’s start with the universal greeting for a programming language. We’ll explore the syntax in the next exercise.
+
+
+
+ex.) 
+
+public class HelloWorld {
+  public static void main(String[] args) {
+    System.out.println("Hello World!");
+  }
+}
+
+
+
+- java files have a .java extension. programs are on one file or multitude of files. 
+- A class is a blueprint or template for an object in Java.
+
+
+ex (starting every code): 
+
+public class HelloWorld {
+  
+}
+
+- We marked the domain of this concept using curly braces: {}. Syntax inside the curly braces is part of the class.
+- Each file has one primary class named after the file. Our class name: HelloWorld and our file name: HelloWorld. Every word is capitalized.
+- inside every class main() method lies our program tasks. 
+
+
+ex.) 
+
+public static void main(String[] args) {
+
+}
+
+
+- cout <<  is c/c++ print statement, print() is for python, but System.out.println(); is for java. 
+
+
+ex.) 
+
+public class HelloYou {
+  public static void main(String[] args) {
+
+    System.out.println("Hello Parker!");
+    
+    
+  }
+}
+
+
+
+**  Print Statements: **
+
+- System is a built-in Java class that contains useful tools for our programs.
+- out is short for “output”.
+- println is short for “print line”.
+ 
+ 
+- We can use System.out.println() whenever we want the program to create a new line on the screen after outputting a value:
+
+
+ex.) 
+
+
+
+System.out.println("Hello World");
+System.out.println("Today is a great day to code!");
+
+(How you move to the next line in Java.)
+
+
+ 
+- We also can output information using System.out.print(). Notice that we’re using print(), 
+  not println(). Unlike System.out.println(), this type of print statement outputs everything on the same line. For example:
+  
+  
+  ex.) 
+  
+  
+  System.out.print("Hello ");
+System.out.print("World");
+
+
+output:  Hello World
+
+
+
+ex.) 
+
+
+public class HideAndSeek {
+  public static void main(String[] args) {
+    System.out.println("Let's play hide and seek.");
+    System.out.print("Three...");
+    System.out.print("Two...");
+    System.out.println("One...");
+    System.out.println("Ready or not, here I come!");
+
+
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

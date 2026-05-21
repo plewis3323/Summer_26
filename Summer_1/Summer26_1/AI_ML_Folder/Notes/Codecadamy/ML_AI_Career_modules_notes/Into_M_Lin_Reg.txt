@@ -1,0 +1,478 @@
+
+
+
+                                                                    # Intro to Multiple Linear Regression ML/AI Engineer Path                                                       
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------                                                 
+                                                                    
+                                                                    
+                                                                    
+    ** (Date: 5/13/26) ** 
+    
+    
+    
+ - Introduction to Multiple Linear Regression:
+ 
+ 
+Multiple Linear Regression uses two or more independent variables 
+to predict the values of the dependent variable. It is based on the following equation that we’ll explore later on:
+
+  y = b + m1x1 + m2x2 + m3x3 + .... + mNxN 
+  
+  
+ex) (Full Code "Don't understand just yet")
+
+import codecademylib3_seaborn
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+from mpl_toolkits.mplot3d import Axes3D
+
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+
+streeteasy = pd.read_csv("https://raw.githubusercontent.com/sonnynomnom/Codecademy-Machine-Learning-Fundamentals/master/StreetEasy/manhattan.csv")
+
+df = pd.DataFrame(streeteasy)
+
+x = df[['size_sqft','building_age_yrs']]
+y = df[['rent']]
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, train_size = 0.8, test_size = 0.2, random_state=6)
+
+ols = LinearRegression()
+
+ols.fit(x_train, y_train)
+
+# Plot the figure
+
+fig = plt.figure(1, figsize=(6, 4))
+plt.clf()
+
+elev = 43.5
+azim = -110
+
+ax = Axes3D(fig, elev=elev, azim=azim)
+
+ax.scatter(x_train[['size_sqft']], x_train[['building_age_yrs']], y_train, c='k', marker='+')
+
+ax.plot_surface(np.array([[0, 0], [4500, 4500]]), np.array([[0, 140], [0, 140]]), ols.predict(np.array([[0, 0, 4500, 4500], [0, 140, 0, 140]]).T).reshape((2, 2)), alpha=.7)
+
+ax.set_xlabel('Size (ft$^2$)')
+ax.set_ylabel('Building Age (Years)')
+ax.set_zlabel('Rent ($)')
+
+ax.w_xaxis.set_ticklabels([])
+ax.w_yaxis.set_ticklabels([])
+ax.w_zaxis.set_ticklabels([])
+
+# Add the code below:
+plt.show()
+
+
+
+ ** (Date: 5/19/26) ** 
+ 
+ 
+ 
+- StreetEasy Dataset: 
+
+ex.) 
+
+import codecademylib3_seaborn
+import pandas as pd
+
+df = pd.read_csv("https://raw.githubusercontent.com/Codecademy/datasets/master/streeteasy/manhattan.csv")
+
+print(df.head())
+
+
+- Training Set vs. Test Set: 
+
+* Split data into training set and test set for model evaluation.
+Training set is used to fit the model.
+Test set is kept separate to check model accuracy.
+Common split is 80% training, 20% test.
+Use train_test_split from scikit-learn to divide data.
+
+(key terms: ther is also validation to fine tune. hyperparamters are settings you change/tune before training a model)
+
+
+ex.) 
+
+import codecademylib3_seaborn
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+# import train_test_split
+
+streeteasy = pd.read_csv("https://raw.githubusercontent.com/sonnynomnom/Codecademy-Machine-Learning-Fundamentals/master/StreetEasy/manhattan.csv")
+
+df = pd.DataFrame(streeteasy)
+
+x = df[['bedrooms', 'bathrooms', 'size_sqft', 'min_to_subway', 'floor', 'building_age_yrs', 'no_fee', 'has_roofdeck', 'has_washer_dryer', 'has_doorman', 'has_elevator', 'has_dishwasher', 'has_patio', 'has_gym']]
+
+y = df['rent']
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, train_size=0.8, test_size=0.2, random_state = 6)
+
+print(x_train.shape)
+print(x_test.shape)
+print(y_train.shape)
+print(y_test.shape)
+
+
+
+- Multiple Linear Regression: Scikit-Learn:
+
+* Multiple linear regression models the relationship between one target and several features.
+Use LinearRegression() from sklearn.linear_model for multiple features.
+Fit the model with .fit(x_train, y_train).
+Predict values with .predict(x_test).
+The model finds coefficients for each feature and an intercept.
+Steps are similar to simple linear regression, just with more features.
+
+
+ex.) 
+
+import codecademylib3_seaborn
+import matplotlib.pyplot as plt
+import pandas as pd
+
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+
+
+streeteasy = pd.read_csv("https://raw.githubusercontent.com/sonnynomnom/Codecademy-Machine-Learning-Fundamentals/master/StreetEasy/manhattan.csv")
+
+df = pd.DataFrame(streeteasy)
+
+x = df[['bedrooms', 'bathrooms', 'size_sqft', 'min_to_subway', 'floor', 'building_age_yrs', 'no_fee', 'has_roofdeck', 'has_washer_dryer', 'has_doorman', 'has_elevator', 'has_dishwasher', 'has_patio', 'has_gym']]
+
+y = df[['rent']]
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, train_size = 0.8, test_size = 0.2, random_state=6)
+
+# Add the code here:
+mlr = LinearRegression()
+mlr.fit(x_train, y_train) 
+
+y_predict = mlr.predict(x_test)
+
+
+#applying the model in action on sonney's apartment
+# Sonny doesn't have an elevator so the 11th item in the list is a 0
+sonny_apartment = [[1, 1, 620, 16, 1, 98, 1, 0, 1, 0, 0, 1, 1, 0]]
+
+predict = mlr.predict(sonny_apartment)
+
+print("Predicted rent: $%.2f" % predict)
+
+
+- Visualizing Results with Matplotlib:
+
+
+# Create a scatter plot
+plt.scatter(x, y, alpha=0.4)
+
+# Create x-axis label and y-axis label
+plt.xlabel("the x-axis label")
+plt.ylabel("the y-axis label")
+
+# Create a title
+plt.title("title!")
+
+# Show the plot
+plt.show()
+
+
+
+ex.)
+import codecademylib3_seaborn
+import matplotlib.pyplot as plt
+import pandas as pd
+
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+
+streeteasy = pd.read_csv("https://raw.githubusercontent.com/sonnynomnom/Codecademy-Machine-Learning-Fundamentals/master/StreetEasy/manhattan.csv")
+
+df = pd.DataFrame(streeteasy)
+
+x = df[['bedrooms', 'bathrooms', 'size_sqft', 'min_to_subway', 'floor', 'building_age_yrs', 'no_fee', 'has_roofdeck', 'has_washer_dryer', 'has_doorman', 'has_elevator', 'has_dishwasher', 'has_patio', 'has_gym']]
+
+y = df[['rent']]
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, train_size = 0.8, test_size = 0.2, random_state=6)
+
+lm = LinearRegression()
+
+model=lm.fit(x_train, y_train)
+
+y_predict = lm.predict(x_test)
+
+#plotting information 
+plt.scatter(y_test, y_predict, alpha = 0.4)
+# Create x-axis label and y-axis label
+plt.xlabel("y_test")
+plt.ylabel("y_predict")
+
+# Create a title
+plt.title("Rent Prices Correlation")
+plt.show()
+
+
+- Multiple Linear Regression Equation: 
+
+
+* Multiple linear regression predicts a target using several features.
+The equation is:
+y = b + m₁x₁ + m₂x₂ + … + mₙxₙ
+b is the intercept; m₁, m₂, …, mₙ are coefficients for each feature.
+Coefficients show how much each feature affects the prediction.
+Use .coef_ for coefficients and .intercept_ for the intercept in scikit-learn.
+
+
+ex.) 
+
+import codecademylib3_seaborn
+import matplotlib.pyplot as plt
+import pandas as pd
+
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+
+streeteasy = pd.read_csv("https://raw.githubusercontent.com/sonnynomnom/Codecademy-Machine-Learning-Fundamentals/master/StreetEasy/manhattan.csv")
+
+df = pd.DataFrame(streeteasy)
+
+x = df[['bedrooms', 'bathrooms', 'size_sqft', 'min_to_subway', 'floor', 'building_age_yrs', 'no_fee', 'has_roofdeck', 'has_washer_dryer', 'has_doorman', 'has_elevator', 'has_dishwasher', 'has_patio', 'has_gym']]
+
+y = df[['rent']]
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, train_size = 0.8, test_size = 0.2, random_state=6)
+
+mlr = LinearRegression()
+
+model=mlr.fit(x_train, y_train)
+
+y_predict = mlr.predict(x_test)
+
+# Input code here:
+print(mlr.coef_)
+
+
+- Correlations: 
+
+* This section explains statistics concept of pearson "r" statistics 
+with review being: r = 1 or -1 meaning neg/pos direct correlation. anything else 
+is false.  
+
+
+ex.) 
+
+import codecademylib3_seaborn
+import matplotlib.pyplot as plt
+import pandas as pd
+
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+
+streeteasy = pd.read_csv("https://raw.githubusercontent.com/sonnynomnom/Codecademy-Machine-Learning-Fundamentals/master/StreetEasy/manhattan.csv")
+
+df = pd.DataFrame(streeteasy)
+
+# Input code here:
+plt.scatter(df[['size_sqft']], df[['rent']], alpha = 0.4)
+print('Yes')
+
+#Other examples:
+plt.scatter(df[['bathrooms']], df[['rent']], alpha = 0.4)
+print('Yes or No')
+
+#Other examples:
+plt.scatter(df[['no_fee']], df[['rent']], alpha = 0.4)
+print('Yes or No')
+
+
+
+plt.show()
+
+
+- Evaluating the Model's Accuracy:
+
+Residual analysis checks the difference between actual and predicted values.
+Residual (e) is calculated as: e = y - ŷ
+Use .score() method to get R² (coefficient of determination).
+R² shows the percentage of variation in y explained by the model.
+R² ranges from negative values to 1.0; higher is better.
+R² of 0.70 or above is usually considered good.
+
+
+ex.) 
+
+import codecademylib3_seaborn
+import matplotlib.pyplot as plt
+import pandas as pd
+
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+
+streeteasy = pd.read_csv("https://raw.githubusercontent.com/sonnynomnom/Codecademy-Machine-Learning-Fundamentals/master/StreetEasy/manhattan.csv")
+
+df = pd.DataFrame(streeteasy)
+
+x = df[['bedrooms', 'bathrooms', 'size_sqft', 'min_to_subway', 'floor', 'building_age_yrs', 'no_fee', 'has_roofdeck', 'has_washer_dryer', 'has_doorman', 'has_elevator', 'has_dishwasher', 'has_patio', 'has_gym']]
+
+y = df[['rent']]
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, train_size = 0.8, test_size = 0.2, random_state=6)
+
+mlr = LinearRegression()
+
+model=mlr.fit(x_train, y_train)
+
+y_predict = mlr.predict(x_test)
+
+# Input code here:
+print("Train score:")
+print(mlr.score(x_train, y_train))
+print("Test Set:")
+print(mlr.score(x_test, y_test))
+
+
+
+
+
+- Rebuild the Model: 
+
+
+ex.) 
+
+import codecademylib3_seaborn
+import matplotlib.pyplot as plt
+import pandas as pd
+
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+
+streeteasy = pd.read_csv("https://raw.githubusercontent.com/sonnynomnom/Codecademy-Machine-Learning-Fundamentals/master/StreetEasy/manhattan.csv")
+
+df = pd.DataFrame(streeteasy)
+
+x = df[['bedrooms', 'bathrooms', 'size_sqft', 'min_to_subway', 'floor', 'building_age_yrs', 'no_fee', 'has_roofdeck', 'has_washer_dryer', 'has_doorman', 'has_patio', 'has_gym']]
+
+y = df[['rent']]
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, train_size = 0.8, test_size = 0.2, random_state=6)
+
+lm = LinearRegression()
+
+model = lm.fit(x_train, y_train)
+
+y_predict= lm.predict(x_test)
+
+print("Train score:")
+print(lm.score(x_train, y_train))
+
+print("Test score:")
+print(lm.score(x_test, y_test))
+
+plt.scatter(y_test, y_predict)
+plt.plot(range(20000), range(20000))
+
+plt.xlabel("Prices: $Y_i$")
+plt.ylabel("Predicted prices: $\hat{Y}_i$")
+plt.title("Actual Rent vs Predicted Rent")
+
+plt.show()
+
+# zoe_apartment = [[1, 1, 620, 16, 1, 98, 0, 0, 1, 0, 0, 0, 1, 0]]
+# predict = model.predict(zoe_apartment)
+# print("Predicted rent: $%.2f" % predict)
+
+#printing coefficents
+print(model.coef_)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

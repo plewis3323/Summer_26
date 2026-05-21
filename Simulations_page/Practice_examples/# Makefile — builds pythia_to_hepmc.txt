@@ -1,0 +1,35 @@
+# Makefile — builds pythia_to_hepmc and calo_sim
+#
+# Assumes you have already sourced the course environment so that
+# pythia8-config, geant4-config, root-config, and HepMC3-config are in PATH.
+
+CXX       ?= g++
+CXXSTD    ?= -std=c++17
+OPT       ?= -O2 -g -Wall
+
+PYTHIA_CFLAGS := $(shell pythia8-config --cxxflags)
+PYTHIA_LIBS   := $(shell pythia8-config --libs)
+ROOT_CFLAGS   := $(shell root-config --cflags)
+ROOT_LIBS     := $(shell root-config --libs)
+HEPMC_CFLAGS  := $(shell HepMC3-config --cflags)
+HEPMC_LIBS    := $(shell HepMC3-config --libs)
+G4_CFLAGS     := $(shell geant4-config --cflags)
+G4_LIBS       := $(shell geant4-config --libs)
+
+ALL: pythia_to_hepmc calo_sim
+
+pythia_to_hepmc: pythia_to_hepmc.cc
+	$(CXX) $(CXXSTD) $(OPT) $< -o $@ \
+	    $(PYTHIA_CFLAGS) $(HEPMC_CFLAGS) \
+	    $(PYTHIA_LIBS)  $(HEPMC_LIBS)
+
+calo_sim: calo_sim.cc
+	$(CXX) $(CXXSTD) $(OPT) $< -o $@ \
+	    $(G4_CFLAGS) $(HEPMC_CFLAGS) \
+	    $(G4_LIBS)  $(HEPMC_LIBS)
+
+clean:
+	rm -f pythia_to_hepmc calo_sim *.o events.hepmc calo.root
+	rm -rf plots
+
+.PHONY: ALL clean

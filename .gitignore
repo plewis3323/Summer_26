@@ -1,0 +1,71 @@
+# ===== Summer_26 .gitignore =====
+# See repo README for the rationale.
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyi
+*.so
+*.so.*
+.venv/
+venv/
+env/
+.Python
+*.egg-info/
+.ipynb_checkpoints/
+
+# --- OS / editor cruft ---
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# --- Windows Zone.Identifier alternate data streams ---
+# (created when files are downloaded from the internet on Windows)
+*:Zone.Identifier
+*_Zone.Identifier
+
+# --- Nested git clones (track upstream separately) ---
+# Claude_Personal_AI_ML_Class_and_Notes is its own repo, also in plewis3323/Masters.
+AI_LLM_ML/Claude_Personal_AI_ML_Class_and_Notes/
+# The textbook collection cloned from meerilahi/Books-Collection.
+1st year physics review/Textbook files/Textbooks/
+
+# --- Reference textbook collections (huge, not user-authored) ---
+# Exclude all of 'Textbook files/' subdirs EXCEPT 'My physics Notes Folder/'
+# (those are user-authored Scrivener / coding notes).
+1st year physics review/Textbook files/*
+!1st year physics review/Textbook files/My physics Notes Folder/
+!1st year physics review/Textbook files/My physics Notes Folder/**
+
+# Generic textbook folder patterns elsewhere in the tree
+**/Textbooks/
+**/textbook/
+**/textbooks/
+
+# --- Virtual machine images, datasets, archives ---
+*.ova
+*.vmdk
+*.iso
+*.h5
+*.hdf5
+*.root.bak
+
+# --- Individual files >= 50 MB (GitHub warns >50 MB, blocks >100 MB) ---
+# Re-evaluate periodically; can be re-added with git add -f if you really need them.
+Nuc1_Nuc2/Nuc_2/an-introduction-to-quantum-field-theory_compress.pdf
+1st year physics review/Fall_2025_SP_26_Sum_26_Teaching_skills/Stat Mech/Chemistry2e-WEB.pdf
+1st year physics review/Fall_2025_SP_26_Sum_26_Teaching_skills/Colliders,TN,TDRs/ATLAS-TDR-031.pdf
+
+# --- Scratch / tmp ---
+*.tmp
+*_tmp
+*.scrvn_*_tmp
+tmp/
+scratch/

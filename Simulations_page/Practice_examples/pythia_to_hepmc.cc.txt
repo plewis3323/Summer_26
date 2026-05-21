@@ -1,0 +1,64 @@
+// pythia_to_hepmc.cc
+// ---------------------------------------------------------------------------
+// Generate N p+p events at sqrt(s) = 200 GeV with Pythia 8 SoftQCD and write
+// them to a HepMC3 ASCII file that Geant4 will subsequently read.
+//
+// Build (after `source` of the course environment):
+//   g++ pythia_to_hepmc.cc -o pythia_to_hepmc \
+//       $(pythia8-config --cxxflags --libs) \
+//       $(HepMC3-config --cflags --libs)
+//
+// Usage:
+//   ./pythia_to_hepmc <nEvents> <outFile>
+// ---------------------------------------------------------------------------
+
+#include "Pythia8/Pythia.h"
+#include "Pythia8Plugins/HepMC3.h"
+#include "HepMC3/WriterAscii.h"
+#include <iostream>
+#include <string>
+
+int main(int argc, char** argv) {
+  const int         nEvents = (argc > 1) ? std::atoi(argv[1]) : 5000;
+  const std::string outFile = (argc > 2) ? argv[2] : "events.hepmc";
+
+  Pythia8::Pythia pythia;
+
+  // --- Beam / process configuration -----------------------------------------
+  pythia.readString("Beams:idA = 2212");           // proton
+  pythia.readString("Beams:idB = 2212");
+  pythia.readString("Beams:eCM = 200.");           // sPHENIX p+p energy
+  pythia.readString("SoftQCD:all = on");           // inelastic + diffractive + elastic
+  pythia.readString("Tune:pp = 14");               // Monash 2013
+
+  // --- Random seed ----------------------------------------------------------
+  pythia.readString("Random:setSeed = on");
+  pythia.readString("Random:seed = 0");            // 0 = time-based
+
+  // --- Init -----------------------------------------------------------------
+  if (!pythia.init()) {
+    std::cerr << "[pythia_to_hepmc] Pythia init failed.\n";
+    return 1;
+  }
+
+  // --- HepMC3 writer --------------------------------------------------------
+  HepMC3::WriterAscii writer(outFile);
+  Pythia8::Pythia8ToHepMC3 toHepMC;
+
+  int nOk = 0;
+  for (int iEv = 0; iEv < nEvents; ++iEv) {
+    if (!pythia.next()) continue;
+    HepMC3::GenEvent hepEvt(HepMC3::Units::GEV, HepMC3::Units::MM);
+    toHepMC.fill_next_event(pythia.event, &hepEvt, iEv, &pythia.info);
+    writer.write_event(hepEvt);
+    ++nOk;
+    if ((iEv+1) % 1000 == 0)
+      std::cout << "[pythia_to_hepmc] " << (iEv+1) << " events...\n";
+  }
+  writer.close();
+  pythia.stat();
+
+  std::cout << "[pythia_to_hepmc] wrote " << nOk << " events to "
+            << outFile << "\n";
+  return 0;
+}

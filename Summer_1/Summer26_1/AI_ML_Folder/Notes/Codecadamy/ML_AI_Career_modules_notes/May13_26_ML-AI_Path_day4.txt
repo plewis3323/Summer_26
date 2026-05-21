@@ -1,0 +1,818 @@
+
+
+
+
+                                                                                   # Day #4 ML/AI Engineer Path 5/13/26
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+* Practice Session: 
+
+
+ex 1.) 
+
+● Walkthrough: String → Timestamp
+
+  The setup
+
+  import datetime
+  import time
+
+  time_string = "08/01/2011"
+
+  - datetime — module for working with dates/times as structured objects.
+  - time — older module, useful here for converting to a Unix timestamp.
+  - time_string — just a plain string. Python has no idea it represents a date yet; it's just characters.
+
+  Step 1: Parse the string into a datetime object
+
+  dt = datetime.datetime.strptime(time_string, "%d/%m/%Y")
+
+  strptime = "string parse time". It reads a string and turns it into a real datetime object.
+
+  It needs two arguments:
+  1. The string to parse: "08/01/2011"
+  2. A format pattern telling Python how to interpret it: "%d/%m/%Y"
+
+  Breaking down the pattern:
+
+  ┌──────┬───────────────┬─────────┐
+  │ Code │    Meaning    │ Matches │
+  ├──────┼───────────────┼─────────┤
+  │ %d   │ day (01–31)   │ 08      │
+  ├──────┼───────────────┼─────────┤
+  │ /    │ literal /     │ /       │
+  ├──────┼───────────────┼─────────┤
+  │ %m   │ month (01–12) │ 01      │
+  ├──────┼───────────────┼─────────┤
+  │ /    │ literal /     │ /       │
+  ├──────┼───────────────┼─────────┤
+  │ %Y   │ 4-digit year  │ 2011    │
+  └──────┴───────────────┴─────────┘
+
+  So dt becomes a datetime object representing January 8, 2011.
+
+  ▎ ⚠️ If your string was American format (month first), you'd swap to "%m/%d/%Y" and get August 1, 2011 instead. The format string must match the string
+  ▎ exactly.
+
+  Step 2: Convert datetime → time tuple
+
+  dt.timetuple()
+
+  A "time tuple" is a 9-element tuple: (year, month, day, hour, minute, second, weekday, day_of_year, dst_flag). It's the format the older time module
+  expects.
+
+  Step 3: Convert tuple → Unix timestamp
+
+  time_stamp = time.mktime(dt.timetuple())
+
+  time.mktime() takes a time tuple and returns a Unix timestamp — the number of seconds since January 1, 1970 (the "epoch").
+
+  For January 8, 2011 at midnight local time, you get something like 1294466400.0.
+
+  Step 4: Print it
+
+  print(time_stamp)
+
+  The whole picture
+
+  "08/01/2011"          ← string (just text)
+        ↓ strptime with format pattern
+  datetime object       ← structured: year=2011, month=1, day=8
+        ↓ .timetuple()
+  time tuple            ← 9-element tuple
+        ↓ time.mktime()
+  1294466400.0          ← Unix timestamp (seconds since 1970)
+
+  Shortcut
+
+  On Python 3.3+ you can skip the tuple step:
+
+  dt = datetime.datetime.strptime(time_string, "%d/%m/%Y")
+  time_stamp = dt.timestamp()
+
+  Same result, one less hop. The original example uses time.mktime because it's the older, more widely-taught pattern.
+
+
+
+(code example is here) 
+
+import datetime
+import time
+time_string = "08/01/2011"
+  dt = datetime.datetime.strptime(time_string, "%d/%m/%Y")
+  time_stamp = time.mktime(dt.timetuple())
+
+print(time_stamp)
+
+
+
+
+ex 2.) 
+
+categorical Variable -> 
+
+A categorical variable is a variable that takes on values from a fixed set of categories or labels, rather than numeric measurements. The values represent
+   groups or types, not quantities you can do math on. (computer definition) 
+   
+A variable that takes on value that is non numeric in nature like color "red" and can't perform math on it. (my definition) 
+
+
+
+
+
+
+
+
+
+ Key Characteristics
+
+  - Values are discrete labels, not continuous numbers.
+  - Even if stored as numbers, arithmetic on them is meaningless (you can't "average" red and blue).
+  - Typically has a limited number of possible values.
+
+  Two Main Types
+
+  1. Nominal (no order)
+
+  Categories with no inherent ranking.
+
+  color = "red"          # could be: "red", "blue", "green"
+  country = "Japan"      # could be: "USA", "Japan", "Brazil", ...
+  blood_type = "O+"      # could be: "A", "B", "AB", "O"
+
+  2. Ordinal (has order)
+
+  Categories with a meaningful order, but distances between them aren't measurable.
+
+  size = "Medium"        # "Small" < "Medium" < "Large"
+  rating = "Good"        # "Poor" < "Fair" < "Good" < "Excellent"
+  education = "Bachelor" # "High School" < "Bachelor" < "Master" < "PhD"
+
+  Categorical vs Numerical — quick comparison
+
+  ┌──────────────┬───────────────────────┬─────────────────────────────────────────────┐
+  │   Variable   │         Type          │                     Why                     │
+  ├──────────────┼───────────────────────┼─────────────────────────────────────────────┤
+  │ eye_color    │ Categorical           │ Labels (brown, blue, green)                 │
+  ├──────────────┼───────────────────────┼─────────────────────────────────────────────┤
+  │ t_shirt_size │ Categorical (ordinal) │ Ordered labels (S, M, L)                    │
+  ├──────────────┼───────────────────────┼─────────────────────────────────────────────┤
+  │ age          │ Numerical             │ Real measurement, math works                │
+  ├──────────────┼───────────────────────┼─────────────────────────────────────────────┤
+  │ zip_code     │ Categorical           │ Looks numeric, but 12345 + 1 is meaningless │
+  ├──────────────┼───────────────────────┼─────────────────────────────────────────────┤
+  │ temperature  │ Numerical             │ Continuous measurement                      │
+  └──────────────┴───────────────────────┴─────────────────────────────────────────────┘
+
+  Example in a DataFrame
+
+  import pandas as pd
+
+  df = pd.DataFrame({
+      "name":    ["Ana", "Ben", "Cleo"],
+      "age":     [25, 31, 22],              # numerical
+      "country": ["USA", "Brazil", "USA"],  # categorical (nominal)
+      "rating":  ["Good", "Excellent", "Fair"]  # categorical (ordinal)
+  })
+
+  Why it matters in ML/data science
+
+  Machine learning models need numbers, so categorical variables usually need to be encoded:
+  - One-hot encoding — turn each category into its own 0/1 column (good for nominal).
+  - Label encoding — assign each category an integer (good for ordinal, where order matters).
+
+  pd.get_dummies(df["country"]) ("main conversion between categorical data to math") 
+  #    Brazil  USA
+  # 0       0    1
+  # 1       1    0
+  # 2       0    1
+
+  That conversion is the bridge between categorical data and models that only speak math.
+
+
+
+
+
+
+  df = pd.DataFrame({
+    'Name': ['Jimmy', 'Estella', 'Amina', 'Xavier'],
+    'Role': ['Manager', 'Manager', 'Employee', 'Manager']
+  })
+
+  pd.get_dummies(data='Role', columns=['Name'])
+
+● The Bug
+
+  You swapped the arguments to pd.get_dummies(). Let's look at what each one means:
+
+  pd.get_dummies(data='Role', columns=['Name'])
+
+  - data= expects the DataFrame (or a Series), not a column name string.
+  - columns= expects the list of columns to encode, not the data source.
+
+  So you passed the string 'Role' where a DataFrame should go, and told it to encode the Name column when you really wanted to encode Role.
+
+  The Fix
+
+  import pandas as pd
+
+  df = pd.DataFrame({
+      'Name': ['Jimmy', 'Estella', 'Amina', 'Xavier'],
+      'Role': ['Manager', 'Manager', 'Employee', 'Manager']
+  })
+
+  encoded = pd.get_dummies(data=df, columns=['Role'])
+  print(encoded)
+
+  Output:
+        Name  Role_Employee  Role_Manager
+  0    Jimmy          False          True
+  1  Estella          False          True
+  2    Amina           True         False
+  3   Xavier          False          True
+
+  What get_dummies Actually Does
+
+  It performs one-hot encoding — turning a categorical column into multiple 0/1 (True/False) columns, one per unique category.
+
+  Before:
+  Role
+  Manager
+  Manager
+  Employee
+  Manager
+
+  After:
+  Role_Employee   Role_Manager
+  False           True
+  False           True
+  True            False
+  False           True
+
+  Each row has exactly one True, marking which category it belongs to. The column names use the pattern <original_column>_<category>.
+
+  Two Common Ways to Call It
+
+  Way 1 — pass the whole DataFrame, specify which columns to encode
+
+  pd.get_dummies(df, columns=['Role'])
+
+  Returns the full DataFrame with Role replaced by its one-hot columns. Other columns (like Name) stay untouched. This is what you want most of the time.
+
+  Way 2 — pass just one column (a Series)
+
+  pd.get_dummies(df['Role'])
+
+  Returns only the one-hot columns, with no prefix:
+     Employee  Manager
+  0     False     True
+  1     False     True
+  2      True    False
+  3     False     True
+
+  Why You'd Do This
+
+  ML models can't read "Manager" — they need numbers. One-hot encoding gives each category its own column of 0s and 1s, so a model can learn from them
+  without falsely assuming any ordering (which would happen if you just mapped Manager=1, Employee=2).
+
+  Quick Mental Model
+
+  get_dummies = "make a dummy (0/1) column for each category."
+
+  - Input: one column with N categories
+  - Output: N columns, each indicating "is this row in that category?"
+
+  Bonus: getting 0/1 instead of True/False
+
+  pd.get_dummies(df, columns=['Role'], dtype=int)
+
+        Name  Role_Employee  Role_Manager
+  0    Jimmy              0             1
+  1  Estella              0             1
+  2    Amina              1             0
+  3   Xavier              0             1
+
+
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+                                                                                           * Regression Vs. Classification: 
+                                                                                           
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+- Intro: 
+
+Machine Learning is a set of many different techniques that are each suited to answering different types of questions.
+One way of categorizing machine learning algorithms is by using the kind output they produce. In terms of output, 
+two main types of machine learning models exist: those for regression and those for classification.
+
+
+- regression: 
+
+Regression is used to predict outputs that are continuous. 
+The outputs are quantities that can be flexibly determined based on the inputs of the model rather than being confined to a set of possible labels.
+
+    - Linear regression is a possible regression algorithm. 
+    
+    
+    
+    
+    
+- Classification: 
+
+Classification is used to predict a discrete label. The outputs fall under a finite set of possible outcomes. 
+Many situations have only two possible outcomes. This is called binary classification (True/False, 0 or 1, Hotdog / not Hotdog).
+
+
+There are also two other common types of classification: multi-class classification and multi-label classification.
+
+
+
+
+
+- Intro to Linear Regression: 
+
+1.) Machine learning models explain and predict real-world data.
+
+2.) Linear regression fits a line to data to model relationships between variables.
+
+3.) Used to predict unknown values, such as house price from size or revenue from months.
+
+4.) The line is a simple model for variables with a linear relationship.
+
+5.) Linear regression allows estimation and prediction based on input data.
+  
+
+
+
+ex.) (Reading linear regression model) 
+
+import codecademylib3_seaborn
+import matplotlib.pyplot as plt
+
+months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+revenue = [52, 74, 79, 95, 115, 110, 129, 126, 147, 146, 156, 184]
+
+plt.plot(months, revenue, "o")
+
+plt.title("Sandra's Lemonade Stand")
+
+plt.xlabel("Months")
+plt.ylabel("Revenue ($)")
+plt.show()
+
+
+# What do you think the revenue in month 13 would be?
+month_13 = 185
+
+
+
+
+
+- Points and Lines: 
+
+1.) A line is defined by its slope (m) and intercept (b).
+
+2.) The equation for a line:
+y=mx+b
+
+3.) Slope (m) shows how steep the line is.
+
+4.) Intercept (b) shows where the line crosses the y-axis.
+
+5.) Linear regression finds the best values for m and b to fit the data.
+
+6.) The goal is to make predictions using the line that fits the data best.
+
+
+Review (List comprehension: python) -> 
+
+
+List Comprehension for y = mx + b
+
+  Basic Form
+
+  m, b = 2, 3
+  x_vals = [0, 1, 2, 3, 4, 5]
+
+  y_vals = [m * x + b for x in x_vals]
+  # [3, 5, 7, 9, 11, 13]
+
+  Using range()
+
+  m, b = 2, 3
+  y_vals = [m * x + b for x in range(6)]
+  # [3, 5, 7, 9, 11, 13]
+
+
+
+
+ex.) (Best fit with linear model and changing inputs) 
+
+import codecademylib3_seaborn
+import matplotlib.pyplot as plt
+months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+revenue = [52, 74, 79, 95, 115, 110, 129, 126, 147, 146, 156, 184]
+
+#slope:
+m = 9
+#intercept:
+b = 60
+
+#List comprehension for linear regression 
+y = [x*m + b for x in months]
+
+plt.plot(months, revenue, "o")
+plt.plot(months, y)
+
+plt.show()
+
+
+
+ ** (cont. 5/14/26) **
+ 
+
+- Loss or Error: 
+
+1.) Loss measures how well a line fits the data points.
+2.) Loss is the squared distance from each point to the line.
+3.) Squaring the distance treats points above and below the line equally.
+4.) Total loss is the sum of all squared distances for every point.
+5.) A lower total loss means a better fit for the line.
+
+
+ex.) (Early quared deviations  -> Lead to x^2)
+
+x = [1, 2, 3]
+y = [5, 1, 3]
+
+#y = x
+m1 = 1
+b1 = 0
+
+#y = 0.5x + 1
+m2 = 0.5
+b2 = 1
+
+
+y_predicted1 = [x*m1 + b1 for x in x]
+y_predicted2 = [x*m2 + b2 for x in x]
+
+total_loss1 = 0 
+for i in range(len(y)):
+  total_loss1 += (y[i] - y_predicted1[i])**2
+
+
+total_loss2 = 0 
+for p in range(len(y)):
+  total_loss2 += (y[p] - y_predicted2[p])**2
+
+print(total_loss1)
+print(total_loss2)
+
+better_fit = 2
+
+
+- Minimizing Loss: 
+
+1.) The goal of a linear regression model is to find the slope and intercept pair that minimizes loss on average across all of the data.
+The interactive visualization in the browser lets you try to find the line of best fit for a random set of data points:
+
+
+ ** (cont. 5/15/26) **
+ 
+ 
+- Grad Descent for Min Loss: 
+
+1.) Gradient descent is a method to minimize loss by adjusting parameters.
+2.) The gradient shows the direction and rate of steepest loss decrease.
+3.) For the intercept, follow the gradient to reduce loss.
+4.) Move the intercept in the direction that lowers the loss.
+
+
+ex.) 
+
+def get_gradient_at_b(x, y, m, b): 
+  #Main grad_Descent algorithm 
+  diff = 0
+  N = len(x)  
+  for i in range(0, len(x)): 
+    x_val = x[i]
+    y_val = y[i]
+    diff += (y_val - (m*x_val + b))
+  #B_grad definition 
+  b_gradient = (-2/N)*diff
+  return b_gradient
+
+
+
+- Grad Descent for Slope: 
+
+1.) The slope (m) controls how steep the line is.
+2.) Gradient descent also adjusts the slope to minimize loss.
+3.)Update the slope by moving in the direction that reduces loss.
+4.)Both slope and intercept are updated together for the best fit.
+
+
+ex.) 
+
+def get_gradient_at_b(x, y, m, b):
+    diff = 0
+    N = len(x)
+    for i in range(N):
+      y_val = y[i]
+      x_val = x[i]
+      diff += (y_val - ((m * x_val) + b))
+    b_gradient = -2/N * diff
+    return b_gradient
+
+
+def get_gradient_at_m(x, y, m, b):
+  diff = 0
+  N = len(x)
+  for i in range(N): 
+    y_val = y[i]
+    x_val = x[i]
+    diff += x_val*(y_val - ((m * x_val) + b))
+  m_gradient = (-2/N)*diff
+  return m_gradient
+
+
+- Putting Together Gradient Descent: 
+
+1.) Use gradients to update both slope (m) and intercept (b).
+2.) Multiply the gradient by a learning rate to control step size.
+3.) Update formulas:
+    new_b = current_b - (learning_rate * b_gradient)
+    new_m = current_m - (learning_rate * m_gradient)
+4.) A small learning rate helps avoid overshooting the minimum loss.
+5.) Repeat updates to move closer to the best fit line.
+    Copy
+    
+    
+ex.) (Full Gradient Descent)
+
+def get_gradient_at_b(x, y, b, m):
+  N = len(x)
+  diff = 0
+  for i in range(N):
+    x_val = x[i]
+    y_val = y[i]
+    diff += (y_val - ((m * x_val) + b))
+  b_gradient = -(2/N) * diff  
+  return b_gradient
+
+def get_gradient_at_m(x, y, b, m):
+  N = len(x)
+  diff = 0
+  for i in range(N):
+      x_val = x[i]
+      y_val = y[i]
+      diff += x_val * (y_val - ((m * x_val) + b))
+  m_gradient = -(2/N) * diff  
+  return m_gradient
+
+# Define your step_gradient function here
+def step_gradient(x, y, b_current, m_current):
+  b_gradient = get_gradient_at_b(x, y, b_current, m_current)
+  m_gradient = get_gradient_at_m(x, y, b_current, m_current)
+  b = b_current - (0.01*b_gradient)
+  m = m_current - (0.01*m_gradient) 
+  return [b, m]
+
+months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+revenue = [52, 74, 79, 95, 115, 110, 129, 126, 147, 146, 156, 184]
+
+# current intercept guess:
+b = 0
+# current slope guess:
+m = 0
+
+# Call your function here to update b and m
+b, m = step_gradient(months, revenue, b, m)
+print(b, m)
+
+
+- Convergence: 
+
+1.)Convergence means the loss stops changing or changes very slowly.
+
+2.) It shows when the algorithm has learned enough.
+
+3.) The goal is for the parameters (m and b) to reach their best values.
+
+4.) When convergence happens, further updates do not improve the model much.
+
+5.) Convergence is a sign to stop training the model.
+
+
+ex.) (Covergence Example)
+
+import codecademylib3_seaborn
+import matplotlib.pyplot as plt
+from data import bs, bs_000000001, bs_01
+
+iterations = range(1400)
+
+plt.plot(iterations, bs)
+plt.xlabel("Iterations")
+plt.ylabel("b value")
+plt.show()
+
+#When b converges and iterations max towards covergance
+num_iterations = 800
+convergence_b = 45
+
+
+
+- Learning Rate: 
+
+1.) When doing Grad descent when b,m values need something called a learning rate which helps as u go down loss curve
+    to find best way towards convergence.  
+    
+
+ex.) (Learning rate applied situation) 
+
+import codecademylib3_seaborn
+import matplotlib.pyplot as plt
+from data import bs, bs_000000001, bs_01
+
+iterations = range(100)
+
+plt.plot(iterations, bs_01)
+plt.xlabel("Iterations")
+plt.ylabel("b value")
+plt.show()
+
+#When b converges and iterations max towards covergance
+num_iterations = 800
+convergence_b = 45
+
+#basically very small learning rate didnt converge (bs_01, and 1400).  Also b_so1 with larger learning rate 
+#made overshot of data. 
+
+
+
+- Putting it together 2: 
+
+ex.) (Full gradient descent) 
+
+import codecademylib3_seaborn
+import matplotlib.pyplot as plt
+
+def get_gradient_at_b(x, y, b, m):
+  N = len(x)
+  diff = 0
+  for i in range(N):
+    x_val = x[i]
+    y_val = y[i]
+    diff += (y_val - ((m * x_val) + b))
+  b_gradient = -(2/N) * diff  
+  return b_gradient
+
+def get_gradient_at_m(x, y, b, m):
+  N = len(x)
+  diff = 0
+  for i in range(N):
+      x_val = x[i]
+      y_val = y[i]
+      diff += x_val * (y_val - ((m * x_val) + b))
+  m_gradient = -(2/N) * diff  
+  return m_gradient
+
+#Your step_gradient function here
+def step_gradient(b_current, m_current, x, y, learning_rate):
+    b_gradient = get_gradient_at_b(x, y, b_current, m_current)
+    m_gradient = get_gradient_at_m(x, y, b_current, m_current)
+    b = b_current - (learning_rate * b_gradient)
+    m = m_current - (learning_rate * m_gradient)
+    return [b, m]
+  
+#Your gradient_descent function here:  
+def gradient_descent(x, y, learning_rate, num_iterations):
+  #initial guesses
+  b = 0
+  m = 0
+  #Lopping of step_sizes starts here 
+  for i in range(num_iterations):
+    b, m = step_gradient(b, m, x, y, learning_rate)
+  return [b,m]
+
+
+months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+revenue = [52, 74, 79, 95, 115, 110, 129, 126, 147, 146, 156, 184]
+
+#Uncomment the line below to run your gradient_descent function
+b, m = gradient_descent(months, revenue, 0.01, 1000)
+
+#Uncomment the lines below to see the line you've settled upon!
+y = [m*x + b for x in months]
+
+plt.plot(months, revenue, "o")
+plt.plot(months, y)
+
+plt.show()
+
+- Use your function for real Data: 
+
+ex.) (extra grad-desc example) 
+
+import codecademylib3_seaborn
+from gradient_descent_funcs import gradient_descent
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("heights.csv")
+
+X = df["height"]
+y = df["weight"]
+
+plt.plot(X, y, 'o')
+
+b, m = gradient_descent(X, y, num_iterations=1000, learning_rate=0.0001)
+y_predictions = [m*x + b for x in X]
+
+plt.plot(X, y_predictions)
+
+plt.show()
+
+Scikit-learn: 
+
+1.) Scikit-learn is a Python library for machine learning.
+
+2.) Use LinearRegression() from sklearn.linear_model to create a linear regression model.
+
+3.) Fit the model to data using .fit(X, y).
+
+4.) The model stores the slope in .coef_ and the intercept in .intercept_.
+
+5.) Predict values with .predict(X).
+
+6.) Scikit-learn handles learning rate and iterations automatically.
+
+ex.) (scikit example) 
+
+import codecademylib3_seaborn
+from sklearn.linear_model import LinearRegression
+import matplotlib.pyplot as plt
+import numpy as np
+
+temperature = np.array(range(60, 100, 2))
+temperature = temperature.reshape(-1, 1)
+sales = [65, 58, 46, 45, 44, 42, 40, 40, 36, 38, 38, 28, 30, 22, 27, 25, 25, 20, 15, 5]
+
+plt.plot(temperature, sales, 'o')
+
+#sklearn regression model starts here 
+line_fitter = LinearRegression()
+
+#model fiting 
+line_fitter.fit(temperature, sales)
+
+#sales predict 
+sales_predict = line_fitter.predict(temperature)
+
+plt.plot(temperature, sales_predict)
+plt.show()
+
+
+- Review: 
+
+1.) We can measure how well a line fits by measuring loss.
+
+2.) The goal of linear regression is to minimize loss.
+
+3.) To find the line of best fit, we try to find the b value (intercept) and the m value (slope) that minimize loss.
+
+4.) Convergence refers to when the parameters stop changing with each iteration.
+
+5.) Learning rate refers to how much the parameters are changed on each iteration.
+
+6.) We can use Scikit-learn’s LinearRegression() model to perform linear regression on a set of points.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

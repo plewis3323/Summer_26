@@ -1,0 +1,261 @@
+// calo_sim.cc
+// ---------------------------------------------------------------------------
+// Minimal Geant4 application: reads events.hepmc (produced by
+// pythia_to_hepmc) and transports the final-state particles through a
+// 20-layer Pb(2 mm)/plastic-scintillator(4 mm) sampling calorimeter.
+//
+// Everything -- detector, primary generator, physics list, run/event/step
+// actions, and analysis -- lives in this single file so it is easy to read.
+//
+// Build:
+//   see Makefile (uses $G4INSTALL via geant4-config and HepMC3-config)
+//
+// Run:
+//   ./calo_sim run.mac
+// ---------------------------------------------------------------------------
+
+#include "G4RunManagerFactory.hh"
+#include "G4UImanager.hh"
+#include "G4UIExecutive.hh"
+#include "G4VisExecutive.hh"
+
+#include "G4VUserDetectorConstruction.hh"
+#include "G4VUserPrimaryGeneratorAction.hh"
+#include "G4UserRunAction.hh"
+#include "G4UserEventAction.hh"
+#include "G4VSensitiveDetector.hh"
+#include "G4Event.hh"
+#include "G4Run.hh"
+
+#include "G4NistManager.hh"
+#include "G4Box.hh"
+#include "G4LogicalVolume.hh"
+#include "G4PVPlacement.hh"
+#include "G4PVReplica.hh"
+#include "G4SDManager.hh"
+#include "G4VPhysicalVolume.hh"
+
+#include "G4THitsCollection.hh"
+#include "G4HCofThisEvent.hh"
+#include "G4VHit.hh"
+#include "G4Step.hh"
+#include "G4SystemOfUnits.hh"
+#include "G4AnalysisManager.hh"
+
+#include "FTFP_BERT.hh"
+
+#include "HepMC3/ReaderAscii.h"
+#include "HepMC3/GenEvent.h"
+#include "HepMC3/GenParticle.h"
+#include "G4HEPEvtInterface.hh"   // simple but we'll use a HepMC3 adapter
+#include "G4PrimaryVertex.hh"
+#include "G4PrimaryParticle.hh"
+
+#include <memory>
+#include <string>
+#include <fstream>
+
+// ---------------------------------------------------------------------------
+// Hit and Sensitive Detector
+// ---------------------------------------------------------------------------
+class CaloHit : public G4VHit {
+ public:
+  G4double edep{0.};
+  G4int    copyNo{-1};
+};
+using CaloHC = G4THitsCollection<CaloHit>;
+
+class CaloSD : public G4VSensitiveDetector {
+ public:
+  explicit CaloSD(const G4String& n, bool isScint)
+      : G4VSensitiveDetector(n), fIsScint(isScint) {
+    collectionName.insert(n + "HC");
+  }
+  void Initialize(G4HCofThisEvent* hce) override {
+    fHC = new CaloHC(SensitiveDetectorName, collectionName[0]);
+    auto id = G4SDManager::GetSDMpointer()->GetCollectionID(fHC);
+    hce->AddHitsCollection(id, fHC);
+  }
+  G4bool ProcessHits(G4Step* step, G4TouchableHistory*) override {
+    G4double e = step->GetTotalEnergyDeposit();
+    if (e <= 0.) return false;
+    auto h = new CaloHit;
+    h->edep = e;
+    h->copyNo = step->GetPreStepPoint()->GetTouchable()->GetCopyNumber();
+    fHC->insert(h);
+    return true;
+  }
+  bool IsScint() const { return fIsScint; }
+ private:
+  CaloHC* fHC = nullptr;
+  bool fIsScint;
+};
+
+// ---------------------------------------------------------------------------
+// Detector Construction
+// ---------------------------------------------------------------------------
+class MyDetector : public G4VUserDetectorConstruction {
+ public:
+  G4VPhysicalVolume* Construct() override {
+    auto nist = G4NistManager::Instance();
+    auto air  = nist->FindOrBuildMaterial("G4_AIR");
+    auto lead = nist->FindOrBuildMaterial("G4_Pb");
+    auto scint = nist->FindOrBuildMaterial("G4_POLYSTYRENE");
+
+    const G4int    nLayers = 20;
+    const G4double dAbs    = 2.0*mm;
+    const G4double dScint  = 4.0*mm;
+    const G4double dLayer  = dAbs + dScint;
+    const G4double caloXY  = 40.0*cm;
+    const G4double caloZ   = nLayers * dLayer;
+    const G4double worldXY = 1.0*m;
+    const G4double worldZ  = 2.0*m;
+
+    // World
+    auto worldS = new G4Box("World", worldXY/2, worldXY/2, worldZ/2);
+    auto worldL = new G4LogicalVolume(worldS, air, "World");
+    auto worldP = new G4PVPlacement(nullptr, {}, worldL, "World",
+                                    nullptr, false, 0, true);
+
+    // Calorimeter mother volume (sits in +z, front face at z=10 cm)
+    auto caloS = new G4Box("Calo", caloXY/2, caloXY/2, caloZ/2);
+    auto caloL = new G4LogicalVolume(caloS, air, "Calo");
+    new G4PVPlacement(nullptr, {0,0, 0.10*m + caloZ/2}, caloL, "Calo",
+                      worldL, false, 0, true);
+
+    // One layer
+    auto layerS = new G4Box("Layer", caloXY/2, caloXY/2, dLayer/2);
+    auto layerL = new G4LogicalVolume(layerS, air, "Layer");
+    new G4PVReplica("LayerPV", layerL, caloL, kZAxis, nLayers, dLayer);
+
+    // Absorber slab
+    auto absS = new G4Box("Abs", caloXY/2, caloXY/2, dAbs/2);
+    auto absL = new G4LogicalVolume(absS, lead, "Abs");
+    new G4PVPlacement(nullptr, {0,0,-dLayer/2 + dAbs/2}, absL, "Abs",
+                      layerL, false, 0, true);
+
+    // Scintillator slab
+    auto sciS = new G4Box("Sci", caloXY/2, caloXY/2, dScint/2);
+    auto sciL = new G4LogicalVolume(sciS, scint, "Sci");
+    new G4PVPlacement(nullptr, {0,0, dLayer/2 - dScint/2}, sciL, "Sci",
+                      layerL, false, 0, true);
+
+    // Sensitive detectors
+    auto sdm = G4SDManager::GetSDMpointer();
+    auto sdAbs = new CaloSD("AbsSD", /*isScint=*/false);
+    auto sdSci = new CaloSD("SciSD", /*isScint=*/true);
+    sdm->AddNewDetector(sdAbs);
+    sdm->AddNewDetector(sdSci);
+    absL->SetSensitiveDetector(sdAbs);
+    sciL->SetSensitiveDetector(sdSci);
+
+    return worldP;
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Primary Generator – reads HepMC3 ASCII file, one event at a time
+// ---------------------------------------------------------------------------
+class HepMC3Reader : public G4VUserPrimaryGeneratorAction {
+ public:
+  explicit HepMC3Reader(const std::string& file)
+      : fReader(std::make_unique<HepMC3::ReaderAscii>(file)) {
+    if (fReader->failed())
+      G4Exception("HepMC3Reader", "noFile", FatalException,
+                  ("Cannot open "+file).c_str());
+  }
+
+  void GeneratePrimaries(G4Event* g4evt) override {
+    HepMC3::GenEvent hepEvt(HepMC3::Units::GEV, HepMC3::Units::MM);
+    if (!fReader->read_event(hepEvt) || fReader->failed()) {
+      G4RunManager::GetRunManager()->AbortRun(true);
+      return;
+    }
+    auto vtx = new G4PrimaryVertex(0, 0, 0, 0);
+    for (auto& p : hepEvt.particles()) {
+      if (p->status() != 1) continue;          // only final state
+      auto pdg = p->pid();
+      auto fv  = p->momentum();
+      if (std::fabs(fv.e()) < 1e-6) continue;
+      auto prim = new G4PrimaryParticle(pdg,
+                        fv.px()*GeV, fv.py()*GeV, fv.pz()*GeV, fv.e()*GeV);
+      vtx->SetPrimary(prim);
+    }
+    g4evt->AddPrimaryVertex(vtx);
+  }
+ private:
+  std::unique_ptr<HepMC3::ReaderAscii> fReader;
+};
+
+// ---------------------------------------------------------------------------
+// Event action – at end of event, sum hits and fill ntuple
+// ---------------------------------------------------------------------------
+class MyEventAction : public G4UserEventAction {
+ public:
+  void BeginOfEventAction(const G4Event*) override {}
+  void EndOfEventAction(const G4Event* evt) override {
+    auto am  = G4AnalysisManager::Instance();
+    auto sdm = G4SDManager::GetSDMpointer();
+
+    double eAbs = 0., eSci = 0.;
+    for (auto pair : std::initializer_list<std::pair<std::string,double*>>{
+                   {"AbsSD/AbsSDHC", &eAbs},
+                   {"SciSD/SciSDHC", &eSci}}) {
+      int id = sdm->GetCollectionID(pair.first);
+      if (id < 0) continue;
+      auto hc = static_cast<CaloHC*>(
+                  evt->GetHCofThisEvent()->GetHC(id));
+      if (!hc) continue;
+      for (size_t i = 0; i < hc->entries(); ++i)
+        *pair.second += (*hc)[i]->edep;
+    }
+    am->FillNtupleDColumn(0, eSci/GeV);
+    am->FillNtupleDColumn(1, eAbs/GeV);
+    am->FillNtupleDColumn(2, (eSci+eAbs)/GeV);
+    am->AddNtupleRow();
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Run action – manage analysis file
+// ---------------------------------------------------------------------------
+class MyRunAction : public G4UserRunAction {
+ public:
+  void BeginOfRunAction(const G4Run*) override {
+    auto am = G4AnalysisManager::Instance();
+    am->SetDefaultFileType("root");
+    am->OpenFile("calo.root");
+    am->CreateNtuple("calo","per-event totals");
+    am->CreateNtupleDColumn("edepScint_GeV");
+    am->CreateNtupleDColumn("edepAbs_GeV");
+    am->CreateNtupleDColumn("edepTot_GeV");
+    am->FinishNtuple();
+  }
+  void EndOfRunAction(const G4Run*) override {
+    auto am = G4AnalysisManager::Instance();
+    am->Write();
+    am->CloseFile();
+  }
+};
+
+// ---------------------------------------------------------------------------
+// main
+// ---------------------------------------------------------------------------
+int main(int argc, char** argv) {
+  std::string macro = (argc > 1) ? argv[1] : "run.mac";
+  std::string hepmc = "events.hepmc";
+
+  auto rm = G4RunManagerFactory::CreateRunManager(G4RunManagerType::Default);
+  rm->SetUserInitialization(new MyDetector);
+  rm->SetUserInitialization(new FTFP_BERT);
+  rm->SetUserAction(new HepMC3Reader(hepmc));
+  rm->SetUserAction(new MyRunAction);
+  rm->SetUserAction(new MyEventAction);
+  rm->Initialize();
+
+  G4UImanager* UI = G4UImanager::GetUIpointer();
+  UI->ApplyCommand("/control/execute " + macro);
+
+  delete rm;
+  return 0;
+}

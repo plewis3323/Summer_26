@@ -1,0 +1,5 @@
+
+Simulations Class:  file:///C:/Users/plewi/AppData/Roaming/Claude/local-agent-mode-sessions/4ff70c91-da33-4bd7-90dd-0358af364e97/8a0f1de9-af5e-42c1-becb-6a57884334fd/local_b2643248-3972-4651-af2e-e61da62e281e/outputs/sphenix_simulation_course.html
+
+
+(Personal) Sim Terminal Class: file:///C:/Users/plewi/AppData/Roaming/Claude/local-agent-mode-sessions/4ff70c91-da33-4bd7-90dd-0358af364e97/8a0f1de9-af5e-42c1-becb-6a57884334fd/local_b2643248-3972-4651-af2e-e61da62e281e/outputs/sphenix_standalone_course.html
