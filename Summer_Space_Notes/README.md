@@ -1,11 +1,11 @@
-# Summer_1
+# Summer_Space
 
 **Summer Block #1: May 15 – Jul 15, 2026.**
 Focus: Nuc #2, Stat Mech, exp HEP Part 1.
 
 ## Layout
 
-- [`Summer_1_Learning_planner.txt`](Other/Summer_1_Learning_planner.txt) — week-by-week breakdown for this block
+- [`Summer_Space_Learning_planner.txt`](Other/Summer_1_Learning_planner.txt) — week-by-week breakdown for this block
 - [`Nuc2_Sm_ExpHep/`](Nuc2_Sm_ExpHep/) — physics study for the block
   - `Notes/Master_Syllabus_2026-27.pdf` — full year master syllabus
   - `Notes/week1_physicsR_Nuc2_SM_ExpHEP.scrvn` — Week 1 review notes (Scrivener)
