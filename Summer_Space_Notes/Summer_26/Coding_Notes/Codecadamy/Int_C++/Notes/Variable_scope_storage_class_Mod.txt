@@ -1,0 +1,175 @@
+
+
+
+(** 5/21/26 **:) 
+
+
+
+- Intro to Variable Scope: 
+
+The term variable scope refers to the region or section of code where a variable can be accessed or is visible. This means that the part of the code where a variable can be used is determined by its scope.
+
+In C++, there are different types of scopes, each determining how and where a variable can be accessed:
+
+Global scope refers to variables declared outside all functions
+or blocks, making them accessible throughout the entire program.
+Local scope, on the other hand, applies to variables declared within a specific function, limiting their visibility to that function.
+Block scope is even more restrictive, covering variables declared within a set of braces {}, such as those inside 
+loops or conditional statements.
+
+We will learn about these scope types in the upcoming exercises.
+
+Understanding variable scope allows us to control the visibility and lifetime of variables in our program, preventing potential 
+errors and enhancing code readability.
+
+
+- Understanding Local and Global Scope: 
+
+
+Global variables: Declared outside all functions, accessible everywhere.
+Local variables: Declared inside a function or block, accessible only there.
+Local variables with the same name as global variables will override the global variable inside their scope.
+Accessing a local variable outside its function causes an error.
+Overusing global variables can make code harder to manage and debug.
+
+
+
+ex.) 
+
+#include <iostream>
+using namespace std;
+
+
+int playerScore = 50; 
+
+void showStats() {
+  cout << "Player score from inside the showStats() function: " << playerScore << endl;
+}
+
+
+int main() {
+  //int playerScore = 50; 
+  cout << "Player score from inside the main() function: " << playerScore << endl;
+  showStats();
+  return 0;
+}
+
+
+
+
+- Block Scope: 
+
+
+Block scope means a variable is only accessible within the curly braces {} where it is declared. If a variable is declared inside a block, 
+it cannot be used outside that block. Variables outside the block can still be used inside the block. If a variable with the same name exists 
+inside and outside the block, the inner one is used inside the block.
+
+
+
+ ex.) 
+
+
+#include <iostream>
+
+using namespace std;
+
+int main() {
+  int totalScore = 20;  
+  {
+    cout << "Total Score: " << totalScore << endl; 
+     int totalScore = 10; 
+     cout << "Total Score: " << totalScore << endl; 
+
+  }
+  
+  return 0;
+}
+
+
+
+- Introduction to Storage Classes: 
+
+
+Automatic (auto) variables are declared inside a function and exist only during its execution.
+Static (static) variables are initialized only once and retain their value even after the function exits.
+Extern (extern) variables are accessible across different files in a program.
+
+
+
+
+- The auto keyword: 
+
+
+  auto is a type deduction keyword — it tells the compiler to figure out the variable's type automatically from its initializer, so you don't
+  have to write it out explicitly.
+  
+  
+  
+ex.) 
+
+
+#include <iostream>
+#include <vector>
+#include "Student.hpp"
+using namespace std;
+
+int main() {
+  auto student1 = Student("John Doe");
+  student1.displayDetails();
+
+  vector<int> marks = {85, 90, 78, 92, 88};
+
+  for (auto mark: marks)
+  {
+    cout << mark << endl; 
+  }
+
+  return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
