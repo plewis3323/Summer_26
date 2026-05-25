@@ -14,3 +14,6 @@ echo "$n" > "$COUNTER_FILE"
 git add .
 git commit -m "Change #${n}"
 git push origin main
+
+
+
