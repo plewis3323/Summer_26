@@ -1,0 +1,72 @@
+
+
+
+
+
+
+* Total Number of events: 
+
+1.) File list and Compare Builds 
+
+2.) PPG already has in csect & Int Lum (MBD Fire Convers) 
+
+3.) Find Files of categorizing Lum->Trig and Lum->Run(Ana build/recent CDB) 
+
+4.) Latest build and recent CDB info (Files/Runs same size or other minute differences) 
+
+5.) Learn more of the pi0etabyeta enviorment steps **(Side)** 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
