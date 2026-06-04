@@ -1,10 +1,10 @@
 
 
 
+* Week 6/1 - 6-15: 
 
 
-
-* Total Number of events: 
+- Total Number of events: 
 
 1.) File list and Compare Builds 
 
@@ -15,6 +15,26 @@
 4.) Latest build and recent CDB info (Files/Runs same size or other minute differences) 
 
 5.) Learn more of the pi0etabyeta enviorment steps **(Side)** 
+
+
+- Nonlinearity p+p pion tasks: 
+1.) Get extra smearing Paramters info from code, analysis note, space for pion p+p result 
+    (Code, Literature, Space, Presis, etc)   (** Do without asking Blair **) 
+    
+2.) Get Sim Files he used for files for smearing (us to use) 
+
+3.) Build/Run new eff for p+p with & without smearing for p+p 
+
+4.) Collect/Read Jet/pion literature:
+4a.) Sijans Result. 
+4b.) PHENIX p+p Cross-Section fot pions (eta/pi0) 
+4c.) Unfolding for Jet analysis and learning more about it
+
+5.) Possible Pileup effects/Unfolding Strategy and Use. (Note: Unfolding eff. Mult Spect to eff Correction (Jet analysis unfolding) 
+
+
+
+
 
 
 
