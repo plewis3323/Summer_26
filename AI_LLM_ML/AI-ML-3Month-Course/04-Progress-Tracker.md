@@ -9,7 +9,7 @@ Tick boxes as you complete items. Keep honest — an unchecked box is informatio
 ### Week 01 — Python scientific stack & reproducibility
 - [ ] Read: Bishop Ch. 1 §1.1–1.3; VanderPlas *PDSH* Ch. 2–3 (skim)
 - [ ] Videos: 3Blue1Brown NN series (all 4)
-- [ ] Codecademy: "Build a Machine Learning Model" — modules 1–2
+- [X] Codecademy: "Build a Machine Learning Model" — modules 1–2
 - [ ] Exercises 1–8 complete
 - [ ] Project: π⁰ peak fit reproduced in numpy/pandas
 - [ ] Tests passing; repo pushed
