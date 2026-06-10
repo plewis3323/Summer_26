@@ -1,0 +1,250 @@
+
+
+                                                                                ** Summer 2026 Research tasks ** 
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+ * eta/pio O + O R_aa and R_cp plan: 
+
+- Build, test, and verify Data Framework for p+p and O+O (use Au + Au as the tester) reconstruction () 
+
+- Sim reconstruction/Occ effect Efficiencies Framework for O+O (use Au + Au as tester for body) () 
+
+- Sim Single particle or p+p reconstruction eff corr for eta/pi0 () 
+
+- OutLine, Research, plan, and build other steps in R_aa or R_cp that's missing () (**Machine learning elements could go here **) 
+  (** could include uncertainty quantification **) 
+
+
+
+* Summer-26 machine/AI Learning tools: 
+
+- Codecadamy Modules, anthropic modules, Claude-personal modules () 
+
+- Ideas, Outline when/where to implement tools () 
+
+(** Readings textbooks/Papers (general research when neccessay) **) 
+
+
+
+* Paper Reading: (** Add more here when needed **) 
+
+- Justins Bryans, Dr. Frantz, and Shyam's Ph.D Theses () 
+
+- Mid-z R_aa paper, recent one () 
+
+- Sijons O+O Calibration updates and recent ppg-12 invenio notes () 
+
+- Double Isolated photon signature (learn it) () 
+
+** Machine Learning/AI nuclear physics papers helpful: () 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+* O+O Calibrations tasks: 
+
+** Week 5/12: 
+
+-  Run pi0etabyEta on data: pt = 0.8, 0.9, 1.1 (confim myself, or look in Justin's Frantz enviorment) (X)
+
+- Find Out total statistics of O+O Run (1. either by luminosity, 2. Dowload and run from data currently add entries, 3. Jaebom's Space (X) 
+
+- Run b-impact/Centrality Matching on O+O sim (what was used for efficiencies) (X)
+
+(task 1-2 can be completed by setting up enviorment for data) 
+
+
+
+** Week 6/1 - 6-15: 
+
+- Total Number of events: 
+
+1.) File list and Compare Builds 
+
+2.) PPG already has in csect & Int Lum (MBD Fire Convers) 
+
+3.) Find Files of categorizing Lum->Trig and Lum->Run(Ana build/recent CDB) 
+
+4.) Latest build and recent CDB info (Files/Runs same size or other minute differences) 
+
+5.) Learn more of the pi0etabyeta enviorment steps **(Side)** 
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+* Nonlinearity p+p pion tasks: 
+
+- Week 6/1 - 6-15: 
+1.) Get extra smearing Paramters info from code, analysis note, space for pion p+p result 
+    (Code, Literature, Space, Presis, etc)   (** Do without asking Blair **) 
+    
+2.) Get Sim Files he used for files for smearing (us to use) 
+
+3.) Build/Run new eff for p+p with & without smearing for p+p 
+
+4.) Collect/Read Jet/pion literature:
+4a.) Sijans Result. 
+4b.) PHENIX p+p Cross-Section fot pions (eta/pi0) 
+4c.) Unfolding for Jet analysis and learning more about it
+
+5.) Possible Pileup effects/Unfolding Strategy and Use. (Note: Unfolding eff. Mult Spect to eff Correction (Jet analysis unfolding) 
+
+
+
+
+
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+                                                                                Summer-26 Personal Research Notes/Log 
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+* Week 5/12 & 5/19/26: 
+
+
+5/13/26: 
+
+- Find total events in  O+O Data: 
+
+Option #1: 
+
+Nevts = (Total 0+0 Cross section) * (O+O all triggered int Luminosity) 
+
+Option #2: 
+
+- Run over Data, and in specific branch per speciifc trigger/or all triggers add all entries. 
+
+** Note for Option 1: Look over ppg12 (Jets/Jaeboms paper of jets Production in O+O to see if total int lum is added and cross-sections) ** 
+
+
+5/14/26: 
+
+- For bimp->Centrality matching all I did there was to include event header node to do maATCHING (IT SHOULD WORK) (It worked) 
+- Centrality Distribution displayed non-flattness in Sim. From this matching scheme.  
+
+
+5/15/26:
+
+- Mainly Continuation on AI/ML Modules and Reading for R_cp ideas.  
+
+
+5/19/26: 
+
+- I'm setting up my data enviorment using agentic markdown file prompting. (The agent is running currently) (Made successfully) 
+(** 5/20: Now basically use enviorment now to get full number of events and do same pt test **) (Use Option #1 For getting events) 
+
+
+* Week 6/1-6/15: 
+
+
+6/9/26: 
+
+- Here are Spaces to look at for Smearing codes and pion/eta comparisons data/Sim: 
+
+  Most Relevant                                                                 
+   
+  - /sphenix/user/bseidlitz/analysis/EMCal_pi0_Calib_2023/macros/figMaker/ —    
+  Contains mass_plot.C which has an explicit bool etaFit toggle to switch
+  between eta and pi0 fits, reads from separate "eta.root" and "pi0.root" files,
+   and produces comparison fits of eta and pi0 mass peaks vs pT. This is likely
+  the closest to what you're looking for.
+  - /sphenix/user/bseidlitz/analysis/neutralMesonTSSA/ — Analyzes both eta and
+  pi0 together with separate mass windows and diphoton vectors for each (pi0s,  
+  etas, pi0Bkgr, etaBkgr). Has dedicated eta mass parameters (mean=0.564,
+  sigma=0.020).                                                                 
+  - /sphenix/user/bseidlitz/analysis/pythiaEMCalAna/ — Pythia simulation-level
+  analysis tracking pi0 and eta decays with daughter particles, comparing truth 
+  vs reconstructed properties. This is the sim side of the comparison.
+                                                                                
+  Supporting Pieces                                                             
+   
+  - /sphenix/user/bseidlitz/analysis/pi0Efficiency/ — Pi0 efficiency from       
+  simulation (needed to correct data yields for a ratio).
+  - /sphenix/user/bseidlitz/analysis/Pi0MassAnalysis/ — Pi0 mass peak extraction
+   from data.                                                                   
+  - /sphenix/user/bseidlitz/pythia/ — Pythia p+p event generation (the MC
+  input).                                                                       
+  - /sphenix/user/bseidlitz/ppg14/trees/photon10_pp/ — p+p photon trees used as
+  input.                                                                        
+                  
+  Want me to look inside any of these in more detail, for example the           
+  mass_plot.C or the neutralMesonTSSA code?
+                                              
+
+
+Primary — Direct pi0/pion analysis
+
+  - /sphenix/user/bseidlitz/ppg12/ — PPG12 analysis (historically the PHENIX pi0
+   cross-section paper in p+p). Contains anatreemaker, efficiency tools,
+  plotting, NLO comparisons, sideband studies, unfolding, and photon isolation
+  analysis.
+  - /sphenix/user/bseidlitz/ppg14/ — PPG14 analysis. Contains a ppg12/ mirror
+  and trees/ with photon10_pp/ (p+p photon trees).
+  - /sphenix/user/bseidlitz/analysis/pi0ClusterAna/ — Pi0 cluster analysis
+  module.
+  - /sphenix/user/bseidlitz/analysis/pi0Efficiency/ — Pi0 efficiency studies.
+  - /sphenix/user/bseidlitz/analysis/Pi0MassAnalysis/ — Pi0 mass peak analysis.
+  - /sphenix/user/bseidlitz/analysis/neutralMesonTSSA/ — Neutral meson (pi0/eta)
+   transverse single-spin asymmetry.
+
+  Secondary — Supporting tools / simulation
+
+  - /sphenix/user/bseidlitz/pythia/ — Pythia generation with condor submission
+  and output trees (likely p+p simulation).
+  - /sphenix/user/bseidlitz/analysis/pythiaEMCalAna/ — Pythia EMCal analysis
+  (p+p MC studies).
+  - /sphenix/user/bseidlitz/analysis/EMCal_pi0_Calib_2023/ — EMCal pi0
+  calibration (2023 commissioning).
+  - /sphenix/user/bseidlitz/analysis/isoCluster/ — Isolated cluster analysis
+  (related to isolated photon/pi0).
+  - /sphenix/user/bseidlitz/analysis/singlePhotonClusterAna/ — Single photon
+  cluster analysis (pi0 decay photons).
+
+  Tertiary — Broader context
+
+  - /sphenix/user/bseidlitz/ppg14/trees/photon10_pp/ — Actual p+p photon tree
+  ROOT files.
+  - /sphenix/user/bseidlitz/emcPerf/ — EMCal performance (detector response
+  relevant to pi0 reconstruction).
+
+  I'd start with ppg12/ and ppg14/ as the most likely homes for a complete p+p
+  pion analysis workflow. Want me to dig deeper into any of these?
+
+
+
+
+- Note: I have Presis and PPG-12 paper to look at for info as well.  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
