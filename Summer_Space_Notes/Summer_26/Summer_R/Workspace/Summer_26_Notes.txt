@@ -56,7 +56,7 @@
 
 
 
-** Week 6/1 - 6-15: 
+** Week 6/1 - 6/20: 
 
 - Total Number of events: 
 
@@ -79,7 +79,7 @@
 
 * Nonlinearity p+p pion tasks: 
 
-- Week 6/1 - 6-15: 
+- Week 6/1 - 6/20: 
 1.) Get extra smearing Paramters info from code, analysis note, space for pion p+p result 
     (Code, Literature, Space, Presis, etc)   (** Do without asking Blair **) 
     
@@ -145,7 +145,7 @@ Option #2:
 (** 5/20: Now basically use enviorment now to get full number of events and do same pt test **) (Use Option #1 For getting events) 
 
 
-* Week 6/1-6/15: 
+* Week 6/1-6/20: 
 
 
 6/9/26: 
@@ -158,25 +158,32 @@ Option #2:
   Contains mass_plot.C which has an explicit bool etaFit toggle to switch
   between eta and pi0 fits, reads from separate "eta.root" and "pi0.root" files,
    and produces comparison fits of eta and pi0 mass peaks vs pT. This is likely
-  the closest to what you're looking for.
+  the closest to what you're looking for. (X)
+  
+  
   - /sphenix/user/bseidlitz/analysis/neutralMesonTSSA/ — Analyzes both eta and
   pi0 together with separate mass windows and diphoton vectors for each (pi0s,  
   etas, pi0Bkgr, etaBkgr). Has dedicated eta mass parameters (mean=0.564,
-  sigma=0.020).                                                                 
+  sigma=0.020).  (X)
+  
+                                                                 
   - /sphenix/user/bseidlitz/analysis/pythiaEMCalAna/ — Pythia simulation-level
   analysis tracking pi0 and eta decays with daughter particles, comparing truth 
-  vs reconstructed properties. This is the sim side of the comparison.
+  vs reconstructed properties. This is the sim side of the comparison. (X)
                                                                                 
   Supporting Pieces                                                             
    
   - /sphenix/user/bseidlitz/analysis/pi0Efficiency/ — Pi0 efficiency from       
-  simulation (needed to correct data yields for a ratio).
+  simulation (needed to correct data yields for a ratio). (X)
+  
   - /sphenix/user/bseidlitz/analysis/Pi0MassAnalysis/ — Pi0 mass peak extraction
-   from data.                                                                   
+   from data.   (X)          
+                                                         
   - /sphenix/user/bseidlitz/pythia/ — Pythia p+p event generation (the MC
-  input).                                                                       
+  input). (X)        
+                                                                
   - /sphenix/user/bseidlitz/ppg14/trees/photon10_pp/ — p+p photon trees used as
-  input.                                                                        
+  input. (X)                                                                        
                   
   Want me to look inside any of these in more detail, for example the           
   mass_plot.C or the neutralMesonTSSA code?
@@ -222,11 +229,13 @@ Primary — Direct pi0/pion analysis
   pion analysis workflow. Want me to dig deeper into any of these?
 
 
-
-
 - Note: I have Presis and PPG-12 paper to look at for info as well.  
 
 
+6/14/26: 
+
+- Goal Here today is to do task #1 of nonlin: Finding Smearing paramaters. 
+  Setup The Github enviorment for NoMachine Space in tg/bulk directory.  
 
 
 
