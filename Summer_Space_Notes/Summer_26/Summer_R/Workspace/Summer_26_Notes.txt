@@ -2,7 +2,7 @@
 
                                                                                 ** Summer 2026 Research tasks ** 
 
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
  * eta/pio O + O R_aa and R_cp plan: 
 
@@ -81,9 +81,9 @@
 
 - Week 6/1 - 6/20: 
 1.) Get extra smearing parameters info from code, analysis note, space for pion p+p result 
-    (Code, Literature, Space, Presis, etc)   (** Do without asking Blair **) 
+    (Code, Literature, Space, Presis, etc)   (** Do without asking Blair **) (X)
     
-2.) Get Sim Files he used for files for smearing (us to use) 
+2.) Get Sim Files he used for files for smearing (us to use) (X)
 
 3.) Build/Run new eff for p+p with & without smearing for p+p 
 
@@ -242,6 +242,17 @@ Primary — Direct pi0/pion analysis
 6/15/26: 
 
 - task #1 continued. Read through the Claude outputs and look at the directory paths.  
+** Findings of Task #1 (Smearing Paramters & Where they live) Files: 
+1.)  SMEARING_CODE_CHAIN_LOG.txt (The system, logic, and analysis chain of how Blair did his code) 
+2.)  SMEARING_EQUATION_SHEET.txt (Contains Smearing info and equation form in PPG12 & Blairs Study) 
+3.)  RESO_SMEAR_UNFOLD_REPORT.pdf (Background Info For me) 
+4.) FINDINGS_smearing.pdf (another file of smearing parameters findings in ppg-12 and Blair's Study) 
+
+** Next: Read PPG-12 & Blair's Presentations, Extract Smearing Info in standalone txt, Copy/paste Codes (index them) **
+
+
+
+
 
 
 
