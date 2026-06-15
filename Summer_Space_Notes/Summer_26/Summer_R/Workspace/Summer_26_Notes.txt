@@ -80,7 +80,7 @@
 * Nonlinearity p+p pion tasks: 
 
 - Week 6/1 - 6/20: 
-1.) Get extra smearing Paramters info from code, analysis note, space for pion p+p result 
+1.) Get extra smearing parameters info from code, analysis note, space for pion p+p result 
     (Code, Literature, Space, Presis, etc)   (** Do without asking Blair **) 
     
 2.) Get Sim Files he used for files for smearing (us to use) 
@@ -92,7 +92,7 @@
 4b.) PHENIX p+p Cross-Section fot pions (eta/pi0) 
 4c.) Unfolding for Jet analysis and learning more about it
 
-5.) Possible Pileup effects/Unfolding Strategy and Use. (Note: Unfolding eff. Mult Spect to eff Correction (Jet analysis unfolding) 
+5.) Possible Pileup effects/Unfolding Strategy and Use. (Note: Unfolding eff. Mult-Spect to eff Correction (Jet analysis unfolding) 
 
 
 
@@ -234,10 +234,16 @@ Primary — Direct pi0/pion analysis
 
 6/14/26: 
 
-- Goal Here today is to do task #1 of nonlin: Finding Smearing paramaters. 
-  Setup The Github enviorment for NoMachine Space in tg/bulk directory.  
-  Claude prompting found smearing terms and inputted on sheet will look 
+- Goal Here today is to do task #1 of nonlin: Finding Smearing parameters. 
+  Set up the GitHub environment for NoMachine Space in the tg/bulk directory.  
+  Claude's prompting found smearing terms and input them on the sheet, which will look 
   at these values.  
+
+6/15/26: 
+
+- task #1 continued. Read through the Claude outputs and look at the directory paths.  
+
+
 
 
 
