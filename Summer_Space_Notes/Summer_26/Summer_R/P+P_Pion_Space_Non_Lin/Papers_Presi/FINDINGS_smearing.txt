@@ -1,0 +1,141 @@
+================================================================================
+   FINDINGS:  EMCal Smearing (Resolution) Parameters for the Run-24 p+p
+              Pion (pi0/eta) Non-Linearity Data-vs-Simulation Study
+================================================================================
+   Author of review : Claude (automated read of the PDFs in Papers_Presi/)
+   Date             : 2026-06-14
+   Source documents : 5 PDFs in this directory (see inventory below)
+   Companion files  : findings_log.txt  (full step-by-step work log)
+                      FINDINGS_smearing.pdf  (PDF version of this file)
+================================================================================
+
+
+1.  WHAT "SMEARING" MEANS HERE
+--------------------------------------------------------------------------------
+    The nominal pythia-8 + GEANT4 simulation produces an EMCal response that is
+    TOO NARROW: the reconstructed pi0 / eta mass peaks (and the photon energy
+    resolution) are sharper in MC than in the real Run-24 p+p data.  To make the
+    simulation describe the data, an EXTRA, artificial Gaussian "smearing" is
+    added to the simulated cluster energy.  "Smearing parameters" therefore =
+    the terms of the EMCal energy-resolution function that set how much extra
+    width is injected.
+
+    The resolution is written in the standard 3-term calorimeter form:
+
+        sigma(E) / E  =  sqrt(  p0^2 / E   +   p1^2 / E^2   +   p2^2  )
+
+        p0 = stochastic / sampling term   (the "a/sqrt(E)" term)
+        p1 = noise term                   (the "b/E" term)
+        p2 = constant term                (the "c" term)
+
+    The extra smearing actually applied to MC is the quadrature DIFFERENCE
+    between the data and MC resolutions:
+
+        sigma_extra(E) = sqrt( max(0,  sigma_data^2(E) - sigma_MC^2(E) ) )
+
+    A Gaussian of width sigma_extra(E)*E is added to the simulated cluster E.
+
+
+2.  THE SMEARING PARAMETER VALUES  (the main answer)
+--------------------------------------------------------------------------------
+    Resolution terms,  sigma(E)/E = sqrt(p0^2/E + p1^2/E^2 + p2^2),  E in GeV:
+
+      SOURCE                                       p0       p1       p2
+                                                 (sqrt)   (1/E)   (const)
+      ------------------------------------------ -------- ------- ---------
+      pythia intrinsic / MC  (PPG12 Sec 5.2)      0.185    0.00    0.040
+      NOMINAL data target    (PPG12 Sec 5.2)      0.15     0.05    0.05
+      "wider-data" variation (PPG12 Sec 5.2)      0.13     0.08    0.08
+      tuned "smear11" set    (calib talk _511)    0.180    0.020   0.015
+      test-beam single-gamma (PPG12 Sec 3.1)      0.16     --      0.05
+
+      Position smearing (calib talks):
+          sigma_psi(E) = 0.0030/sqrt(E) (+) 0.0040   (tuned, smear11)
+          sigma_psi(E) = 0.0055/sqrt(E) (+) 0.0020   (data-driven extraction)
+      Energy scale (calib talks):  E_scale = f(E) x 0.998  (tuned)
+
+    Notes on these numbers:
+      - "(+)" / "+" between terms means addition in QUADRATURE.
+      - The NOMINAL data target (0.15, 0.05, 0.05) gives sigma_extra ~ 0 below
+        ~17 GeV, rising to only ~2% above 20 GeV -> smearing matters mostly at
+        high E_T.
+      - The "wider-data" variation (0.13, 0.08, 0.08) gives sigma_extra ~ 6%,
+        roughly flat in E_T.  This identical triple appears in the calibration
+        talks as the data-driven toy-MC extraction
+        sigma_E/E = 0.130/sqrt(E) (+) 0.080/E (+) 0.080.
+      - The PPG12 resolution systematic ("eres") is the symmetrized envelope of
+        "no extra smearing" (sigma_data = 0) and "wider-data"; its maximum is
+        +/-9.6% at E_T ~ 27 GeV.
+
+
+3.  THE "smearN" SAMPLE NAMING
+--------------------------------------------------------------------------------
+    pythia_smearN = nominal pythia with the N-th additional-smearing parameter
+    set applied on top of the measured MC resolution.  Documented iterations:
+
+        smear1  = "global minimum difference" parameter set
+        smear2  = constant energy term  c_E = 0.08  (8%)   -- insufficient
+        smear3  = constant energy term  c_E = 0.05  (5%)
+        smear5  = "added an additional 8% energy smearing"  <-- nominal in the
+                  nonLin update; width agreement at the MC statistical limit
+        smear11 = "added an additional 8%/sqrt(E) energy smearing"  <-- newest;
+                  refines smear5; leaves only ~2% high-pT eta discrepancy
+        pythia_smear5_pix = smear5 plus the SiPM pixel-occupancy non-linearity
+
+    The recurring "8% smearing" = the extra ~0.08 resolution term required to
+    widen the intrinsically narrow pythia peak (p0~0.185, tiny constant ~0.040)
+    up to the Run-24 data width.
+
+
+4.  NON-LINEARITY PHYSICS (two effects added to MC)
+--------------------------------------------------------------------------------
+    (1) Longitudinal light attenuation in the SPACAL fibers
+        - High-E showers peak deeper -> longer light path -> more attenuation.
+        - S(E)/E ~ E^(-X0/Lambda),  attenuation length Lambda ~ 1.6 m (TDR).
+        - Response change ~ 1.0% / 1.3% / 1.6% at 10 / 20 / 40 GeV.
+        - Implemented as a z-dependent light efficiency in the current MC.
+
+    (2) SiPM pixel saturation / occupancy
+        - N_pix ~ 1.6e5 total (4 SiPMs x ~40k); ~400-500 photoelectrons/GeV.
+        - First-order occupancy ~0.125% x E -> ~1.25/2.5/5% at 10/20/40 GeV.
+        - Two model parameters: electrons-per-GeV (~500 slide value) and the
+          effective number of pixels.  Validated against test-beam.
+        - Added via the pythia_smear5_pix sample (small effect on pi0/eta mass).
+
+
+5.  SOURCE-DOCUMENT INVENTORY & ROLES
+--------------------------------------------------------------------------------
+    1. EMCal_nonLin_update.pdf        (13 pp) - nonlinearity physics; uses sample
+                                                names pythia_smear5 / _pix; NO
+                                                numerical smearing values.
+    2. EMCalCalibUpdate.pdf           (12 pp) - data-driven resolution extraction;
+                                                smear5 = "+8% smearing"; tuned set
+                                                0.180/0.020/0.015 + Escale x0.998.
+    3. EMCal calibration update.pdf   (10 pp) - earlier talk; defines smear1/2/3
+                                                (c_E = global-min / 0.08 / 0.05).
+    4. EMCal calibration update_511.pdf (11 pp) - newest talk; smear11 = "+8%/
+                                                sqrt(E)"; ~2% high-pT eta residual.
+    5. PPG12_analysis_note_v4.pdf     (111 pp) - formal analysis note
+                                                (sPH-ppg-2024-012 v4, 2026-05-15).
+                                                DEFINITIVE values in Section 5.2:
+                                                MC (0.185,0,0.040); nominal data
+                                                (0.15,0.05,0.05); wider-data
+                                                (0.13,0.08,0.08).
+
+    Reference for the toy-MC extraction (calibration talks):
+      https://indico.bnl.gov/event/31859/contributions/120756/attachments/68548/117758/EMCal_toyMC_calib_20260302.pdf
+
+
+6.  BOTTOM LINE
+--------------------------------------------------------------------------------
+    - All smearing parameters were located WITHIN this directory; no external
+      search was required.
+    - The definitive, citable numbers are in PPG12_analysis_note_v4.pdf Sec 5.2:
+        MC intrinsic   (p0,p1,p2) = (0.185, 0.00, 0.040)
+        nominal data   (p0,p1,p2) = (0.15,  0.05, 0.05 )
+        wider-data var (p0,p1,p2) = (0.13,  0.08, 0.08 )
+    - The calibration presentations give the tuned working set
+        sigma_E/E = 0.180/sqrt(E) (+) 0.020/E (+) 0.015,
+        sigma_psi = 0.0030/sqrt(E) (+) 0.0040,  E_scale = f(E) x 0.998
+      and explain the smearN naming (smear5 = +8%, smear11 = +8%/sqrt(E)).
+================================================================================

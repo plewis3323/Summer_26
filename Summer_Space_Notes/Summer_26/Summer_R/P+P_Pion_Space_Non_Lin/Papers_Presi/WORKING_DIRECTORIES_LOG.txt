@@ -1,0 +1,160 @@
+================================================================================
+   WORKING-DIRECTORY MAP  --  EMCal Smearing / Non-Linearity / PPG12 Study
+================================================================================
+   Purpose : Locate the actual working directories on the /sphenix filesystem
+             that hold the CODE, PLOTS, ROOT files, and work environment behind
+             the Run-24 p+p pi0/eta non-linearity + EMCal smearing study and the
+             PPG12 isolated-prompt-photon analysis (the source PDFs reviewed in
+             this Papers_Presi/ folder).
+   Date    : 2026-06-14
+   Note    : These directories belong to the COLLABORATORS who produced the work
+             (NOT in any plewis3323 area).  All were inspected READ-ONLY.
+   Source PDFs reviewed (this folder): EMCal_nonLin_update.pdf, EMCalCalibUpdate.pdf,
+             EMCal calibration update.pdf, EMCal calibration update_511.pdf,
+             PPG12_analysis_note_v4.pdf  (all by B. Seidlitz / Y. Go et al.)
+================================================================================
+
+
+WHO DID THE WORK  ->  USER HOME ON /sphenix
+--------------------------------------------------------------------------------
+   Blair Seidlitz  (all EMCal calib / non-lin / smearing talks)  -> bseidlitz
+   Yeonju Go       (PPG12 lead author, prompt-photon note)        -> yeonjugo
+   Shuhang Li      (PPG12 co-author, calo fast-ana / calib)       -> shuhang98 /
+                                                                      shuhangli
+
+   Two filesystem roots are used for each person:
+     /sphenix/u/<user>/        = NFS home  (code, macros, small root, plots)
+     /sphenix/user/<user>/     = GPFS area (large ntuples, condor output, mirror)
+
+
+================================================================================
+ 1.  EMCAL SMEARING / NON-LINEARITY  --  Blair Seidlitz  (bseidlitz)
+================================================================================
+   MAIN WORK AREA (code + macros + plots):
+     /sphenix/u/bseidlitz/work/
+   GPFS OUTPUT MIRROR (big root files / condor output):
+     /sphenix/user/bseidlitz/
+
+   *** THE SMEARING STUDY ITSELF ***
+     /sphenix/u/bseidlitz/work/resolutionStudy/
+        - eta_decay_simulation_with_smearing.C   <== the smearing code
+        - etaDecaySim.C , plot.C
+        - width_vs_pt.png                         <== resolution/width plot
+        - output.root , meson_graphs.root , relative_widths.root
+
+   *** EMCAL PERFORMANCE (data/sim pi0-eta comparisons = the calib talks) ***
+     /sphenix/u/bseidlitz/work/emcPerf/
+        - calo_emc_pi0_tbt/  : CaloCalibEmc_Pi0.cc/.h, pi0EtaByEta.cc/.h
+                               (tower-by-tower pi0/eta calibration code; builds w/
+                               autogen/configure; this is the calo_emc_pi0_tbt module)
+        - lighteff/          : longitudinal light-attenuation = NON-LIN effect #1
+        - nonoise/           : noise-term variation studies
+        - macros/            : driver macros incl. calib_smear0.3.root (smear file)
+        - src/               : analysis source
+        - figs/              : PLOTS  (subdirs: etaFitting/, findOpt/)
+        - truth/, output/, lumiStuff/
+
+   *** MC ENERGY-SCALE FINE TUNING (the E_scale x 0.998 term) ***
+     /sphenix/u/bseidlitz/work/adjMCCalib/
+        - CEMC_MC_EMscale_fineTune.root, CEMC_MC_calib_default_v2/v3.root
+        - convSwitch.C
+     (GPFS mirror: /sphenix/user/bseidlitz/adjMCCalib/)
+
+   *** EMCAL CALIBRATION MACROS ***
+     /sphenix/u/bseidlitz/work/calibMac/
+        - emcal_calib_y2/ , emcal_calib_y3/ , emcal_calib_year1/
+        - emc_pi0_tbt/ , eta/ , pi0_run23/ , tower_slope_macro/
+
+   *** PYTHIA SAMPLE GENERATION (origin of the pythia_smearN samples) ***
+     /sphenix/u/bseidlitz/work/pythia/
+        - gen.C, settings.cfg, run.sh, condor.sub, pytreeEff.root, log/, output/
+
+   OTHER RELEVANT:
+     /sphenix/u/bseidlitz/work/analysis/   (103 subdirs of analysis work)
+     /sphenix/u/bseidlitz/work/macros/     (general macros)
+     /sphenix/u/bseidlitz/notes.txt        (33 KB running work notes)
+     /sphenix/u/bseidlitz/plotstyle/       (plot styling)
+
+
+================================================================================
+ 2.  PPG12 ISOLATED-PROMPT-PHOTON ANALYSIS  --  Blair Seidlitz side (smearing
+     enters here, at the unfolding response-matrix stage; PPG12 note Sec 5.2)
+================================================================================
+   CODE REPO (git):
+     /sphenix/u/bseidlitz/work/ppg12/          (README.md, .git)
+        - toymcunfold/        : toy-MC + UNFOLDING -> where the extra Gaussian
+                                smearing is applied to E_T^reco (Sec 5.2 numbers)
+        - plotting/           : final-plot macros (PLOTS)
+        - anatreemaker/       : analysis-tree maker
+        - FunWithxgboost/     : XGBoost photon-ID BDT
+        - sideband/           : data-driven ABCD purity
+        - ResonancePeakIsoAnalysis/ , efficiencytool/ , photontruthisopythia/
+        - NLO/ (JETPHOX) , lumi/ , config/
+   GPFS OUTPUT MIRROR:
+     /sphenix/user/bseidlitz/ppg12/
+
+
+================================================================================
+ 3.  PPG12 ANALYSIS  --  Yeonju Go  (yeonjugo)  [note lead author]
+================================================================================
+   MAIN WORK AREA (staged by date):
+     /sphenix/u/yeonjugo/sPHENIX_PPG12/
+        - ppg12_setup.sh , include/yjUtility.h
+        - 20241209_showerShape/        shower-shape studies
+        - 20250113_clustering/         clustering
+        - 20250203_skimtree/           skim trees
+        - 20250228_MC_production/      MC production
+        - 20250228_TMVA/               TMVA / BDT training
+        - 20250908_identification/     photon identification
+        - 20250908_MC_production/      MC production (EcoMug, figures/, hist/, out/)
+        - 20250920_calorimeterBkg/     calorimeter background
+        - 20251209_calorimeterBkg_streak/
+        - 20260228_MCspectrum/         MC spectrum
+        - 2026Apr9_claude/             recent work
+   GPFS OUTPUT MIRROR (big files / production):
+     /sphenix/user/yeonjugo/sPHENIX_PPG12/
+        - MCproduction/, anatreemaker/, clustering/, showerShape/, xjg/,
+          2026Apr9_claude/, ppg12_old/
+   Also: /sphenix/user/yeonjugo/CaloCalib/   (calo calibration)
+
+
+================================================================================
+ 4.  PPG12 CO-AUTHOR / CALO FAST-ANA + CALIBRATION  --  Shuhang Li (shuhang98 /
+     shuhangli)
+================================================================================
+   HOME (code + plots):
+     /sphenix/u/shuhang98/
+        - 2024calofastana/     calorimeter fast analysis
+        - MakePlots/           plotting code (PLOTS)
+        - towercalibbackup/    tower-calibration backup
+        - macros/ , measureg/ , simulation/
+        - AtlasStyle.C / AtlasUtils.C   (plot styling used in the talks)
+   GPFS OUTPUT MIRROR (big files):
+     /sphenix/user/shuhangli/
+        - 2024calofastana/ , calibrations/ , analysis/ , caloembedding/ ,
+          calotrack_tree/ , calowaveformsim/ , CDBfile/
+
+
+================================================================================
+ 5.  EXTERNAL REFERENCE (not on this filesystem)
+================================================================================
+   Toy-MC resolution-extraction slides (the data-driven 0.13/0.08/0.08 set):
+     https://indico.bnl.gov/event/31859/contributions/120756/attachments/68548/117758/EMCal_toyMC_calib_20260302.pdf
+
+
+================================================================================
+ QUICK INDEX  --  copy/paste paths
+================================================================================
+   SMEARING CODE      : /sphenix/u/bseidlitz/work/resolutionStudy/
+   EMCAL PERF + PLOTS : /sphenix/u/bseidlitz/work/emcPerf/   (figs/ = plots)
+   PI0/ETA CALIB CODE : /sphenix/u/bseidlitz/work/emcPerf/calo_emc_pi0_tbt/
+   MC E-SCALE TUNE    : /sphenix/u/bseidlitz/work/adjMCCalib/
+   CALIB MACROS       : /sphenix/u/bseidlitz/work/calibMac/
+   PYTHIA SAMPLES     : /sphenix/u/bseidlitz/work/pythia/
+   PPG12 CODE (smear  : /sphenix/u/bseidlitz/work/ppg12/   (toymcunfold/ = smearing)
+     in unfolding)      /sphenix/user/bseidlitz/ppg12/        (output)
+   PPG12 (Y. Go)      : /sphenix/u/yeonjugo/sPHENIX_PPG12/
+                        /sphenix/user/yeonjugo/sPHENIX_PPG12/  (output)
+   PPG12 (S. Li)      : /sphenix/u/shuhang98/2024calofastana/ , MakePlots/
+                        /sphenix/user/shuhangli/               (output)
+================================================================================

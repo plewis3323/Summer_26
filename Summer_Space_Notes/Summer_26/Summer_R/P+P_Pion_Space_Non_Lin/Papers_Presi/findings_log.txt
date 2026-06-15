@@ -1,0 +1,388 @@
+================================================================================
+                 WORK LOG  -  EMCal Nonlinearity / Smearing Review
+================================================================================
+   Task: Read the PDFs in Papers_Presi/, extract what they say about Run24 p+p
+         pion (eta/pi0) nonlinearity vs simulation, and FIND the smearing
+         (resolution) parameters used to define the Pythia simulation.
+   Date started: 2026-06-14
+   Working dir : .../P+P_Pion_Space_Non_Lin/Papers_Presi
+================================================================================
+
+
+--------------------------------------------------------------------------------
+ STEP 0 -- Inventory of source files
+--------------------------------------------------------------------------------
+
+   Found 5 PDFs in directory:
+
+     1. EMCal calibration update_511.pdf      (1.97 MB)
+     2. EMCal calibration update.pdf          (1.59 MB)
+     3. EMCalCalibUpdate.pdf                  (2.17 MB)
+     4. EMCal_nonLin_update.pdf               (2.21 MB)
+     5. PPG12_analysis_note_v4.pdf            (6.54 MB)
+
+   No command-line PDF tools (pdftotext/pdfinfo/pdftk) available on system.
+   Using the built-in Read tool to read PDFs directly (text + rendered pages).
+
+
+--------------------------------------------------------------------------------
+ STEP 1 -- Read: EMCal_nonLin_update.pdf   (13 pages)   [Blair Seidlitz]
+           "EMCal calibration update: data/sim comparisons"
+--------------------------------------------------------------------------------
+
+   PURPOSE OF DOC: Compares Run24 p+p data to simulation for the EMCal energy
+   scale / non-linearity, using pi0 and eta neutral-meson reconstructed mass
+   (M_rec / PDG) and width (sigma/mu) vs pT.
+
+   *** SMEARING-RELATED CONTENT (the key thing we are hunting) ***
+
+     - The nominal simulation sample is labelled  "pythia_smear5".
+     - A variant with the pixel-occupancy effect is "pythia_smear5_pix"
+       (a.k.a. pythia_smear5-pix).
+     - Template-fit plot (p.11) also refers to a "Smeared MC" curve.
+     - NOTE: the *numerical* smearing parameters (what "smear5" actually sets,
+       e.g. the constant/stochastic resolution terms) are NOT written out in
+       this presentation. Only the sample names appear. --> Must keep looking
+       in the other PDFs / directories for the actual numbers.
+
+   NON-LINEARITY PHYSICS DISCUSSED (two effects added to MC):
+
+     (1) Longitudinal light attenuation in fibers (p.2)
+         - Higher-energy showers develop deeper -> longer light path to SiPM
+           -> more attenuation.  Shower depth t_max ~ ln(E), dx ~ X0 ln(E),
+           exponential attenuation S ~ exp(-dx/Lambda).
+         - Result:  S(E)/E  ~  E^(-X0/Lambda).
+         - Attenuation length scale  Lambda ~ 1.6 m  (from the TDR).
+         - Response change ~ 1.0%, 1.3%, 1.6% at 10, 20, 40 GeV.
+         - Implemented in current MC as a z-dependent light efficiency.
+         - Not super important for extrapolating non-linearity out to 30 GeV.
+
+     (2) SiPM pixel saturation / occupancy (p.3)
+         - N_pix ~ 1.6e5 total pixels (4 SiPMs x 40k each),
+           ~400 photoelectrons per GeV.
+         - First-order occupancy estimate: 400E/(160000x2) ~ 0.125% x E
+           -> roughly 1.25%, 2.5%, 5% at 10, 20, 40 GeV.
+         - NOT in the current sPHENIX MC (but was in the test-beam sim);
+           now implemented.
+         - TWO PARAMETERS for the pixel-occupancy model:
+              * Number of electrons per GeV  = 500   (slide value)
+              * Number of effective pixels (all pixels)
+         - Compared to test-beam results; agreement shown.
+
+     Effect of pixel occupancy on neutral-meson mass (p.4): comparing
+     pythia_smear5 vs pythia_smear5_pix, the effect on pi0/eta M_rec/PDG vs pT
+     is small (both sit ~1.01-1.02 above PDG over 0-14 GeV).
+
+   SELECTIONS (p.5):
+     - Data: ana509, GRL (good-run list).
+     - Pythia run 28: main samples MB pythia, plus Eta3 and Eta8.
+     - MBD vertex |z| < 40 cm.
+     - Cluster cuts: pT(1,2) > 0.25 GeV ; energy asymmetry Asym < 0.6.
+
+   PILEUP INFO (p.6) -- trigger_index 12 and 30:
+     - trig 12: weighted_mu = 0.1095 ; total_scaled_events = 1.312e10
+                0mrad (run<51274): weighted_mu = 0.2212, 3.579e9 ev (652 runs)
+                1.5mrad (run>=51274): weighted_mu = 0.0676, 9.546e9 ev (812 runs)
+     - trig 30: total_scaled_events = 3.189e9
+                0mrad: weighted_mu = 0.2441, 2.463e9 ev (725 runs)
+                1.5mrad: weighted_mu = 0.0713, 7.252e8 ev (680 runs)
+
+   VERTEX REWEIGHTING & PILEUP (p.7):
+     - MC (MB pythia + EtaX) reweighted to match 0 and 1.5 mrad data.
+     - Pileup added by drawing a synthetic pileup vertex from a Gaussian with
+       sigma = 50 cm (0 mrad) / 15 cm (1.5 mrad); averaged with the reco vertex.
+
+   DATA/MC MESON COMPARISONS:
+     - 0 mrad (p.8): good agreement except last point (fitting issue); small
+       width discrepancy, not expected to bias mass much.
+     - 1.5 mrad (p.9): non-linearity looks OK; sudden drop in triggered-sample
+       mass; small width discrepancy.
+     - 0 vs 1.5 mrad (p.13): 0mrad (1.5mrad) ~22% (7%) double interactions which
+       degrades vertex resolution; worse for 0mrad (vertex width ~50 cm vs
+       ~15 cm). --> 1.5 mrad used for the data/MC comparisons.
+
+   PI0-TEMPLATE ETA FITTING (p.10-11):
+     - To extend pT reach: fit = signal Gaussian + pi0 template (pi0 gun) +
+       residual background (pol3).  Eta fit panels span 9-21 GeV.
+     - Would be largely unnecessary if conversion photons could be rejected
+       with tracking.
+     - Mass/width results (p.11): template fit, data Gaussian fit, and Smeared
+       MC all agree near M_rec/M_PDG ~ 1.01-1.02 across pT = 4-20 GeV.
+
+   CONCLUSION (p.12):
+     - Eta-mass issues remain but show no growing discrepancy with pT.
+     - Integrating stats -> ~2% uncertainty constraint at 20 GeV.
+     - Need a decision about PPG12.
+
+   >>> SMEARING NUMBERS STILL NOT FOUND HERE. Continue to other PDFs/dirs. <<<
+
+
+--------------------------------------------------------------------------------
+ STEP 2 -- Read: EMCalCalibUpdate.pdf   (12 pages)   [Blair Seidlitz]
+           "EMCal calibration update: data/sim comparisons"
+--------------------------------------------------------------------------------
+
+   *** THIS DOC CONTAINS THE ACTUAL SMEARING PARAMETERS -- FOUND THEM ***
+
+   THE PROBLEM MOTIVATING SMEARING (p.3 "Data pythia comparison"):
+     - Pythia sample = MB + jet5 (pT>6 GeV) + jet8 (pT>9 GeV) + jet12 (pT>12 GeV).
+     - "Data is much wider than sim..."  i.e. the nominal pythia (pythia_nominal)
+       has a NARROWER pi0/eta peak (better resolution) than the real data.
+     - "It is unclear why, and thus we are attempting to smear the MC."
+     - So "smearing" here = artificially degrading the MC energy/position
+       resolution so the simulated pi0/eta peak widths match data.
+
+   DATA-DRIVEN EXTRACTION OF RESOLUTION (p.4):
+     - Reference (smearing study slides):
+       https://indico.bnl.gov/event/31859/contributions/120756/attachments/68548/117758/EMCal_toyMC_calib_20260302.pdf
+     - Method: measure the energy and position resolution in MC and find how
+       much ADDITIONAL smearing is needed to reproduce the data.
+     - Resolution functional forms shown on the panel (sampling/noise/constant):
+         * Energy:   sigma_E / E  =  0.130/sqrt(E)  (+)  0.080/E  (+)  0.080
+                     ( the constant term 0.080 was highlighted/boxed )
+         * Position: sigma_psi(E) =  0.0055/sqrt(E)  (+)  0.0020
+                     ( the 0.0020 term was highlighted/boxed )
+       Conditions on that panel: MBD N&S>=1, |v_z| < 20 cm, |eta| < 1.1,
+                                 pT > 0.25 GeV, alpha < 0.6, E_scale = f(E)x0.999
+     - Lower-panel single-fit examples (pi0 decay photons, MB pythia):
+         * Resolution [GeV] = nan/E + 0.1635/sqrt(E) + 0.0000
+         * Position (Gaussian width) = 0.0027/sqrt(E) + 0.0039
+       (Several candidate parameter sets shown: mean parameter set, global
+        minimum parameter set, single-particle-gun response, and examples
+        c_e=0.08/c_p=0.002 and c_e=0.05/c_p=0.0025.)
+
+   POST-SMEARING ATTEMPT #1 (p.5):  sample = "pythia_smear2"
+     - "This well defined process did not seem to work and the smearing
+       factors was insufficient to reproduce the data."  (MC still too narrow.)
+
+   POST-SMEARING ATTEMPT #2 (p.6):  sample = "pythia_smear5"   <== NOMINAL
+     - *** Added an ADDITIONAL 8% of energy smearing. ***   <-- key number
+     - Agreement in width is at the statistical limit of the MC.
+     - Mass is shifted to agree.
+     - Large discrepancy remains at high pT in the eta.
+     ==> This is the "smear5" sample referenced throughout the nonLin update.
+
+   CALIBRATION (p.7-8):
+     - Scale set eta-by-eta (per leading-tower i-eta), 2.0 < pT(pi0) < 5.0 GeV,
+       data vs "MB smear5".  M_fit/m_PDG, sigma(pi0)/M(pi0), and Gaussian norm
+       all tracked vs leading tower i-eta.
+     - Calibration factors FCEMC_calib_ADC_to_ETower: New mean 0.001357
+       (Std 0.0003641) vs Old mean 0.001338 (Std 0.0003551), 24576 entries.
+
+   HIGH-pT ETA MESON (p.9):  *** FINAL / TUNED SMEARING PARAMETER SET ***
+     (Jaebeom's version of the mu/m_PDG vs pT plot; p+p sqrt(s)=200 GeV)
+         * Energy:   sigma_E / E  =  0.180/sqrt(E)  (+)  0.020/E  (+)  0.015
+         * Position: sigma_psi(E) =  0.0030/sqrt(E)  (+)  0.0040
+         * Energy scale:  E_scale = f(E) x 0.998
+       Conditions: MBD N&S>=1, |v_z| < 20 cm, |eta| < 1.1, pT > 0.25 GeV,
+                   alpha < 0.6.
+     - "Need more stats in MC."  pi0/eta data vs MC mu/m_PDG ~ 1 over 0-14 GeV.
+
+     NOTE: the "(+)" above denotes addition in quadrature (the standard
+     a/sqrt(E) (+) b/E (+) c calorimeter resolution parameterization:
+     a = stochastic/sampling term, b = noise term, c = constant term).
+
+   CONCLUSION (p.10):
+     - Nominal pythia has MUCH better resolution than data.
+     - Unclear what the major issue in data is.
+     - Extra smearing helps describe the data but needs further tuning.
+     - Need to follow up on high-pT eta (only calibration constraint at high pT).
+
+   0mrad vs 1.5mrad (p.11): same as nonLin doc (22%/7% double interactions;
+     vertex width ~50 cm vs ~15 cm; use 1.5 mrad).
+
+   PILEUP EFFECTS IN MC (p.12):
+     - Large effect seen in double-interaction sim (pythia_jet12 vs jet12_double).
+     - Could be wrong-vertex effect, or poor performance at large truth-z vertex
+       that passes the |reco z| < 20 cm cut due to bad reco.
+
+
+--------------------------------------------------------------------------------
+ STEP 3 -- Read: "EMCal calibration update.pdf"   (10 pages)   [Blair Seidlitz]
+           (an EARLIER version of the same talk -- has the smear-set legend)
+--------------------------------------------------------------------------------
+
+   Same selections, 0mrad-vs-1.5mrad, pileup, and data-pythia-comparison
+   slides as STEP 2.  ADDS the explicit definitions of the smearing variations:
+
+   SMEARING FACTORS (p.7): single-photon (pi0 decay photon, MB pythia) fits give
+     - Energy resolution:   sigma = nan/E + 0.1635/sqrt(E) + 0.0000  [GeV]
+     - Position (Gaussian width): sigma(d-psi) = 0.0027/sqrt(E) + 0.0039
+
+   APPLICATION OF SMEARING (p.8):  sample = "pythia_smear3"
+     - Additional smearing brings the pi0 mass to within ~0.5% (looks good),
+       BUT the 3 variations don't envelope the data (would be preferable for
+       systematics).
+     - Eta is NOT well described -- "a major issue."
+     - Will try additional smearing to better describe the eta.
+
+   *** COMPARISON OF ALL SMEARING SETS (p.9) -- defines what each set means ***
+     Three additional-smearing variations were tried:
+        - smear1  =  "global minimum difference" parameter set
+        - smear2  =  constant energy term  c_E = 0.08   (8%)
+        - smear3  =  constant energy term  c_E = 0.05   (5%)
+     (The position constants pair with these as c_p ~ 0.002 / 0.0025; cf. the
+      "Example c_e=0.08/c_p=0.002" and "c_e=0.05/c_p=0.0025" curves on p.6.)
+     Findings: stats are limited; NONE of the 3 reproduce the data eta; the pi0
+     mass and width show little variation between the sets.
+
+   So the naming convention is: pythia_smearN = nominal pythia with the N-th
+   additional-smearing parameter set applied on top of the measured MC
+   resolution.  smear5 (and later smear11) are the better-tuned iterations.
+
+
+--------------------------------------------------------------------------------
+ STEP 4 -- Read: "EMCal calibration update_511.pdf"  (11 pages)  [B. Seidlitz]
+           (the MOST RECENT / May-11 version -- final smearing scheme)
+--------------------------------------------------------------------------------
+
+   Selections (p.2): same as before, plus a note "New since last week: New high
+   pT eta samples" and main MC samples = MB pythia, Eta3 and Eta8.
+
+   POST-SMEARING (2nd attempt) (p.6):  sample = "pythia_smear11"
+     - *** Added an additional 8%/sqrt(E) of energy smearing ***
+       (This refines the earlier "8% energy smearing" statement: the 8% is on
+        the STOCHASTIC / sampling term, i.e. an extra 0.08/sqrt(E) added in
+        quadrature, NOT a flat 8% constant.)
+     - Now only a ~2% discrepancy at high pT in the eta (improved vs smear5).
+
+   CALIBRATION (p.7): scale set eta-by-eta, data vs "MB smear5",
+     2.0 < pT(pi0) < 5.0 GeV (same plots as STEP 2 p.7).
+
+   HIGH-pT ETA MESON (p.8): *** FINAL TUNED SMEARING PARAMETERS (smear11) ***
+     (Jaebeom's mu/m_PDG vs pT plot; p+p sqrt(s) = 200 GeV)
+        * Energy:    sigma_E / E  =  0.180/sqrt(E)  (+)  0.020/E  (+)  0.015
+        * Position:  sigma_psi(E) =  0.0030/sqrt(E)  (+)  0.0040
+        * Energy scale:  E_scale = f(E) x 0.998
+       Conditions: MBD N&S>=1, |v_z| < 20 cm, |eta| < 1.1, pT > 0.25 GeV,
+                   alpha < 0.6.   "Need more stats in MC."
+
+   CONCLUSION (p.9):
+     - Investigate an apparent 2-2.5% non-linearity.
+     - Calibration set "last week" still good, considering the slightly
+       different smearing scheme.
+
+   p.10-11: 0mrad-vs-1.5mrad and pileup-effects slides (same as before).
+
+
+--------------------------------------------------------------------------------
+ STEP 5 -- Read: PPG12_analysis_note_v4.pdf   (111 pages)
+           sPH-ppg-2024-012, v4, dated 2026-05-15
+           "Measurement of isolated-prompt photons in p+p at sqrt(s)=200 GeV"
+           Authors: Yeonju Go, Shuhang Li, Blair Seidlitz, Justin Bennett,
+                    Muhammad Elsayed
+--------------------------------------------------------------------------------
+
+   WHAT THE NOTE IS: the formal PPG12 analysis note for the Run-24 p+p
+   isolated-prompt-photon cross section (12 < E_T^gamma < 32 GeV, |eta|<0.7,
+   truth isolation E_T^iso < 4 GeV in R=0.3). Uses the SAME EMCal + the same
+   pi0/eta-derived calibration discussed in the presentations. The MC EMCal
+   smearing IS the same machinery as the pythia_smearN samples.
+
+   *** THE DEFINITIVE NUMERICAL SMEARING PARAMETERS (Section 5.2, p.50) ***
+
+   How smearing is applied (Sec 2.2.3, p.11 + Sec 5.2):
+     - The EMCal energy resolution in MC is matched to data via an ADDITIVE,
+       E_T^gamma-dependent GAUSSIAN smearing applied to the cluster E_T^reco
+       at the UNFOLDING response-matrix fill stage (NOT to the ABCD yields,
+       photon-ID, or isolation cuts -- those use the unsmeared E_T^reco).
+     - Smearing drawn from  N(0, sigma_extra(E)*E)  with
+            sigma_extra(E) = sqrt( max(0, sigma_data^2(E) - sigma_MC^2(E)) )
+     - Each resolution follows the standard EMCal 3-term form:
+            sigma(E)/E = sqrt( p0^2/E + p1^2/E^2 + p2^2 )   (E in GeV)
+       i.e. p0 = stochastic/sampling term, p1 = noise term, p2 = constant term.
+
+   THE PARAMETER VALUES (this is what the user asked for):
+     - MC intrinsic (fit of UNSMEARED pythia-8 tight+iso prompt-photon response):
+            (p0, p1, p2)_MC   = (0.185, 0, 0.040)
+     - NOMINAL data target:
+            (p0, p1, p2)_data = (0.15, 0.05, 0.05)
+            --> gives sigma_extra ~ 0 for E_T <~ 17 GeV, rising to ~2% above
+                20 GeV (so smearing only matters at high E_T).
+     - Systematic VARIATIONS that bracket the nominal:
+            * "no extra smearing":  sigma_data == 0  (sigma_extra == 0)
+            * "wider-data":  (p0, p1, p2)_data = (0.13, 0.08, 0.08)
+                             --> sigma_extra ~ 6%, approx flat in E_T
+       The per-bin max of the two abs. deviations is symmetrized -> "eres"
+       systematic; max across 12-32 GeV is +/-9.6% at E_T ~ 27 GeV (Fig 41).
+
+   *** CONNECTION BETWEEN THE PRESENTATIONS AND THE NOTE (important) ***
+     - The note's MC term (0.185, 0, 0.040) == the presentations' tuned smear11
+       set sigma_E/E = 0.180/sqrt(E) (+) 0.020/E (+) 0.015 region / the
+       "single particle gun response" -- i.e. pythia is intrinsically narrow
+       (p0~0.185, very small constant 0.040).
+     - The note's "wider-data" variation (0.13, 0.08, 0.08) is EXACTLY the
+       presentations' data-driven toy-MC extraction
+       sigma_E/E = 0.130/sqrt(E) (+) 0.080/E (+) 0.080
+       (EMCal_toyMC_calib_20260302.pdf, shown on calib-update slide p.4/6).
+     - So the "8%" smearing referenced in the calibration talks = the p0=0.08
+       (or p1/p2=0.08) extra term needed to widen the narrow pythia peak to
+       match data. The smearN sample naming (smear2/3/5/11) tracks iterations
+       of tuning this extra term.
+
+   OTHER RESOLUTION REFERENCE NUMBERS in the note:
+     - Test-beam single-photon EMCal resolution (Sec 3.1, p.14):
+            sigma_E/E ~= 16%/sqrt(E[GeV]) (+) 5%   [from TDR/test beam, ref 5]
+     - Measured reco photon energy resolution (Fig 10, signal pythia, tight+iso):
+            sigma(E_T^reco/E_T^truth) falls from ~0.07 at 10 GeV to ~0.05 at
+            >25 GeV; energy scale (mean) ~0.99-1.0, dropping to ~0.955 by 45 GeV.
+     - Per-bin Gaussian fits (Fig 9): mu ~0.99-0.997, sigma 0.071 (8-10 GeV)
+            down to 0.052-0.053 (28-36 GeV).
+
+   ENERGY-SCALE systematic (Sec 5.1): cluster E_T^reco shifted +/-1.1% in MC
+     (per Calorimeter Calibration WG) -> up to -10.5%/+12.2%; plus a residual
+     non-linearity 1 + s(E_T-10) with s = 5e-4 /GeV (0% at 10 GeV -> +1% at
+     30 GeV, from sPHENIX testbeam) -> +/-7.2% max. NOTE the conclusion (p.64)
+     flags the +/-1.1% as a PLACEHOLDER pending final Calo Calib guidance.
+
+   SAMPLES / SETUP (for context):
+     - Data: Run 24 p+p, runs 47289-53880, production ana521, CDB 2025p007,
+       integrated lumi L = 64.37 pb^-1 (+9.13%/-6.75%).
+     - MC: pythia-8 (Detroit tune 8.307) + GEANT4; photon5/10/20 + jet8/12/20/30
+       (+ matching *_double pileup partners), combined by effective cross section.
+     - Two crossing-angle periods split at run 51274:
+            0 mrad   runs 47289-51274, L=47 pb^-1, sigma_z~54 cm, 22.4% DI
+            1.5 mrad runs 51274-54000, L=17 pb^-1, sigma_z~22 cm,  7.9% DI
+     - DI (double-interaction/pileup) blended at cluster-weighted fractions
+       f_DI = 0.224 (0 mrad) / 0.079 (1.5 mrad); shifts MBD vertex to the mean
+       of the two collisions (Eq z_reco ~ (z1+z2)/2), distorting cluster eta and
+       broadening shower shapes -- handled by SI+DI blend + truth-vertex reweight.
+     - Photon ID = XGBoost BDT on shower shapes; NPB (non-physics/beam bkg)
+       removed by a separate BDT (cut >0.5); purity via data-driven ABCD double
+       sideband (0.51 at 10-12 GeV rising to 0.90 above 26 GeV).
+     - Unfolding: D'Agostini iterative Bayesian (RooUnfold), N_iter = 2.
+     - Result agrees with JETPHOX NLO (CT14nlo) and pythia-8 within
+       uncertainties; consistent with PHENIX PRD 86 072008.
+
+   TOTAL SYSTEMATICS (Table 7): per-bin total -30.8%/+31.7% at high E_T,
+     dominated by energy resolution (21.2%), energy scale (flat 11.9% + non-lin
+     7.3%), purity (tight-ID 6.7%, fit-CI 4.4%, MC-closure 5.8%), MBD vertex
+     6.0%, unfolding iteration 5.5%, luminosity +9.1/-6.8%.
+
+
+================================================================================
+ SUMMARY -- WHERE THE SMEARING PARAMETERS LIVE
+================================================================================
+
+   The "smearing parameters" the user asked about are the terms of the EMCal
+   energy-resolution parameterization  sigma(E)/E = sqrt(p0^2/E + p1^2/E^2 + p2^2)
+   used to widen the (too-narrow) pythia EMCal response to match Run-24 data:
+
+     SOURCE                                   p0(sqrt)  p1(1/E)  p2(const)
+     ---------------------------------------- -------- -------- ----------
+     pythia intrinsic / MC (PPG12 Sec 5.2)     0.185    0.00     0.040
+     nominal data target (PPG12 Sec 5.2)       0.15     0.05     0.05
+     wider-data variation (PPG12 Sec 5.2)      0.13     0.08     0.08
+       == data-driven toyMC extraction in the calibration talks
+     tuned "smear11" set (calib talk _511 p.8)  0.180    0.020    0.015  + Escale x0.998
+     position smearing (calib talk):  sigma_psi = 0.0030/sqrt(E) (+) 0.0040
+     test-beam single-gamma (PPG12 Sec 3.1)    0.16     --       0.05
+
+   Plus the pixel-occupancy (non-linearity) model parameters from the nonLin
+   talk: ~500 e-/GeV (slide) [text uses ~400 pe/GeV], N_pix ~ 1.6e5 total.
+
+   ALL SMEARING PARAMETERS FOUND -- no need to search outside this directory.
+================================================================================
+
+
+
