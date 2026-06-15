@@ -69,3 +69,6 @@ Nuc1_Nuc2/Nuc_2/an-introduction-to-quantum-field-theory_compress.pdf
 *.scrvn_*_tmp
 tmp/
 scratch/
+
+# --- Per-machine push counter (local only; never shared, never conflicts) ---
+.git_push_counter
