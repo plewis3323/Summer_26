@@ -1,0 +1,335 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+\usepackage{enumitem}
+\usepackage{booktabs}
+
+\definecolor{codebg}{rgb}{0.96,0.96,0.94}
+\definecolor{pathcol}{rgb}{0.55,0.0,0.0}
+\newcommand{\pp}[1]{\textcolor{pathcol}{\texttt{#1}}}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{codebg},
+  breaklines=true,
+  frame=single,
+  language=C++,
+  showstringspaces=false,
+  columns=fullflexible,
+}
+
+\title{\textbf{Resolution, Smearing, and Unfolding in the Run-24 $p{+}p$\\
+EMCal $\pi^0/\eta$ Non-Linearity Study}\\[4pt]
+\large A Reading and Teaching Report on B.~Seidlitz's Working Directories}
+\author{Prepared for: P.~Lewis \quad (read-only inspection of collaborator areas)}
+\date{2026-06-15}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This report explains the three concepts that drive the sPHENIX Run-24 $p{+}p$
+$\pi^0/\eta$ EMCal calibration, non-linearity, and PPG12 isolated-photon work:
+\textbf{resolution}, \textbf{smearing}, and \textbf{unfolding}. Each concept is
+first taught from first principles, then tied line-by-line to the actual code
+that implements it in Blair Seidlitz's working areas
+(\pp{/sphenix/u/bseidlitz/work/} and its GPFS mirror
+\pp{/sphenix/user/bseidlitz/} --- the two are the same content). Every file and
+directory inspected is named explicitly so the report can be retraced. A
+companion plain-text inspection log, \texttt{RESO\_SMEAR\_UNFOLD\_LOG.txt},
+lists the exact paths, sizes, and what was read.
+\end{abstract}
+
+\tableofcontents
+
+%==============================================================
+\section{Background and context of the study}
+%==============================================================
+
+The physics goal is a clean measurement of $\pi^0$ and $\eta$ mesons (and
+isolated photons, PPG12) in $\sqrt{s}=200$~GeV $p{+}p$ collisions recorded by
+sPHENIX in Run~24. Both mesons are reconstructed through their two-photon decay
+channel,
+\[
+  \pi^0 \to \gamma\gamma \qquad (m_{\pi^0}=0.134977~\text{GeV}),\qquad
+  \eta  \to \gamma\gamma \qquad (m_{\eta}=0.547862~\text{GeV}),
+\]
+by pairing electromagnetic clusters in the EMCal (CEMC) and forming the
+two-photon invariant mass
+\[
+  M_{\gamma\gamma}=\sqrt{2E_1E_2\,(1-\cos\theta_{12})}.
+\]
+The measured peak position $M_{\rm fit}$ probes the \emph{energy scale} and its
+\emph{non-linearity} (does $M_{\rm fit}/m_{\rm PDG}$ stay flat versus $p_T$?),
+while the measured peak width $\sigma(M)$ probes the \emph{energy resolution}.
+
+To compare data with simulation fairly, the Geant4 MC must reproduce the
+detector's true performance. In practice the MC is slightly \emph{too good}
+(its clusters are sharper than the real detector). The study therefore:
+\begin{enumerate}[nosep]
+  \item measures the resolution and energy scale in data via the meson peaks,
+  \item \textbf{smears} the MC so that simulated peak widths and positions match
+        data,
+  \item propagates that tuned MC into efficiency and \textbf{unfolding}
+        corrections for the final $p_T$ spectra / cross-sections (PPG12).
+\end{enumerate}
+
+The directories examined for this report:
+\begin{itemize}[nosep]
+  \item \pp{/sphenix/u/bseidlitz/work/resolutionStudy/} --- standalone toy-MC
+        resolution/smearing demonstration.
+  \item \pp{/sphenix/u/bseidlitz/work/emcPerf/calo\_emc\_pi0\_tbt/} --- the
+        production tower-by-tower $\pi^0/\eta$ calibration module
+        (\texttt{pi0EtaByEta.cc}), which contains the real smearing routine.
+  \item \pp{/sphenix/u/bseidlitz/work/emcPerf/macros/figMaker/} ---
+        \texttt{smear\_compare.C} and \texttt{function\_compare\_wide.root},
+        where the data/MC smearing functions are derived and stored.
+  \item \pp{/sphenix/u/bseidlitz/work/adjMCCalib/} --- MC energy-scale
+        fine-tuning CDB trees (\texttt{convSwitch.C}).
+  \item \pp{/sphenix/u/bseidlitz/work/ppg12/toymcunfold/macro/} ---
+        \texttt{resolutionsim.C} and \texttt{jet\_pt\_unfolding.C}, the
+        RooUnfold examples.
+\end{itemize}
+
+%==============================================================
+\section{Resolution --- what it is and how it is defined here}
+%==============================================================
+
+\subsection{Teaching: the meaning of resolution}
+\textbf{Energy resolution} is the fractional uncertainty with which the
+calorimeter measures a particle's energy. If a fixed-energy photon is sent into
+the EMCal many times, the reconstructed energies form a roughly Gaussian
+distribution of width $\sigma_E$ about a mean $E$. The resolution is the ratio
+\[
+  \boxed{\;\frac{\sigma_E}{E}=\frac{a}{\sqrt{E}}\;\oplus\;c\;
+          =\sqrt{\Big(\tfrac{a}{\sqrt{E}}\Big)^{2}+c^{2}}\;}
+\]
+where $\oplus$ denotes addition in quadrature. The two physically distinct
+terms are:
+\begin{description}[nosep]
+  \item[Stochastic term $a/\sqrt{E}$:] from shower-sampling and
+        photo-statistics. It \emph{shrinks} as energy rises, so high-energy
+        showers are measured proportionally better.
+  \item[Constant term $c$:] from calibration spread, light-collection
+        non-uniformity, leakage, and dead material. It does \emph{not} shrink
+        with energy and therefore dominates at high $E$.
+\end{description}
+Because $\pi^0/\eta$ widths come from \emph{two} photons, the meson relative
+width $\sigma(M)/M$ inherits this same $a/\sqrt{E}\oplus c$ shape versus $p_T$
+and is the experimental handle used throughout these directories.
+
+\subsection{Where it is defined in code}
+The cleanest written-out definition is the standalone toy in\\
+\pp{/sphenix/u/bseidlitz/work/resolutionStudy/eta\_decay\_simulation\_with\_smearing.C}.
+There the constant and stochastic terms are literal constants and are combined
+in quadrature exactly as above:
+
+\begin{lstlisting}
+// energyResolution = constant term c = 12%
+const double energyResolution = 0.12;
+...
+// stochastic term a/sqrt(E) with a = 15%
+double energyDepSmear1 = 0.15 / TMath::Sqrt(photon1.E());
+// quadrature sum  c (+) a/sqrt(E)  -> width of the Gaussian smear
+double smearFactor1 = 1 + randGen.Gaus(0,
+      TMath::Sqrt(energyResolution*energyResolution
+                  + energyDepSmear1*energyDepSmear1));
+\end{lstlisting}
+
+This is exactly the curve labelled in the plotting macro
+\pp{.../resolutionStudy/plot.C} as
+
+\begin{lstlisting}
+myText(0.65,0.30+0.5,1,"Toy MC   15/#sqrt{E} #oplus 12%");
+\end{lstlisting}
+
+i.e. $\sigma_E/E = 15\%/\sqrt{E}\,\oplus\,12\%$. The companion file
+\pp{.../resolutionStudy/etaDecaySim.C} is an earlier variant with
+$a=20\%$, $c=15\%$. The output \texttt{output.root} /
+\texttt{meson\_graphs.root} feed \texttt{plot.C}, which fits each $p_T$ slice
+with a Gaussian, forms $\sigma^{\eta}/M^{\eta}$, and overlays the toy curve on
+the $p{+}p$ data points (\texttt{width\_vs\_pt.png}). \textbf{This is the
+operational definition of ``resolution'' in the study: the $p_T$ dependence of
+the fitted meson relative width.}
+
+%==============================================================
+\section{Smearing --- what it is and how it is done here}
+%==============================================================
+
+\subsection{Teaching: the meaning of smearing}
+\textbf{Smearing} is the deliberate degradation of a simulated quantity so that
+the MC reproduces the (worse) resolution of real data. The truth-level MC
+photon energy $E$ is replaced by
+\[
+  E \;\longrightarrow\; E\cdot f,\qquad
+  f \sim \mathrm{Gaus}\!\big(1,\;\sigma_E/E\big),
+\]
+a random multiplicative factor drawn from a Gaussian centred at 1 with width
+equal to the desired \emph{extra} resolution. Smearing is the inverse mindset
+to resolution: resolution \emph{measures} the blur; smearing \emph{injects} the
+blur into an otherwise-too-perfect simulation. Position (angle) smearing works
+the same way but is \emph{additive} on $\eta$ and $\phi$ and centred at zero.
+
+\subsection{Toy-level smearing}
+In the toy
+\pp{.../resolutionStudy/eta\_decay\_simulation\_with\_smearing.C} the photon
+4-vector is scaled by the Gaussian factor while keeping its direction fixed
+(lines~69--70):
+\begin{lstlisting}
+photon1.SetPxPyPzE(photon1.Px()*smearFactor1, photon1.Py()*smearFactor1,
+                   photon1.Pz()*smearFactor1, photon1.E()*smearFactor1);
+\end{lstlisting}
+
+\subsection{Production smearing: \texttt{pi0EtaByEta::smearPhot}}
+The real, analysis-grade smearing lives in\\
+\pp{/sphenix/u/bseidlitz/work/emcPerf/calo\_emc\_pi0\_tbt/pi0EtaByEta.cc},
+function \texttt{smearPhot()} (lines~863--927). Key points:
+\begin{itemize}[nosep]
+  \item The energy- and position-resolution widths are \emph{not} hard-coded
+        constants; they are read as ROOT \texttt{TF1} functions of energy from\\
+        \pp{.../emcPerf/macros/figMaker/output/function\_compare\_wide.root}
+        (opened in \texttt{Init()} at line~206, variable \texttt{kSmearParFile}).
+  \item Energy smear: \texttt{Efac = rnd->Gaus(1.0, E\_res)} with
+        \texttt{E\_res = f\_energy\_smear[idx]->Eval(E)}; clamped non-negative.
+  \item Position smear: \texttt{Pfac\_eta/phi = rnd->Gaus(0.0, P\_res)} added to
+        $\eta,\phi$ with $\phi$ wrapped to $(-\pi,\pi]$.
+  \item Defaults if the file is missing: \texttt{E\_res = 0.08} (8\%),
+        \texttt{P\_res = 0.0001}.
+\end{itemize}
+
+\begin{lstlisting}
+float Efac     = rnd->Gaus(1.0f, E_res);     // energy smear factor
+float Pfac_phi = rnd->Gaus(0.0f, P_res);     // angular smear (phi)
+float Pfac_eta = rnd->Gaus(0.0f, P_res);     // angular smear (eta)
+...
+const float E_s = E * Efac;
+sp.SetPtEtaPhiE(E_s/std::cosh(eta_s), eta_s, phi_s, E_s);
+\end{lstlisting}
+
+\paragraph{Six smearing variations (systematics).} The integer
+\texttt{smear\_idx} ($0\text{--}5$) selects a systematic variation:
+\texttt{base\_smear\_idx = idx\%3} picks one of three energy/position function
+sets named in the code as
+\texttt{global\_minimum}, \texttt{cE\_0p08}, \texttt{cE\_0p05}
+(i.e.\ different assumed constant terms $c=0.08,\,0.05$); and for
+\texttt{idx}$\ge 3$ an \emph{extra} 8\% constant term is added in quadrature:
+\begin{lstlisting}
+if (add_extra_const) E_res = std::sqrt(0.08f*0.08f + E_res*E_res);
+\end{lstlisting}
+These six histograms (\texttt{h\_m\_pt\_smear1..6}, filled at lines~740--745)
+are how the smearing systematic is propagated.
+
+\subsection{Where the smear functions come from}
+The functions stored in \texttt{function\_compare\_wide.root} are produced by\\
+\pp{/sphenix/u/bseidlitz/work/emcPerf/macros/figMaker/smear\_compare.C}.
+This macro loads MC $\pi^0/\eta$ mass-vs-$p_T$ histograms
+(\texttt{h\_m\_pt\_smear12/13/14}), fits each with the \texttt{MesonFitter}
+class, and compares the fitted mean ($M_{\rm fit}/m_{\rm PDG}$, the
+\emph{non-linearity}) and relative width ($\sigma/M_{\rm fit}$, the
+\emph{resolution}) across smear variations labelled
+\texttt{A(-1\%)/$\sqrt{E}$}, \texttt{A/$\sqrt{E}$}, \texttt{(A+1\%)/$\sqrt{E}$}.
+The per-$p_T$ spread (max$-$min)/average is taken as the smearing systematic.
+\textbf{Loop closed:} data widths $\Rightarrow$ choose smear function
+$\Rightarrow$ store \texttt{TF1} $\Rightarrow$ apply in \texttt{smearPhot}
+$\Rightarrow$ re-fit smeared MC $\Rightarrow$ verify it matches data.
+
+\subsection{Related: MC energy-scale tuning}
+Smearing fixes the \emph{width}; a separate small \emph{scale} correction fixes
+the \emph{mean}. That lives in
+\pp{/sphenix/u/bseidlitz/work/adjMCCalib/}: \texttt{convSwitch.C} calls
+\texttt{scaleCDBTree(...)} to rescale the MC tower ADC$\to$E calibration
+(\texttt{CEMC\_MC\_calib\_default\_v3.root}). Scale tuning and width smearing
+together align MC to data in both peak position and peak width.
+
+%==============================================================
+\section{Unfolding --- what it is and how it is done here}
+%==============================================================
+
+\subsection{Teaching: the meaning of unfolding}
+A measured spectrum is the \emph{true} spectrum convolved with detector effects
+(resolution/smearing, efficiency, bin migration). \textbf{Unfolding} is the
+statistical inversion that recovers the truth-level distribution from the
+measured one. Formally, with a \emph{response matrix} $R_{ij}=P(\text{measured
+bin }i\,|\,\text{truth bin }j)$ built from MC,
+\[
+  \vec{m}=R\,\vec{t}\quad\Longrightarrow\quad
+  \vec{t}_{\rm unfold}=\mathcal{U}(R,\vec{m}),
+\]
+where naive matrix inversion amplifies statistical noise, so iterative
+\textbf{Bayesian unfolding} (D'Agostini) is used instead --- regularised by a
+small number of iterations. The MC that builds $R$ must already be
+\emph{smeared} to match data resolution; otherwise the response is wrong and
+the unfolded result is biased. This is the direct link from the smearing work
+to PPG12.
+
+\subsection{Toy unfolding and the resolution-mismatch bias}
+\pp{/sphenix/u/bseidlitz/work/ppg12/toymcunfold/macro/resolutionsim.C}
+is a pure teaching toy. It loads \texttt{libRooUnfold.so} (from
+\texttt{/sphenix/user/egm2153/...}) and, for several pairs of
+(MC resolution, data resolution), builds a response from a smeared exponential
+$p_T$ spectrum and unfolds:
+\begin{lstlisting}
+RooUnfoldResponse *response = new RooUnfoldResponse(nbins,xlow,xup);
+double recophotonpT = photonpT * r->Gaus(1, reso_mc);   // build response (MC reso)
+response->Fill(recophotonpT, photonpT);
+...
+double recophotonpT = photonpT * r->Gaus(1, reso_data); // "data" with a DIFFERENT reso
+RooUnfoldBayes *unfold = new RooUnfoldBayes(response, hMeasPT, 2); // 2 iterations
+TH1D *hRecoPT = (TH1D*)unfold->Hreco();
+\end{lstlisting}
+It then plots the \textbf{bias} $(\text{unfolded}-\text{truth})/\text{truth}$.
+The pairs \texttt{reso = \{(0.1,0.1),(0.1,0.11),(0.1,0.09),(0.05,0.06),
+(0.05,0.04)\}} deliberately mismatch MC and data resolution to show how a
+poorly-tuned smearing inflates the unfolding bias --- the quantitative argument
+for why smearing must be tuned first.
+
+\subsection{Realistic unfolding with Miss/Fake/Match}
+\pp{/sphenix/u/bseidlitz/work/ppg12/toymcunfold/macro/jet\_pt\_unfolding.C}
+is the full machinery on real JetValidation trees. It demonstrates the
+bookkeeping that the toy omits:
+\begin{itemize}[nosep]
+  \item \texttt{response->Fill(reco,truth)} for matched ($\Delta R<0.3$) pairs;
+  \item \texttt{response->Miss(truth)} for truth jets with no reco match;
+  \item \texttt{response->Fake(reco)} for reco jets with no truth match;
+  \item a half-sample \emph{closure test} (\texttt{resp\_half},
+        \texttt{hMeasPTHalf}) to verify the procedure returns truth on
+        independent MC;
+  \item \texttt{RooUnfoldBayes(resp\_full,hMeasPT,1)} with 1--4 iterations as
+        the regularisation parameter.
+\end{itemize}
+The PPG12 \texttt{README.md} confirms this is the production strategy:
+``Bayesian unfolding (RooUnfold)'', with energy-resolution \emph{smearing
+variations} (\texttt{config\_eres.yaml}) and unfolding iteration count listed
+explicitly among the systematic uncertainties.
+
+%==============================================================
+\section{How the three concepts fit together}
+%==============================================================
+\begin{enumerate}[nosep]
+  \item \textbf{Resolution} is measured in data as $\sigma(M)/M$ vs $p_T$ of the
+        $\pi^0/\eta$ peaks (\texttt{resolutionStudy/}, \texttt{figMaker/}).
+  \item \textbf{Smearing} injects exactly that much extra blur into MC so
+        simulated peaks match data, via \texttt{pi0EtaByEta::smearPhot} using
+        TF1s from \texttt{function\_compare\_wide.root}; six variations give the
+        smearing systematic. Scale tuning (\texttt{adjMCCalib/}) aligns the mean.
+  \item \textbf{Unfolding} uses that smeared MC to build the response matrix and
+        Bayesian-inverts the measured spectrum back to truth for the final
+        cross-section (\texttt{ppg12/toymcunfold/}, PPG12 pipeline).
+\end{enumerate}
+
+\noindent\textbf{One-line glossary.}
+\emph{Resolution} = how blurry the detector is (measured).
+\emph{Smearing} = adding that blur to MC (applied).
+\emph{Unfolding} = removing the blur from a measured spectrum to recover truth
+(corrected).
+
+\bigskip
+\noindent\footnotesize All inspected files are read-only collaborator areas
+(owner \texttt{bseidlitz}). Exact paths, file sizes, and line references are
+recorded in \texttt{RESO\_SMEAR\_UNFOLD\_LOG.txt} in this directory.
+
+\end{document}

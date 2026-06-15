@@ -1,0 +1,141 @@
+================================================================================
+INSPECTION LOG -- Resolution / Smearing / Unfolding
+Run-24 p+p pi0/eta EMCal non-linearity + PPG12 study
+Generated: 2026-06-15   By: read-only inspection of B. Seidlitz work areas
+Companion report: RESO_SMEAR_UNFOLD_REPORT.tex / .pdf (same directory)
+================================================================================
+
+SCOPE
+  Two paths were given:
+    /sphenix/u/bseidlitz/work/      (home-area work dir)
+    /sphenix/user/bseidlitz         (GPFS mirror)
+  VERIFIED: both `ls -la` listings are byte-for-byte identical -- same content,
+  same 39 subdirs, same timestamps. They are one and the same working area
+  (home symlink: work/home -> /sphenix/u/bseidlitz). All paths below use the
+  /sphenix/u/bseidlitz/work/ form. These are OTHER USERS' dirs: read-only only.
+
+================================================================================
+DIRECTORIES OPENED (top level of /sphenix/u/bseidlitz/work/)
+================================================================================
+  resolutionStudy/   <-- toy resolution + smearing demo        [READ in full]
+  emcPerf/           <-- EMCal performance + production calib   [READ key files]
+  adjMCCalib/        <-- MC energy-SCALE fine tune              [READ convSwitch.C]
+  ppg12/             <-- PPG12 isolated-photon pipeline         [READ README + unfold]
+  (also listed, not central: analysis/ calibMac/ macros/ pythia/ QA/ test/ ...)
+
+================================================================================
+FILE-BY-FILE: what was read and the key content found
+================================================================================
+
+--------------------------------------------------------------------------------
+[1] RESOLUTION (definition lives here)
+--------------------------------------------------------------------------------
+/sphenix/u/bseidlitz/work/resolutionStudy/        (dir, 8 files, 2024-08-08)
+  eta_decay_simulation_with_smearing.C   4368 B   [READ FULL, 102 lines]
+       - THE canonical definition. Toy eta->gamma gamma decay.
+       - Resolution model = stochastic (+) constant in quadrature:
+           const double energyResolution = 0.12;            // constant term c = 12%
+           energyDepSmear = 0.15 / sqrt(photon.E());         // stochastic a/sqrt(E), a=15%
+           smearFactor = 1 + Gaus(0, sqrt(eRes^2 + eDepSmear^2));   // lines 62-66
+       - eta pT thrown as power-law pT^-4; nEvents = 1e7.
+  etaDecaySim.C                          4246 B   [READ FULL, 103 lines]
+       - earlier variant: energyResolution = 0.15, stochastic 0.2/sqrt(E) (lines 24,66-67)
+  plot.C                                 4528 B   [READ FULL, 124 lines]
+       - fits each pT slice with gaus, builds sigma^eta/M^eta, overlays p+p data.
+       - LABEL (line 118): "Toy MC   15/#sqrt{E} #oplus 12%"  <-- the resolution curve
+  meson_graphs.root  6455 B / output.root 9977 B / relative_widths.root 4417 B
+       - input/output graphs for plot.C (not opened binary; referenced by plot.C)
+  width_vs_pt.png                       14777 B   - final resolution-vs-pT figure
+
+--------------------------------------------------------------------------------
+[2] SMEARING (production implementation)
+--------------------------------------------------------------------------------
+/sphenix/u/bseidlitz/work/emcPerf/calo_emc_pi0_tbt/   (dir)
+  pi0EtaByEta.cc                        48667 B   [READ lines 200-278, 740-747, 860-927]
+       - Init() line 206: kSmearParFile =
+           "/sphenix/u/bseidlitz/work/emcPerf/macros/figMaker/output/function_compare_wide.root"
+         Opens it, clones 3 ENERGY TF1s + 3 POSITION TF1s (lines 216-274):
+           names: f_energy_difference_global_minimum, _cE_0p08, _cE_0p05 (+ legacy g_ )
+       - smearPhot(TLorentzVector p, int smear_idx)  lines 863-927  <-- THE routine:
+           base_smear_idx = smear_idx % 3;  add_extra_const = (smear_idx >= 3);
+           defaults: E_res = 0.08 (8%), P_res = 0.0001 if file missing (lines 879-880)
+           E_res = f_energy_smear[base]->Eval(E);    P_res = f_position_smear[base]->Eval(E)
+           if add_extra_const: E_res = sqrt(0.08^2 + E_res^2)            (line 893)
+           Efac     = rnd->Gaus(1.0, E_res)   // multiplicative energy smear (line 904)
+           Pfac_eta = rnd->Gaus(0.0, P_res)   // additive angle smear      (line 906)
+           Pfac_phi = rnd->Gaus(0.0, P_res)   //                            (line 905)
+           E_s = E*Efac; SetPtEtaPhiE(E_s/cosh(eta_s), eta_s, phi_s, E_s)  (lines 923-925)
+       - Fill loop lines 740-745: smearP1/smearP2 -> h_m_pt_smear[ks] for ks variations
+       - SIX smear histograms h_m_pt_smear1..6 = the smearing systematic.
+  pi0EtaByEta.h                          9223 B   [grep only: f_energy_smear[], f_position_smear[]]
+  CaloCalibEmc_Pi0.cc                   57494 B   [not read in detail -- older calib module]
+  README.md                                793 B
+  (build/, macro/, autotools files present)
+
+/sphenix/u/bseidlitz/work/emcPerf/macros/figMaker/   (dir, ~30 files)
+  smear_compare.C                       15193 B   [READ FULL, 465 lines]
+       - DERIVES the smear functions. Loads MC h_m_pt_smear12/13/14, fits with
+         MesonFitter, compares M_fit/m_PDG (non-linearity) and sigma/M_fit (resolution)
+       - smear variation labels (line 191):
+           "A(-1%)/sqrt(E)" , "A/sqrt(E)" , "(A+1%)/sqrt(E)"
+       - PDG masses used: pi0 0.134977, eta 0.547862 (lines 245-246)
+       - writes output/smear_compare.root (pi0/eta means + sigmas), and figs
+  function_compare_wide.root            14464 B   - the TF1 store consumed by pi0EtaByEta.cc
+  MesonFitter.C / .h                            - the gaussian peak fitter used above
+  (etaFitting.C, dataMC_comp.C, mass_plot.C, etc. = related fig makers; grep-matched
+   "smear/resolution" in 9 files: etaFitting.C simple_dataMC_plots.C dataMC_comp.C
+   cp_to_note.sh eta_mass_comp.C mass_plot.C smear_compare.C dataMC_mass_overlay.C comp.C)
+  output/                                       - per-config fit roots (0vs15_*.root)
+
+--------------------------------------------------------------------------------
+[3] MC ENERGY-SCALE TUNING (companion to smearing -- fixes the MEAN, not width)
+--------------------------------------------------------------------------------
+/sphenix/u/bseidlitz/work/adjMCCalib/            (dir, 4 files, 2026-01)
+  convSwitch.C                             195 B   [READ FULL, 7 lines]
+       - calls scaleCDBTree(... "CEMC_calib_ADC_to_ETower", 0, 1.0) from cdbHistConv.C
+  9da399a..._CEMC_MC_EMscale_fineTune.root 116472 B  - input fine-tune CDB tree
+  CEMC_MC_calib_default_v2.root           116304 B
+  CEMC_MC_calib_default_v3.root           116472 B  - output rescaled MC calib
+
+--------------------------------------------------------------------------------
+[4] UNFOLDING
+--------------------------------------------------------------------------------
+/sphenix/u/bseidlitz/work/ppg12/                 (dir, git repo, 2026-02-28)
+  README.md                              17957 B   [READ head + grep smear/reso/unfold]
+       - "PPG12 sPHENIX Isolated Photon Analysis" -- xgboost photon ID, JETPHOX NLO.
+       - Pipeline step 5: "Apply unfolding corrections and produce final cross-sections"
+       - Systematics listed: "Energy Resolution: Smearing variations" (config_eres.yaml),
+         "Unfolding: Bayesian iteration count, prior choice".
+  ppg12/toymcunfold/macro/
+    resolutionsim.C                       3292 B   [READ FULL, 125 lines]
+       - loads libRooUnfold.so from /sphenix/user/egm2153/calib_study/.../roounfold/
+       - RooUnfoldResponse(nbins,xlow,xup); fills with photonpT*Gaus(1,reso_mc)
+       - data pass uses Gaus(1,reso_data) (DIFFERENT reso) -> RooUnfoldBayes(...,2 iter)
+       - reso pairs (line 35): {(0.1,0.1),(0.1,0.11),(0.1,0.09),(0.05,0.06),(0.05,0.04)}
+       - plots BIAS = (reco-truth)/truth  -> shows resolution-mismatch -> unfolding bias
+    jet_pt_unfolding.C                    17669 B   [READ FULL, 438 lines]
+       - full RooUnfoldBayes on JetValidation trees (/sphenix/tg/tg01/jets/egm2153/)
+       - response->Fill/Miss/Fake (match dR<0.3, lines 232-326); half-sample closure test
+       - RooUnfoldBayes(resp_full,hMeasPT,1)  Hreco() (lines 335-351)
+    pi0simout.root 419 B / resosimout.root 39781 B  - macro outputs
+  (other ppg12 subdirs: FunWithxgboost/ efficiencytool/ ResonancePeakIsoAnalysis/
+   plotting/ sideband/ NLO/ lumi/ anatreemaker/ photontruthisopythia/ config/)
+
+================================================================================
+KEY EQUATIONS (as found in the code, not invented)
+================================================================================
+  Resolution:   sigma_E/E = a/sqrt(E) (+) c = sqrt( (a/sqrt(E))^2 + c^2 )
+                toy values: a=0.15, c=0.12   (eta_decay_simulation_with_smearing.C)
+  Energy smear: E -> E * Gaus(1, E_res),  E_res = TF1->Eval(E)   (pi0EtaByEta.cc:904)
+                systematic: E_res -> sqrt(0.08^2 + E_res^2)       (pi0EtaByEta.cc:893)
+  Angle smear:  eta -> eta + Gaus(0,P_res);  phi -> phi + Gaus(0,P_res)  (lines 905-912)
+  Unfolding:    m = R t  ->  t_unfold = RooUnfoldBayes(R, m, N_iter)  (resolutionsim.C:80)
+
+================================================================================
+NOTE ON PRE-EXISTING FILES IN THIS DIRECTORY (Papers_Presi/)
+================================================================================
+  Already present (earlier work, NOT overwritten by this report):
+    FINDINGS_smearing.tex / .pdf / .txt , SMEARING_EQUATION_SHEET.txt ,
+    WORKING_DIRECTORIES_LOG.txt , EMCal_nonLin_update.pdf , PPG12_analysis_note_v4.pdf
+  This report adds: RESO_SMEAR_UNFOLD_REPORT.tex/.pdf and this LOG.
+================================================================================
