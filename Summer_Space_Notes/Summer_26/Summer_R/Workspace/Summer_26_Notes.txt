@@ -236,6 +236,8 @@ Primary — Direct pi0/pion analysis
 
 - Goal Here today is to do task #1 of nonlin: Finding Smearing paramaters. 
   Setup The Github enviorment for NoMachine Space in tg/bulk directory.  
+  Claude prompting found smearing terms and inputted on sheet will look 
+  at these values.  
 
 
 
