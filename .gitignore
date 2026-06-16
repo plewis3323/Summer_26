@@ -72,3 +72,4 @@ scratch/
 
 # --- Per-machine push counter (local only; never shared, never conflicts) ---
 .git_push_counter
+.git_push_1_counter
