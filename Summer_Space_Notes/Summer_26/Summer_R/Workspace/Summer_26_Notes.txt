@@ -250,6 +250,10 @@ Primary — Direct pi0/pion analysis
 
 ** Next: Read PPG-12 & Blair's Presentations, Extract Smearing Info in standalone txt, Copy/paste Codes (index them) **
 
+6/16/26: 
+
+
+
 
 
 
