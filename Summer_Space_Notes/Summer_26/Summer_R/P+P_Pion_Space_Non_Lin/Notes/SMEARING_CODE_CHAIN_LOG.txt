@@ -1,0 +1,198 @@
+================================================================================
+   SMEARING-ANALYSIS CODE LOG  --  Blair Seidlitz EMCal pi0/eta Smearing Study
+================================================================================
+   Purpose : Catalogue the actual SOURCE CODES that implement the photon-energy /
+             position SMEARING in B. Seidlitz's Run-24 p+p pi0/eta EMCal study,
+             and lay out the FRAMEWORK -- how the codes sit in the system and the
+             CHAIN / ORDER in which they are run (input -> processing -> output).
+   Date    : 2026-06-15
+   Root    : /sphenix/u/bseidlitz/work/   (== /sphenix/user/bseidlitz, same mirror)
+   Note    : All code below is COLLABORATOR code, inspected READ-ONLY.
+             Line numbers verified 2026-06-15 against the live files.
+================================================================================
+
+
+================================================================================
+ PART 1 -- THE CODES (file-by-file catalogue)
+================================================================================
+
+There are TWO distinct families of "smearing" code in Blair's area:
+
+  (A) PRODUCTION smearing  -- runs inside the Fun4All / pi0-tower-by-tower
+      reconstruction; this is the smearing that actually feeds the data/MC
+      comparison and the physics result.
+
+  (B) STANDALONE TOY smearing -- self-contained ROOT macros used for quick
+      cross-checks of resolution -> mass-width and of unfolding bias. Not part
+      of the production result.
+
+--------------------------------------------------------------------------------
+ (A) PRODUCTION SMEARING CHAIN
+--------------------------------------------------------------------------------
+
+ [A1] emcPerf/macros/figMaker/mass_plot.C
+      ROLE : DERIVES the smearing functions. From the data vs MC resolution
+             models and the fitted resolution, it builds the per-energy
+             "quadrature-difference" TF1s  sqrt(model^2 - fit^2)  for BOTH
+             energy and position, and WRITES them into the parameter file.
+      KEY  : line 241  opens output/function_compare_wide.root in "UPDATE"
+             lines 242-260  reads model TF1s (global_minimum, cE=0.08, cE=0.05)
+             lines 275-276  MakeEnergyQuadDiffTF1 / MakePositionQuadDiffTF1
+             lines 283-296  Write f_energy_difference_* / f_position_difference_*
+                            (+ legacy "g_..." and bare "f_energy_difference" names)
+      OUT  : emcPerf/macros/figMaker/output/function_compare_wide.root
+             (a copy is staged at calo_emc_pi0_tbt/function_compare_wide.root)
+
+ [A2] emcPerf/calo_emc_pi0_tbt/pi0EtaByEta.cc  (+ .h)
+      ROLE : The PRODUCTION smearing engine. A Fun4All SubsysReco module that
+             loops clusters, builds pi0/eta photon pairs, and APPLIES the smear.
+      LOADS the smear functions at Init:
+             line 207  kSmearParFile = ".../figMaker/output/function_compare_wide.root"
+             lines 227-272  Get TF1s into f_energy_smear[k] / f_position_smear[k]
+                            (k=0,1,2 = the three resolution models; falls back to
+                            legacy "g_..." then bare names if missing)
+      APPLIES the smear in the event loop:
+             lines 738-746  for ks = 0..5: smearPhot(photon1,ks), smearPhot(photon2,ks)
+                            -> fill h_m_pt_smear[ks], h_m_pT_eta_smear[ks], dR hist
+      THE SMEAR FUNCTION:  pi0EtaByEta::smearPhot(TLorentzVector p, int smear_idx)
+             line 863  start
+             line 869  base_smear_idx = smear_idx % 3   (which of 3 models)
+             line 870  add_extra_const = (smear_idx >= 3) (the 6 = 3 models x 2)
+             lines 883-890  E_res = f_energy_smear[k]->Eval(E)   (energy-dep sigma)
+             lines 891-894  if extra: E_res = sqrt(0.08^2 + E_res^2) (extra const term)
+             lines 895-902  P_res = f_position_smear[k]->Eval(E)  (position sigma)
+             line  904  Efac     = Gaus(1.0, E_res)   <- multiplicative E smear
+             lines 905-906  Pfac_eta/phi = Gaus(0.0, P_res) <- additive angle smear
+             lines 912-921  eta_s = eta + Pfac_eta ; phi_s = phi + Pfac_phi (wrapped)
+      OUT  : caloana ROOT file with the h_m_pt_smear1..6 (+ eta/dR) histograms.
+             Compiled via autotools (autogen.sh -> configure -> make); run through
+             macro/Fun4All_G4_Pi0_Tbt.C (job control: macro/run_f4a.csh + condor).
+
+ [A3] emcPerf/macros/figMaker/smear_compare.C
+      ROLE : CONSUMES the smeared histograms. Reads h_m_pt_smear{12,13,14}
+             (the A/sqrtE variations), fits pi0 & eta peaks vs pT, and produces
+             the mass-scale and width comparison + the smear-variation systematic
+             band (max-min / average across the three variations).
+      KEY  : line 175  input  ../ttreeReader/output/caloana_mb_pythia.root
+             lines 190-191  kHistNames = h_m_pt_smear12/13/14 ; labels A-1% / A / A+1%
+             lines 92-166   prepareSmearHist() -- load, optional trigger-merge, rebinY
+             line 215  MesonFitter::FitAndExtract(h2[i]) -> mean/sigma vs pT
+             lines 235-243  Write output/smear_compare.root
+             lines 317     buildRelativeSpreadHist() -> relative systematic
+      OUT  : figs/meson/pythia_smear_mass_vs_pt_adSmear.pdf
+             figs/meson/pythia_smear_width_vs_pt_adSmear.pdf
+             output/smear_compare.root
+      DEPS : BlairUtils.C, MesonFitter.C/.h, sPhenixStyle.C (same dir)
+
+--------------------------------------------------------------------------------
+ (B) STANDALONE TOY MACROS (cross-checks, NOT the production result)
+--------------------------------------------------------------------------------
+
+ [B1] resolutionStudy/eta_decay_simulation_with_smearing.C
+      ROLE : Pure-toy eta -> gamma gamma generator. Throws eta with pT^-4 spectrum,
+             decays isotropically in CM, boosts to lab, then smears each photon
+             energy and re-computes M_gammagamma vs pT. Demonstrates how a chosen
+             resolution maps to the reconstructed mass peak/width.
+      MODEL: line 20  energyResolution = 0.12 (constant term)
+             lines 62-63  energyDepSmear = 0.15 / sqrt(E)  (stochastic term a=0.15)
+             lines 65-66  smearFactor = 1 + Gaus(0, sqrt(c^2 + a^2/E))  (a (+) c)
+      OUT  : output.root (h_invmass, h_invmass_vs_pt), width_vs_pt.png
+      SIBL : etaDecaySim.C (earlier variant), plot.C (plotter)
+
+ [B2] ppg12/toymcunfold/macro/resolutionsim.C
+      ROLE : Toy UNFOLDING-bias study. For 5 (MC-reso, data-reso) pairs it builds a
+             RooUnfold response from a smeared exponential pT spectrum, unfolds a
+             "data" pass with a DIFFERENT smearing, and plots the residual bias.
+             Quantifies how a data/MC resolution MISMATCH propagates through
+             Bayesian unfolding.
+      MODEL: line 35  reso pairs {0.1,0.1},{0.1,0.11},{0.1,0.09},{0.05,0.06},{0.05,0.04}
+             line 57  reco = pT * Gaus(1, reso_mc)   (response training)
+             line 75  reco = pT * Gaus(1, reso_data) (data pass)
+             line 80  RooUnfoldBayes(response, hMeasPT, 2)  (2 iterations)
+      LIB  : R__LOAD_LIBRARY(.../roounfold/libRooUnfold.so)  (line 21)
+      OUT  : resosimout.root (bias canvases)
+      SIBL : ppg12/toymcunfold/macro/jet_pt_unfolding.C (full jet-pT unfolding)
+
+
+================================================================================
+ PART 2 -- FRAMEWORK / SYSTEM LAYOUT
+================================================================================
+
+The production smearing is NOT one program -- it is three stages that hand a
+single ROOT file (the TF1 parameter file) and a set of histograms down a chain:
+
+  STAGE 1  PARAMETERISE  (mass_plot.C)           --> function_compare_wide.root
+  STAGE 2  APPLY in reco (pi0EtaByEta.cc)        --> caloana ...root (h_m_pt_smear*)
+  STAGE 3  EXTRACT/COMPARE (smear_compare.C)     --> mass/width PDFs + .root
+
+The bridge between stages is the FILE, not a function call:
+   - Stage 1 WRITES the TF1s into function_compare_wide.root.
+   - Stage 2 READS that same file at Init (hard-coded path, pi0EtaByEta.cc:207)
+     and Eval()'s the TF1 at each photon's energy to get sigma(E).
+   - Stage 3 READS the histograms Stage 2 produced.
+
+The "6 smear indices" decode as 3 resolution MODELS x 2 (with/without an extra
+0.08 constant term), set in smearPhot() via base_smear_idx = idx%3 and
+add_extra_const = idx>=3. The three models are global-minimum, cE=0.08, cE=0.05.
+
+Physics meaning of the smear: MC clusters are already at MC resolution; the TF1s
+hold the QUADRATURE EXTRA  sqrt(reso_model^2 - reso_fit^2)  needed to push MC up
+to the (worse) data resolution, applied multiplicatively in energy and additively
+in (eta,phi).
+
+
+================================================================================
+ PART 3 -- CHAIN OF RUNNING  (commands, in order)
+================================================================================
+
+ PRODUCTION (the result):
+
+   0. Build the reco module (once):
+        cd /sphenix/u/bseidlitz/work/emcPerf/calo_emc_pi0_tbt
+        ./autogen.sh && ./configure --prefix=$MYINSTALL && make install
+
+   1. Make the smear-parameter file (STAGE 1):
+        cd /sphenix/u/bseidlitz/work/emcPerf/macros/figMaker
+        root -l -b -q 'mass_plot.C'
+        # -> output/function_compare_wide.root  (TF1 energy/position diff funcs)
+
+   2. Run the tower-by-tower reco that APPLIES the smear (STAGE 2):
+        cd /sphenix/u/bseidlitz/work/emcPerf/calo_emc_pi0_tbt/macro
+        root -l -b -q 'Fun4All_G4_Pi0_Tbt.C(...)'       # local test
+        # or at scale:  run_f4a.csh + condor submission
+        # -> ../macros/ttreeReader/output/caloana_mb_pythia.root (h_m_pt_smear1..6)
+
+   3. Fit/compare the smeared peaks (STAGE 3):
+        cd /sphenix/u/bseidlitz/work/emcPerf/macros/figMaker
+        root -l -b -q 'smear_compare.C'
+        # -> figs/meson/pythia_smear_{mass,width}_vs_pt_adSmear.pdf
+        #    output/smear_compare.root
+
+ TOY CROSS-CHECKS (independent, run any time):
+
+   T1. Resolution -> mass width:
+        cd /sphenix/u/bseidlitz/work/resolutionStudy
+        root -l -b -q 'eta_decay_simulation_with_smearing.C'   # -> output.root
+
+   T2. Unfolding bias vs data/MC reso mismatch:
+        cd /sphenix/u/bseidlitz/work/ppg12/toymcunfold/macro
+        root -l -b -q 'resolutionsim.C'                        # -> resosimout.root
+
+
+================================================================================
+ ONE-LINE DEPENDENCY MAP
+================================================================================
+
+   mass_plot.C ---writes---> function_compare_wide.root
+                                   |
+                                   v (read at Init, pi0EtaByEta.cc:207)
+   pi0EtaByEta::smearPhot() ---fills---> h_m_pt_smear1..6  (caloana_mb_pythia.root)
+                                   |
+                                   v (read, smear_compare.C:175)
+   smear_compare.C + MesonFitter ---> mass/width vs pT PDFs + smear_compare.root
+
+   [independent toys]  eta_decay_simulation_with_smearing.C ;  resolutionsim.C
+
+================================================================================
+   END OF LOG
+================================================================================
