@@ -1,0 +1,308 @@
+\documentclass[11pt]{article}
+\usepackage{notesstyle}
+
+\begin{document}
+\notesheader{3.9}{Pivot Tables}{A pivot table is a multidimensional \code{groupby}: aggregate one number across the grid formed by two categorical keys.}
+
+\section{From one-dimensional grouping to a two-dimensional grid}
+
+\begin{background}
+In the previous section we met \code{groupby}: the \emph{split--apply--combine} pattern. You pick a categorical column, split the rows into one bucket per category, apply a reducer (mean, sum, count, \dots) to each bucket, and combine the per-bucket answers back into a single result indexed by the categories.
+
+A \code{groupby} on \emph{one} key gives you a one-dimensional summary: one row per category. But real questions are usually phrased along \emph{two} axes at once. ``What was the average sale \emph{by region and by quarter}?'' is not a list --- it is a \emph{table}: regions down the side, quarters across the top, an average in every cell. That two-dimensional cross-tabulation is exactly what a \textbf{pivot table} produces.
+\end{background}
+
+\begin{intuition}
+A pivot table is a \code{groupby} on \emph{two} keys at once, where one key is laid out along the rows and the other along the columns. Formally, it aggregates a chosen quantity over the \emph{Cartesian product} of the two key sets: for every (row-category, column-category) pair, it collects the matching rows, runs a reducer on them, and drops the scalar result into the corresponding cell of a grid.
+\end{intuition}
+
+If you have ever built a pivot table in Excel or Google Sheets --- dragging one field onto ``Rows,'' another onto ``Columns,'' and a numeric field onto ``Values'' with an aggregation like \emph{Average} --- you already know the mental model. Pandas's \code{pivot\_table} is the same idea expressed in code, with the full power of Python reducers behind it.
+
+\subsection{Why not just use \code{groupby} twice?}
+
+You can, in fact, reproduce a pivot table with the tools from \S3.8. Group by \emph{both} keys, aggregate, and then \emph{unstack} the inner key from the row index up into the columns:
+
+\begin{lstlisting}
+# long-form df with columns: region, quarter, sales
+grouped = df.groupby(['region', 'quarter'])['sales'].mean()
+table = grouped.unstack()   # move 'quarter' from rows to columns
+\end{lstlisting}
+
+This works, but it is clumsy: you spell out the grouping keys twice over, you have to remember which level \code{unstack} pulls up, and adding grand totals or a second reducer turns into a small project. \code{pivot\_table} packages this whole pipeline behind one call with readable keyword arguments.
+
+\begin{keyidea}
+\code{df.pivot\_table(values, index, columns, aggfunc)} \emph{is} \code{df.groupby([index, columns])[values].aggfunc().unstack(columns)} --- same computation, friendlier interface. Whenever a pivot table puzzles you, mentally rewrite it as the equivalent \code{groupby} and the result becomes obvious.
+\end{keyidea}
+
+\section{The shape of the operation}
+
+The diagram below shows the move from \emph{long form} (one fact per row, the ``tidy'' layout) to the pivoted \emph{wide} grid. Each long-form row carries a row-key (its region), a column-key (its quarter), and a value; the pivot routes that value into a cell, and where several rows land in the same cell the reducer collapses them to one number.
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily\small,
+   lbl/.style={font=\sffamily\footnotesize\color{accent}},
+   row/.style={draw=rulegray, minimum width=3.4cm, minimum height=0.55cm, anchor=west},
+   rk/.style={fill=bgblue, font=\sffamily\footnotesize\color{accent}},
+   ck/.style={fill=bggreen, font=\sffamily\footnotesize\color{accent2}},
+   vv/.style={fill=white, font=\sffamily\footnotesize},
+   cell/.style={draw=rulegray, minimum width=1.5cm, minimum height=0.7cm},
+   hcell/.style={cell, fill=bggreen, font=\sffamily\footnotesize\color{accent2}},
+   icell/.style={cell, fill=bgblue, font=\sffamily\footnotesize\color{accent}},
+   dcell/.style={cell, fill=white}]
+
+  % ---- Long form (left) ----
+  \node[lbl] at (0.0,3.4) {\textbf{Long form} (tidy: one fact per row)};
+  \foreach \y/\r/\c/\v [count=\i] in {
+     2.7/North/Q1/12, 2.1/North/Q2/18, 1.5/South/Q1/9,
+     0.9/South/Q2/15, 0.3/North/Q1/14} {
+     \node[row,rk] at (-1.6,\y) {region = \r};
+     \node[row,ck] at (0.0,\y) {quarter = \c};
+     \node[row,vv] at (1.6,\y) {sales = \v};
+  }
+
+  % ---- Arrow ----
+  \node at (4.55,1.5) {\large $\Longrightarrow$};
+  \node[lbl] at (4.55,2.0) {pivot\_table};
+  \node[lbl] at (4.55,1.0) {aggfunc=mean};
+
+  % ---- Wide grid (right) ----
+  \node[lbl] at (7.6,3.4) {\textbf{Wide grid} (region $\times$ quarter)};
+  \node[hcell] at (6.4,2.6) {};
+  \node[hcell] at (7.9,2.6) {Q1};
+  \node[hcell] at (9.4,2.6) {Q2};
+  \node[icell] at (6.4,1.9) {North};
+  \node[icell] at (6.4,1.2) {South};
+  \node[dcell] at (7.9,1.9) {13.0};
+  \node[dcell] at (9.4,1.9) {18.0};
+  \node[dcell] at (7.9,1.2) {9.0};
+  \node[dcell] at (9.4,1.2) {15.0};
+
+  % highlight: two North/Q1 rows feed one cell
+  \draw[-{Latex[length=2mm]},warn,thick]
+     (2.45,0.3) .. controls (5.2,-0.4) and (6.8,0.3) .. (7.9,1.75);
+  \node[font=\sffamily\scriptsize\color{warn}] at (5.0,-0.7)
+     {two North/Q1 rows (12, 14) $\to$ mean 13.0};
+\end{tikzpicture}
+\end{center}
+
+\begin{intuition}
+Read the grid as a function of two arguments. The \textbf{row index} (blue) is the first key, the \textbf{columns} (green) are the second key, and each interior cell is the reducer applied to ``all original rows whose first key matches this row label \emph{and} whose second key matches this column label.'' Empty combinations --- pairs that never occur in the data --- become \code{NaN} unless you tell Pandas otherwise.
+\end{intuition}
+
+\section{A worked example, end to end}
+
+Let us build a small original dataset: a guest list for a workshop. Each attendee has a \emph{track} they registered for, a \emph{seniority} level, and we record their post-session \emph{rating} of the workshop (0--10). The long-form table:
+
+\begin{lstlisting}
+import numpy as np
+import pandas as pd
+
+guests = pd.DataFrame({
+    'track':     ['Data', 'Data', 'Data', 'Systems', 'Systems',
+                  'Systems', 'Data', 'Systems', 'Data', 'Systems'],
+    'seniority': ['Junior', 'Senior', 'Junior', 'Senior', 'Junior',
+                  'Senior', 'Senior', 'Junior', 'Junior', 'Senior'],
+    'rating':    [8, 9, 7, 6, 5, 8, 10, 4, 9, 7],
+    'hours':     [3.0, 4.5, 2.0, 5.0, 1.5, 6.0, 4.0, 2.5, 3.5, 5.5],
+})
+guests
+\end{lstlisting}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{r l l r r}
+\toprule
+ & \textbf{track} & \textbf{seniority} & \textbf{rating} & \textbf{hours} \\
+\midrule
+0 & Data    & Junior & 8  & 3.0 \\
+1 & Data    & Senior & 9  & 4.5 \\
+2 & Data    & Junior & 7  & 2.0 \\
+3 & Systems & Senior & 6  & 5.0 \\
+4 & Systems & Junior & 5  & 1.5 \\
+5 & Systems & Senior & 8  & 6.0 \\
+6 & Data    & Senior & 10 & 4.0 \\
+7 & Systems & Junior & 4  & 2.5 \\
+8 & Data    & Junior & 9  & 3.5 \\
+9 & Systems & Senior & 7  & 5.5 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The natural two-dimensional question is: \emph{what is the average rating for each (track, seniority) combination?} That is one call:
+
+\begin{lstlisting}
+guests.pivot_table(values='rating', index='track', columns='seniority')
+# aggfunc='mean' is the default, so it is implied here
+\end{lstlisting}
+
+\begin{outblock}
+seniority   Junior  Senior
+track
+Data           8.0     9.5
+Systems        4.5     7.0
+\end{outblock}
+
+Four numbers, each the mean of the matching original rows. The Data/Junior cell averages ratings 8, 7, 9 $\to 8.0$; the Systems/Senior cell averages 6, 8, 7 $\to 7.0$. The same answer, with no \code{unstack} to remember, comes from the explicit pivot syntax:
+
+\begin{lstlisting}
+guests.pivot_table('rating', index='track', columns='seniority',
+                   aggfunc='mean')
+\end{lstlisting}
+
+\begin{keyidea}
+The default \code{aggfunc} is \code{'mean'}. If you forget to think about it, every cell is an average --- which is the right default surprisingly often, but is also a classic source of confusion when you actually wanted a \emph{sum} or a \emph{count}.
+\end{keyidea}
+
+\subsection{Choosing the reducer, and using several at once}
+
+\code{aggfunc} accepts any reducer \code{groupby} accepts: a string name (\code{'sum'}, \code{'count'}, \code{'median'}, \code{'max'}), a NumPy function (\code{np.std}), or a list/dict for several at once. A \emph{dict} lets you apply a different reducer to a different value column:
+
+\begin{lstlisting}
+guests.pivot_table(index='track', columns='seniority',
+                   aggfunc={'rating': 'mean', 'hours': 'sum'})
+\end{lstlisting}
+
+\begin{outblock}
+            hours          rating
+seniority  Junior  Senior  Junior  Senior
+track
+Data          8.5     8.5     8.0     9.5
+Systems       4.0    16.5     4.5     7.0
+\end{outblock}
+
+When \code{aggfunc} is a dict, you omit \code{values} --- the dict keys already name the columns to aggregate. Notice the result now has a \emph{hierarchical} column index: the outer level names the value column, the inner level the seniority.
+
+\subsection{Grand totals with \code{margins}}
+
+A spreadsheet pivot usually carries an ``All'' row and column holding the per-row, per-column, and overall aggregate. Set \code{margins=True}:
+
+\begin{lstlisting}
+guests.pivot_table('rating', index='track', columns='seniority',
+                   margins=True, margins_name='All')
+\end{lstlisting}
+
+\begin{outblock}
+seniority   Junior  Senior   All
+track
+Data          8.00     9.5  8.60
+Systems       4.50     7.0  6.00
+All           6.25     8.2  7.30
+\end{outblock}
+
+\begin{pitfall}
+The margin is the reducer applied to \emph{all the underlying rows}, \textbf{not} the mean of the cells in that row or column. The grand-total \code{All}/\code{All} cell here is $7.30$, the mean of all ten ratings. Averaging the four interior means instead would give $(8.0+9.5+4.5+7.0)/4 = 7.25$ --- close, but wrong, because the four groups have different sizes. ``Average of averages'' is not the average; \code{margins} correctly recomputes from the raw data.
+\end{pitfall}
+
+\subsection{Filling and dropping empty cells}
+
+If a (row, column) pair never occurs, its cell is \code{NaN}. Two knobs control this:
+
+\begin{itemize}
+  \item \code{fill\_value=v} replaces missing cells with \code{v} \emph{after} aggregation --- handy for turning absent counts into \code{0}.
+  \item \code{dropna=True} (the default) drops any column whose every entry is \code{NaN}; set \code{dropna=False} to keep fully empty columns.
+\end{itemize}
+
+\begin{lstlisting}
+guests.pivot_table('rating', index='track', columns='seniority',
+                   aggfunc='count', fill_value=0)
+\end{lstlisting}
+
+\begin{outblock}
+seniority   Junior  Senior
+track
+Data             3       2
+Systems          2       3
+\end{outblock}
+
+\section{Multi-level pivot tables}
+
+The row and column arguments each accept a \emph{list} of keys, producing a hierarchical (\code{MultiIndex}) grid. And --- the trick that makes pivots powerful on messy data --- a key need not be a pre-existing categorical column. You can bin a \emph{continuous} variable on the fly and pivot on the bins.
+
+\subsection{Binning a continuous variable with \code{pd.cut} and \code{pd.qcut}}
+
+Our \code{hours} column is continuous, so it cannot index a grid directly --- every value is its own ``category.'' We bucket it first:
+
+\begin{itemize}
+  \item \code{pd.cut(x, bins)} splits by \emph{value} into intervals you specify (equal-width or explicit edges). Buckets may hold very different counts.
+  \item \code{pd.qcut(x, q)} splits by \emph{quantile} into $q$ groups of (roughly) equal \emph{count}. Buckets have similar size but uneven width.
+\end{itemize}
+
+\begin{lstlisting}
+effort = pd.cut(guests['hours'], bins=[0, 3, 6], labels=['Light', 'Heavy'])
+guests.pivot_table('rating', index=['track', effort],
+                   columns='seniority', observed=False)
+\end{lstlisting}
+
+\begin{outblock}
+                  seniority  Junior  Senior
+track   hours
+Data    Light                   7.5     NaN
+        Heavy                   9.0     9.5
+Systems Light                   4.5     NaN
+        Heavy                   NaN     7.0
+\end{outblock}
+
+The row index is now hierarchical: \code{track} on the outer level, the \code{hours} bucket on the inner. \code{NaN}s appear where a combination is empty (no light-effort Senior in either track). Pass \code{observed=False} so that empty category combinations are still laid out --- and remember \code{fill\_value} if you would rather see a placeholder than \code{NaN}.
+
+\begin{pyrefresh}
+\code{pd.cut} returns a \emph{Categorical} object, the same kind of labeled-bucket array you get from \code{astype('category')}. Because it is categorical, Pandas knows the full set of buckets even when some are unused --- which is why the empty ``Light/Senior'' combinations still get a row or column rather than vanishing. The \code{observed} flag chooses whether unused combinations are shown.
+\end{pyrefresh}
+
+You can stack keys on the columns side too. Both axes can be lists, giving a fully four-way cross-tabulation:
+
+\begin{lstlisting}
+guests.pivot_table('rating', index=['track', effort],
+                   columns='seniority', aggfunc=['mean', 'count'],
+                   observed=False, fill_value=0)
+\end{lstlisting}
+
+This nests \code{mean} and \code{count} as the outermost column level, each split again by seniority --- a compact dashboard of both the average rating and how many people it was averaged over.
+
+\section{\code{pivot\_table} vs \code{groupby} vs \code{crosstab}}
+
+These three overlap; choosing well is mostly about matching the tool to the question.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{l l l}
+\toprule
+\textbf{Tool} & \textbf{Best when you want\dots} & \textbf{Output shape} \\
+\midrule
+\code{groupby} & a 1-D summary, or a custom apply step & long (index = keys) \\
+\code{pivot\_table} & a 2-D summary of \emph{one numeric column} & wide grid \\
+\code{crosstab} & a 2-D \emph{frequency count} of two categories & wide grid of counts \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\code{pd.crosstab} is really \code{pivot\_table} specialized to counting. These two calls are equivalent:
+
+\begin{lstlisting}
+pd.crosstab(guests['track'], guests['seniority'])
+guests.pivot_table(index='track', columns='seniority',
+                   aggfunc='size', fill_value=0)
+\end{lstlisting}
+
+\begin{outblock}
+seniority  Junior  Senior
+track
+Data            3       2
+Systems         2       3
+\end{outblock}
+
+\begin{keyidea}
+Reach for \code{crosstab} when the cells are just \emph{how many} (a contingency table); reach for \code{pivot\_table} when the cells are an aggregate of some \emph{measured quantity}; and drop back to plain \code{groupby} when you need one dimension only, or a bespoke \code{.apply} that no built-in reducer expresses. They are three doors into the same split--apply--combine engine.
+\end{keyidea}
+
+\section*{Section recap}
+\addcontentsline{toc}{section}{Section recap}
+\begin{itemize}
+  \item A pivot table is a \emph{two-key} \code{groupby}: it aggregates one value over the Cartesian product of a row key and a column key, producing a grid.
+  \item \code{pivot\_table(values, index, columns, aggfunc)} equals \code{groupby([index, columns])[values].aggfunc().unstack()} --- the same computation with a cleaner interface; the Excel ``Rows / Columns / Values'' model is the right intuition.
+  \item Default \code{aggfunc} is \code{'mean'}; pass a string, function, list, or dict (dict applies a different reducer per value column).
+  \item \code{margins=True} adds correct grand totals recomputed from raw data --- never an average of the cell averages.
+  \item \code{fill\_value} replaces empty cells; \code{index}/\code{columns} accept lists for hierarchical grids; \code{pd.cut}/\code{pd.qcut} turn a continuous column into a usable key.
+  \item Use \code{crosstab} for frequency counts, \code{pivot\_table} for aggregated measurements, and plain \code{groupby} for 1-D or custom summaries.
+\end{itemize}
+
+\end{document}

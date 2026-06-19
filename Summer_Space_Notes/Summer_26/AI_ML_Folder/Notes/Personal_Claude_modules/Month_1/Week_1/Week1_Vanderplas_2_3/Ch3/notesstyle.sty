@@ -1,0 +1,173 @@
+% notesstyle.sty — shared style for Vanderplas Ch.3 grad-level study notes
+% Original explanatory notes (not a reproduction of the textbook).
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{notesstyle}[2026/06/18 Grad-level Pandas notes style]
+
+% ---------- Fonts & encoding ----------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{inconsolata}   % nice monospace for code
+\usepackage{microtype}
+
+% ---------- Page geometry ----------
+\usepackage[letterpaper,margin=1in,headheight=15pt]{geometry}
+\usepackage{parskip}       % space between paragraphs, no indent
+
+% ---------- Math ----------
+\usepackage{amsmath,amssymb}
+
+% ---------- Tables ----------
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{colortbl}
+
+% ---------- Graphics / diagrams ----------
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{positioning,fit,shapes.geometric,arrows.meta,backgrounds,matrix,calc,decorations.pathreplacing}
+
+% ---------- Color palette ----------
+\usepackage{xcolor}
+\definecolor{accent}{HTML}{1F4E79}      % deep blue (section accents)
+\definecolor{accent2}{HTML}{2E7D32}     % green (intuition)
+\definecolor{warn}{HTML}{B23A00}        % burnt orange (pitfalls)
+\definecolor{bgblue}{HTML}{EAF1F8}
+\definecolor{bggreen}{HTML}{EAF3EB}
+\definecolor{bgorange}{HTML}{FBEEE6}
+\definecolor{bggray}{HTML}{F2F2F2}
+\definecolor{bgpurple}{HTML}{F0EAF6}
+\definecolor{purpleaccent}{HTML}{5E35B1}
+\definecolor{codekw}{HTML}{0033B3}
+\definecolor{codestr}{HTML}{067D17}
+\definecolor{codecom}{HTML}{8C8C8C}
+\definecolor{codenum}{HTML}{1750EB}
+\definecolor{codebg}{HTML}{F7F8FA}
+\definecolor{rulegray}{HTML}{CCCCCC}
+
+% ---------- Code listings ----------
+\usepackage{listings}
+\lstdefinestyle{py}{
+  language=Python,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{codekw}\bfseries,
+  stringstyle=\color{codestr},
+  commentstyle=\color{codecom}\itshape,
+  numberstyle=\tiny\color{codecom},
+  showstringspaces=false,
+  breaklines=true,
+  breakatwhitespace=false,
+  tabsize=4,
+  frame=single,
+  rulecolor=\color{rulegray},
+  framesep=6pt,
+  backgroundcolor=\color{codebg},
+  xleftmargin=10pt,
+  xrightmargin=4pt,
+  aboveskip=8pt,
+  belowskip=8pt,
+  literate={->}{{$\rightarrow$}}1 {>=}{{$\geq$}}1 {<=}{{$\leq$}}1,
+  morekeywords={as,with,assert,None,True,False,np,pd}
+}
+\lstset{style=py}
+% plain style for REPL / printed output (no keyword coloring, gray frame)
+\lstdefinestyle{out}{
+  basicstyle=\ttfamily\small\color{black!80},
+  keywordstyle=\color{black!80},
+  stringstyle=\color{black!80},
+  commentstyle=\color{black!80},
+  frame=single,
+  rulecolor=\color{accent},
+  framesep=6pt,
+  backgroundcolor=\color{bggray},
+  xleftmargin=10pt, xrightmargin=4pt,
+  aboveskip=6pt, belowskip=10pt,
+  breaklines=true, showstringspaces=false,
+  morekeywords={}
+}
+% environment for printed output blocks: \begin{outblock} ... \end{outblock}
+\lstnewenvironment{outblock}{\lstset{style=out}}{}
+% inline code helper
+\newcommand{\code}[1]{\lstinline[basicstyle=\ttfamily\normalsize]{#1}}
+\newcommand{\pcode}[1]{{\ttfamily #1}}
+
+% ---------- Callout boxes (tcolorbox) ----------
+\usepackage[most]{tcolorbox}
+
+\newtcolorbox{background}[1][]{
+  breakable, enhanced, colback=bgblue, colframe=accent,
+  boxrule=0.4pt, left=8pt, right=8pt, top=6pt, bottom=6pt,
+  fonttitle=\bfseries\sffamily, coltitle=white,
+  title={Background \& Context}, #1}
+
+\newtcolorbox{intuition}[1][]{
+  breakable, enhanced, colback=bggreen, colframe=accent2,
+  boxrule=0.4pt, left=8pt, right=8pt, top=6pt, bottom=6pt,
+  fonttitle=\bfseries\sffamily, coltitle=white,
+  title={Intuition}, #1}
+
+\newtcolorbox{pitfall}[1][]{
+  breakable, enhanced, colback=bgorange, colframe=warn,
+  boxrule=0.4pt, left=8pt, right=8pt, top=6pt, bottom=6pt,
+  fonttitle=\bfseries\sffamily, coltitle=white,
+  title={Common Pitfall}, #1}
+
+\newtcolorbox{keyidea}[1][]{
+  breakable, enhanced, colback=bgpurple, colframe=purpleaccent,
+  boxrule=0.4pt, left=8pt, right=8pt, top=6pt, bottom=6pt,
+  fonttitle=\bfseries\sffamily, coltitle=white,
+  title={Key Idea}, #1}
+
+\newtcolorbox{pyrefresh}[1][]{
+  breakable, enhanced, colback=bggray, colframe=rulegray,
+  boxrule=0.4pt, left=8pt, right=8pt, top=6pt, bottom=6pt,
+  fonttitle=\bfseries\sffamily, coltitle=accent,
+  title={Python Refresher}, #1}
+
+% Output-of-code box: monospace, light gray, labelled "Out"
+\newtcolorbox{outbox}[1][]{
+  breakable, enhanced, colback=white, colframe=rulegray,
+  boxrule=0.4pt, left=8pt, right=8pt, top=4pt, bottom=4pt,
+  fontupper=\ttfamily\small, sharp corners,
+  borderline west={2pt}{0pt}{accent},
+  #1}
+
+% ---------- Section header styling ----------
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries\sffamily\color{accent}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries\sffamily\color{accent}}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\sffamily\color{accent2}}{\thesubsubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{14pt}{6pt}
+
+% ---------- Headers / footers ----------
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{rulegray}\leaders\hrule height \headrulewidth\hfill}}
+\fancyhead[L]{\small\sffamily\color{accent}\notessection}
+\fancyhead[R]{\small\sffamily\color{codecom}Pandas Study Notes}
+\fancyfoot[C]{\small\sffamily\color{codecom}\thepage\ / \pageref{LastPage}}
+
+% ---------- Hyperlinks ----------
+\usepackage[colorlinks=true,linkcolor=accent,urlcolor=accent2,citecolor=accent]{hyperref}
+
+% ---------- Title block helper ----------
+% \notesheader{section number}{title}{subtitle}
+\newcommand{\notessection}{}
+\newcommand{\notesheader}[3]{%
+  \renewcommand{\notessection}{#2}%
+  \begin{tcolorbox}[enhanced, colback=accent, colframe=accent, sharp corners,
+      boxrule=0pt, left=14pt, right=14pt, top=12pt, bottom=12pt]
+    {\sffamily\bfseries\LARGE\color{white} #2}\\[3pt]
+    {\sffamily\normalsize\color{bgblue} Python Data Science Handbook --- Chapter 3, Section #1}\\[2pt]
+    {\sffamily\small\color{bgblue} #3}
+  \end{tcolorbox}
+  \vspace{4pt}
+}
+
+% small helper for "API" inline tags
+\newcommand{\api}[1]{\textcolor{accent}{\ttfamily #1}}
+\endinput

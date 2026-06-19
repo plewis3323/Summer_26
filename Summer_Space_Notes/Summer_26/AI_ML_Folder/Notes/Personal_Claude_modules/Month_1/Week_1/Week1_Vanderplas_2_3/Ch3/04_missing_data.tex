@@ -1,0 +1,374 @@
+\documentclass[11pt]{article}
+\usepackage{notesstyle}
+
+\begin{document}
+\notesheader{3.4}{Handling Missing Data}{None vs.\ NaN, dtype upcasting, and the \code{isnull}/\code{dropna}/\code{fillna} toolkit.}
+
+\section{Why ``missing'' is a first-class problem}
+
+Real data has holes. A sensor drops a reading, a survey respondent skips a question, two tables get joined and one side has no matching row. Before we can compute averages or fit models, we need a principled way to say ``there is no value here'' --- and to make every downstream operation behave sensibly when it meets one.
+
+\begin{background}
+There are two broad strategies for marking a missing entry, and essentially every data system picks one (or pays to support both).
+
+\begin{itemize}
+  \item \textbf{Mask approach.} Keep the data array exactly as it is, and store a \emph{separate} boolean array of the same shape: \code{True} where a value is present, \code{False} where it is missing. The data array's values at the missing positions are simply ignored.
+  \item \textbf{Sentinel approach.} Reserve one specific value inside the data itself to mean ``missing.'' For floating-point data the natural choice is the IEEE special pattern \code{NaN}; for other types one might steal a value like \code{-9999} or a bit pattern, and agree by convention that it denotes a hole.
+\end{itemize}
+
+Each has a real cost. The \textbf{mask} costs extra memory (a whole parallel boolean array) and extra bookkeeping (every operation must consult the mask). The \textbf{sentinel} costs you a value from the type's range --- whatever bit pattern you reserve can no longer be a legitimate datum --- and it is \emph{dtype-specific}: a float can spare a \code{NaN}, but a plain machine integer has no spare bit pattern to give up.
+
+Pandas was originally built on top of NumPy, and NumPy arrays have no native mask. So historically Pandas leaned on the \textbf{sentinel} strategy, reusing whatever sentinels the underlying types already offered: Python's \code{None} object and the floating-point \code{NaN}. The rest of this section is really the story of those two sentinels and the machinery Pandas wraps around them.
+\end{background}
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily\small,
+   cell/.style={draw=rulegray, minimum width=1.0cm, minimum height=0.7cm, fill=white},
+   miss/.style={cell, fill=bgorange, text=warn},
+   tcell/.style={cell, fill=bgblue, font=\sffamily\footnotesize},
+   fcell/.style={cell, fill=bggray, text=warn, font=\sffamily\footnotesize},
+   lbl/.style={font=\sffamily\footnotesize\color{accent}},
+   title/.style={font=\sffamily\bfseries\color{accent}}]
+
+  % ---------- MASK approach (left) ----------
+  \node[title] at (2.5,3.4) {Mask approach};
+  \node[lbl] at (-1.3,2.6) {data};
+  \foreach \x/\v [count=\i from 0] in {0/7, 1/3, 2/9, 3/4, 4/2} {
+    \node[cell] at (\x,2.6) {\v};
+  }
+  \node[lbl] at (-1.3,1.7) {mask};
+  \foreach \x/\m [count=\i from 0] in {0/T, 1/T, 2/F, 3/T, 4/F} {
+    \ifnum\i=2 \node[fcell] at (\x,1.7) {\m};
+    \else\ifnum\i=4 \node[fcell] at (\x,1.7) {\m};
+    \else \node[tcell] at (\x,1.7) {\m};
+    \fi\fi
+  }
+  \node[lbl, text width=5cm, align=left] at (2.0,0.7)
+    {data untouched; a parallel boolean array says which cells count. Costs an extra array.};
+
+  % ---------- SENTINEL approach (right) ----------
+  \begin{scope}[xshift=8.2cm]
+  \node[title] at (2.0,3.4) {Sentinel approach};
+  \node[lbl] at (-1.3,2.6) {data};
+  \node[cell] at (0,2.6) {7};
+  \node[cell] at (1,2.6) {3};
+  \node[miss] at (2,2.6) {NaN};
+  \node[cell] at (3,2.6) {4};
+  \node[miss] at (4,2.6) {NaN};
+  \node[lbl, text width=5cm, align=left] at (1.6,1.2)
+    {one reserved value lives \emph{inside} the array and means ``missing.'' No extra memory, but you give up a usable value and it is type-specific.};
+  \end{scope}
+
+  % divider
+  \draw[rulegray, thick] (6.6,3.6) -- (6.6,0.3);
+\end{tikzpicture}
+\end{center}
+
+\section{Sentinel \#1: Python's \code{None}}
+
+Python already ships a universal ``nothing here'' object: the singleton \code{None}. It is the obvious first candidate for a sentinel, and Pandas does accept it. But putting \code{None} into a NumPy array has an important consequence.
+
+\begin{lstlisting}
+import numpy as np
+import pandas as pd
+
+vals = np.array([1, None, 3, 4])
+print(vals)
+print(vals.dtype)
+\end{lstlisting}
+
+\begin{outblock}
+[1 None 3 4]
+object
+\end{outblock}
+
+\begin{keyidea}
+NumPy needs every element of an array to share one dtype. A machine integer and the Python object \code{None} have no common \emph{numeric} type, so NumPy falls back to the only type that can hold anything: \code{dtype=object}. An object array is really an array of pointers to full Python objects.
+\end{keyidea}
+
+That fallback is expensive in two distinct ways.
+
+\textbf{Speed.} An \code{object} array cannot use NumPy's fast, vectorized, C-level loops. Every operation has to dispatch back into the Python interpreter, element by element --- the same overhead you were trying to escape by using NumPy in the first place. A sum over a million-element object array can be an order of magnitude or more slower than over a native \code{int64} array.
+
+\textbf{Broken aggregations.} Worse, common reductions simply fail:
+
+\begin{lstlisting}
+np.array([1, None, 3]).sum()
+\end{lstlisting}
+
+\begin{outblock}
+TypeError: unsupported operand type(s) for +: 'int' and 'NoneType'
+\end{outblock}
+
+\begin{pitfall}
+\code{None} is not a number, and Python has no definition for \code{int + None}. So a \code{sum()} over an object array containing \code{None} raises \code{TypeError} rather than skipping the hole. \code{None} is a fine sentinel for ``a Python object is absent,'' but a poor one for ``a numeric value is absent,'' precisely because arithmetic on it is undefined.
+\end{pitfall}
+
+\section{Sentinel \#2: the floating-point \code{NaN}}
+
+The numeric world has its own purpose-built sentinel: \code{NaN}, ``Not a Number,'' a special bit pattern defined by the IEEE-754 floating-point standard. Crucially it \emph{is} a float, so it lives happily inside a native float array with no dtype downgrade.
+
+\begin{lstlisting}
+vals = np.array([1, np.nan, 3, 4])
+print(vals.dtype)   # -> float64  (a fast, native array)
+\end{lstlisting}
+
+\begin{outblock}
+float64
+\end{outblock}
+
+Because the array stays \code{float64}, all the fast vectorized machinery still works. The catch is a different one: \code{NaN} is \emph{contagious}.
+
+\begin{lstlisting}
+print(1 + np.nan)          # -> nan
+print(0 * np.nan)          # -> nan
+print(np.array([1, np.nan, 3]).sum())   # -> nan
+\end{lstlisting}
+
+\begin{outblock}
+nan
+nan
+nan
+\end{outblock}
+
+\begin{intuition}
+Think of \code{NaN} as a stain that spreads. By design, \emph{any} arithmetic that touches a \code{NaN} produces a \code{NaN} --- $1 + \text{NaN} = \text{NaN}$, $0 \times \text{NaN} = \text{NaN}$, and so a plain \code{sum} of a column with one hole is itself \code{NaN}. This is mathematically honest (the answer truly is undefined if one input is unknown), but it means a single missing cell can silently nullify an entire aggregate.
+\end{intuition}
+
+The fix is to use \emph{NaN-aware} reductions, which skip the holes instead of propagating them:
+
+\begin{lstlisting}
+x = np.array([1, np.nan, 3, 4])
+print(np.nansum(x))    # -> 8.0
+print(np.nanmean(x))   # -> 2.6666666666666665
+print(np.nanmax(x))    # -> 4.0
+\end{lstlisting}
+
+\begin{outblock}
+8.0
+2.6666666666666665
+4.0
+\end{outblock}
+
+\begin{pyrefresh}
+\code{NaN} also breaks one rule you may rely on: it is the only value that is \emph{not equal to itself}. \code{np.nan == np.nan} returns \code{False}. That is why you can never test for missingness with \code{x == np.nan}; you must use a dedicated predicate like \code{np.isnan(x)} (or Pandas' \code{isnull}, below). The same quirk is why we need special tools to even \emph{find} the holes.
+\end{pyrefresh}
+
+\section{How Pandas unifies \code{None} and \code{NaN}}
+
+Pandas papers over the two sentinels and lets you use them almost interchangeably. Where it can, it will quietly convert \code{None} to \code{NaN} so that data lands in a fast native array:
+
+\begin{lstlisting}
+s = pd.Series([1, np.nan, 2, None])
+print(s)
+\end{lstlisting}
+
+\begin{outblock}
+0    1.0
+1    NaN
+2    2.0
+3    NaN
+dtype: float64
+\end{outblock}
+
+Notice that the \code{None} we passed in came back out as \code{NaN}, and the whole \code{Series} is \code{float64}. To make that possible, Pandas sometimes has to change the dtype of your data --- a behavior called \textbf{upcasting}.
+
+\subsection{Upcasting: the price of inserting a NaN}
+
+Suppose you have a clean integer \code{Series} and you set one element to missing:
+
+\begin{lstlisting}
+s = pd.Series([1, 2, 3, 4])
+print(s.dtype)        # -> int64
+s[1] = np.nan
+print(s)
+print(s.dtype)        # -> float64
+\end{lstlisting}
+
+\begin{outblock}
+int64
+0    1.0
+1    NaN
+2    3.0
+3    4.0
+dtype: float64
+\end{outblock}
+
+\begin{keyidea}
+\textbf{Why did an integer column become float?} Because \code{NaN} is a \emph{floating-point} sentinel --- there is no such bit pattern in the integer world. A native \code{int64} array literally has no way to represent ``missing.'' So the moment a \code{NaN} must enter an integer column, Pandas \emph{upcasts} the whole column to \code{float64}, where \code{NaN} is a legal value. Your \code{1, 2, 3, 4} become \code{1.0, 2.0, 3.0, 4.0} as a side effect.
+\end{keyidea}
+
+Different dtypes upcast differently. The table below summarizes the rules Pandas (in the NumPy-backed model the book describes) applies when a missing value is introduced.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{l l l}
+\toprule
+\textbf{Original dtype} & \textbf{Upcasts to} & \textbf{Sentinel used} \\
+\midrule
+\code{float64}        & \code{float64} (unchanged) & \code{NaN} \\
+\code{int64}          & \code{float64}             & \code{NaN} \\
+\code{bool}           & \code{object}              & \code{None} or \code{NaN} \\
+\code{object}         & \code{object} (unchanged)  & \code{None} or \code{NaN} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The pattern: a \code{float} column already has room for \code{NaN}, so it is untouched. An \code{int} column must climb to \code{float}. A \code{bool} column cannot become a float without losing its meaning, so it falls all the way back to slow \code{object}. An \code{object} column is already maximally permissive and stays put.
+
+\begin{pitfall}
+Upcasting is silent. If you depend on a column staying \code{int64} (for an index, a join key, or memory budgeting) and a single missing value sneaks in, the dtype flips to \code{float64} underneath you and your integers become floats like \code{3.0}. Always check \code{df.dtypes} after any operation that could introduce a hole --- a merge, a reindex, a \code{concat}.
+\end{pitfall}
+
+\section{Operating on null values}
+
+Pandas gives a small, consistent vocabulary for detecting, removing, and filling missing data. These four methods cover almost everything you will do day to day.
+
+\subsection{Detecting nulls: \code{isnull} and \code{notnull}}
+
+Both return a boolean mask the same shape as the input --- \code{isnull} flags the holes, \code{notnull} flags the present values. They work on \code{Series} and \code{DataFrame} alike.
+
+\begin{lstlisting}
+data = pd.Series([1, np.nan, 'hello', None])
+print(data.isnull())
+\end{lstlisting}
+
+\begin{outblock}
+0    False
+1     True
+2    False
+3     True
+dtype: bool
+\end{outblock}
+
+Because the result is a boolean mask, you can use it directly to filter --- this is the idiom underneath everything else:
+
+\begin{lstlisting}
+print(data[data.notnull()])
+\end{lstlisting}
+
+\begin{outblock}
+0        1
+2    hello
+dtype: object
+\end{outblock}
+
+\begin{pyrefresh}
+\code{isna} is an exact alias for \code{isnull}, and \code{notna} for \code{notnull} --- they do the same thing, and which you see is mostly a matter of an author's taste. Both detect \code{None} \emph{and} \code{NaN} (and, in modern Pandas, \code{NaT} for missing datetimes and \code{pd.NA}).
+\end{pyrefresh}
+
+\subsection{Removing nulls: \code{dropna}}
+
+On a \code{Series}, \code{dropna()} simply discards the missing entries. On a \code{DataFrame} the choice is richer, because you cannot drop a single cell --- you must drop a whole \emph{row} or a whole \emph{column}. Consider:
+
+\begin{lstlisting}
+df = pd.DataFrame([[1,      np.nan, 2],
+                   [2,      3,      5],
+                   [np.nan, 4,      6]])
+print(df)
+\end{lstlisting}
+
+\begin{outblock}
+     0    1  2
+0  1.0  NaN  2
+1  2.0  3.0  5
+2  NaN  4.0  6
+\end{outblock}
+
+The \code{axis} argument decides the unit of removal, and \code{how} decides the threshold:
+
+\begin{lstlisting}
+df.dropna()                 # axis=0 default: drop any ROW containing a NaN
+df.dropna(axis=1)           # drop any COLUMN containing a NaN
+df.dropna(axis=1, how='all')  # drop a column only if ALL its values are NaN
+df.dropna(thresh=3)         # keep rows with >= 3 non-null values
+\end{lstlisting}
+
+\begin{intuition}
+Read \code{axis} as ``the axis along which I am moving the blade.'' \code{axis=0} (the default) slices off \emph{rows}; \code{axis=1} slices off \emph{columns}. Then \code{how='any'} (the default) is aggressive --- one hole and the whole row/column goes --- while \code{how='all'} is lenient, removing only the fully-empty ones. When neither is precise enough, \code{thresh=n} keeps anything with at least \code{n} real values, giving you a tunable middle ground.
+\end{intuition}
+
+For the frame above, \code{df.dropna()} leaves only row 1 (the one row with no holes):
+
+\begin{outblock}
+     0    1  2
+1  2.0  3.0  5
+\end{outblock}
+
+\begin{pitfall}
+\code{dropna} returns a \emph{new} object by default --- it does not modify your frame in place. If you write \code{df.dropna()} on a line by itself and then keep using \code{df}, nothing changed. Capture the result (\code{df = df.dropna()}) or, with care, pass \code{inplace=True}. The same caveat applies to \code{fillna}.
+\end{pitfall}
+
+\subsection{Filling nulls: \code{fillna}}
+
+Often you would rather \emph{repair} the holes than delete the rows that contain them. \code{fillna} replaces each missing value, either with a constant or by copying a neighbor.
+
+\begin{lstlisting}
+data = pd.Series([1, np.nan, 2, None, 3], index=list('abcde'))
+print(data.fillna(0))        # constant fill
+\end{lstlisting}
+
+\begin{outblock}
+a    1.0
+b    0.0
+c    2.0
+d    0.0
+e    3.0
+dtype: float64
+\end{outblock}
+
+Two directional fills copy an adjacent value into the gap --- forward-fill carries the \emph{previous} value down, back-fill pulls the \emph{next} value up:
+
+\begin{lstlisting}
+data.ffill()   # forward-fill: propagate last valid value forward
+data.bfill()   # back-fill: propagate next valid value backward
+\end{lstlisting}
+
+\begin{outblock}
+# ffill:                 # bfill:
+a    1.0                 a    1.0
+b    1.0                 b    2.0
+c    2.0                 c    2.0
+d    2.0                 d    3.0
+e    3.0                 e    3.0
+\end{outblock}
+
+On a \code{DataFrame} the same fills take an \code{axis} (fill down columns vs.\ across rows), and a \code{limit} caps how many consecutive holes a single fill will bridge:
+
+\begin{lstlisting}
+df.fillna(method='ffill', axis=1)   # carry values rightward across each row
+df.ffill(limit=1)                   # fill at most 1 consecutive NaN
+\end{lstlisting}
+
+\begin{pyrefresh}
+The book uses the keyword form \code{fillna(method='ffill')} and \code{fillna(method='bfill')}. Modern Pandas exposes the dedicated methods \code{ffill()} and \code{bfill()} shown above and has deprecated the \code{method=} keyword; the behavior is identical. If a forward-fill meets a leading \code{NaN} with no prior value to copy, that entry simply stays \code{NaN}.
+\end{pyrefresh}
+
+\section{A note on modern Pandas: \code{pd.NA} and nullable dtypes}
+
+\begin{background}
+VanderPlas's text predates a significant addition to the library, and it is worth knowing because it removes the most annoying limitation above --- the forced \code{int}-to-\code{float} upcast.
+
+Modern Pandas introduces a single, type-agnostic missing-value indicator, \code{pd.NA}, together with a family of \textbf{nullable dtypes}: \code{Int64}, \code{boolean}, and \code{string} (note the capital \code{I} in \code{Int64} --- that capitalization is how you tell the nullable extension type apart from the old \code{int64}). Internally these use something closer to the \textbf{mask} approach from the very first box: the values and a separate validity mask, so a column can be a genuine integer column \emph{and} hold missing values at the same time.
+
+\begin{itemize}
+  \item \code{pd.Series([1, 2, None], dtype="Int64")} stays an integer column; the hole shows as \code{<NA>}, and there is \emph{no} upcast to float.
+  \item \code{df.convert_dtypes()} inspects a frame and migrates its columns to the best available nullable types automatically.
+  \item \code{isna}/\code{notna} recognize \code{pd.NA} just as they do \code{NaN} and \code{None}.
+\end{itemize}
+
+We keep the rest of these notes grounded in the \code{None}/\code{NaN} model, because that is what you will see in the book, in older code, and in the default behavior of most NumPy-backed columns. But when you find yourself fighting an unwanted upcast in real work, nullable dtypes are the modern escape hatch.
+\end{background}
+
+\section*{Section recap}
+\addcontentsline{toc}{section}{Section recap}
+\begin{itemize}
+  \item Two strategies for missing data: a separate \textbf{mask} (extra memory) vs.\ an in-band \textbf{sentinel} (costs a representable value, type-specific). NumPy-backed Pandas historically used sentinels.
+  \item \code{None} is a Python object sentinel: it forces \code{dtype=object}, runs slowly, and makes \code{sum()} raise \code{TypeError} because \code{int + None} is undefined.
+  \item \code{NaN} is a native floating-point sentinel: fast, but \emph{contagious} --- any arithmetic touching it yields \code{NaN}. Use \code{np.nansum}, \code{np.nanmean}, etc.\ to skip holes. Also, \code{NaN != NaN}.
+  \item Pandas interchanges \code{None} and \code{NaN}, and \textbf{upcasts} dtypes to fit a \code{NaN}: \code{int}$\to$\code{float}, \code{bool}$\to$\code{object}, \code{float} and \code{object} unchanged.
+  \item Core toolkit: \code{isnull}/\code{notnull} (masks), \code{dropna} (\code{axis}, \code{how}, \code{thresh}), \code{fillna} (scalar, \code{ffill}, \code{bfill}, \code{axis}, \code{limit}). Most return a new object unless \code{inplace=True}.
+  \item Modern Pandas adds \code{pd.NA} and nullable dtypes (\code{Int64}, \code{boolean}, \code{string}) so integers can hold missing values without upcasting --- helpful context the book predates.
+\end{itemize}
+
+\end{document}

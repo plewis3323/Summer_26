@@ -1,0 +1,267 @@
+\documentclass[11pt]{article}
+\usepackage{notesstyle}
+
+\begin{document}
+\notesheader{3.12}{High-Performance Pandas: eval() and query()}{Killing the temporary arrays --- how string-based expressions let Pandas fuse a compound calculation into a single pass.}
+
+\section{The problem: vectorization is fast, but greedy}
+
+By now you have absorbed the central performance lesson of NumPy and Pandas: \emph{vectorize everything}. Replacing a Python \code{for} loop with an array expression like \code{a + b} hands the work to compiled C code, and you typically see one or two \emph{orders of magnitude} speed-up. So you would be forgiven for thinking that, once an expression is written in array form, there is nothing left to optimize.
+
+There is. The issue hides inside \emph{compound} expressions --- expressions built from several operators, like
+\[
+\texttt{result} \;=\; (A + B) * (C - D).
+\]
+Each binary operator (\code{+}, \code{-}, \code{*}) is its own vectorized call, and each one produces a brand-new array. The Python interpreter evaluates the expression one operator at a time, and it has no way to know that you only care about the final answer. So it dutifully \emph{materializes} every intermediate result in memory.
+
+\begin{background}
+\textbf{Why a fresh array per operator?} NumPy operators are ordinary function calls under the hood: \code{A + B} is really \code{A.__add__(B)}, and a function has to \emph{return} something. The only thing it can return is a freshly allocated array holding $A_i + B_i$ for every $i$. The interpreter then feeds that array into the next operator, which again allocates. Nobody in this chain is allowed to ``peek ahead'' and reuse memory, because each call is evaluated in isolation. The result is correct --- it is just wasteful.
+\end{background}
+
+\subsection{Counting the waste}
+
+Consider \code{(A + B) * (C - D)} on four arrays of $N$ elements each. Python evaluates it as three steps, and allocates a temporary of size $N$ at each internal node of the expression tree:
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily\small,
+   op/.style={draw=accent, fill=bgblue, rounded corners, minimum size=0.85cm, font=\sffamily\bfseries\color{accent}},
+   leaf/.style={draw=rulegray, fill=white, rounded corners, minimum size=0.8cm},
+   tmp/.style={draw=warn, fill=bgorange, rounded corners, font=\sffamily\footnotesize\color{warn}, inner sep=3pt, align=center},
+   edge/.style={-Stealth, rulegray, thick}]
+
+  % root
+  \node[op] (mul) at (0,0) {$*$};
+  % internal
+  \node[op] (add) at (-2.4,-1.8) {$+$};
+  \node[op] (sub) at ( 2.4,-1.8) {$-$};
+  % leaves
+  \node[leaf] (A) at (-3.4,-3.6) {$A$};
+  \node[leaf] (B) at (-1.4,-3.6) {$B$};
+  \node[leaf] (C) at ( 1.4,-3.6) {$C$};
+  \node[leaf] (D) at ( 3.4,-3.6) {$D$};
+
+  \draw[edge] (A) -- (add);
+  \draw[edge] (B) -- (add);
+  \draw[edge] (C) -- (sub);
+  \draw[edge] (D) -- (sub);
+  \draw[edge] (add) -- (mul);
+  \draw[edge] (sub) -- (mul);
+
+  % temporary annotations
+  \node[tmp, right=0.35cm of add] (t1) {temp\textsubscript{1} $=A{+}B$ \\ \emph{$N$ floats}};
+  \node[tmp, left=0.35cm of sub]  (t2) {temp\textsubscript{2} $=C{-}D$ \\ \emph{$N$ floats}};
+  \node[tmp, above=0.30cm of mul] (t3) {result $=$ temp\textsubscript{1}$\,*\,$temp\textsubscript{2} \\ \emph{$N$ floats}};
+
+  \draw[warn, dashed, -Stealth] (add) to[bend left=10] (t1.west);
+  \draw[warn, dashed, -Stealth] (sub) to[bend right=10] (t2.east);
+  \draw[warn, dashed, -Stealth] (mul) -- (t3.south);
+
+  % caption
+  \node[font=\sffamily\footnotesize\color{warn}, align=center] at (0,-4.7)
+    {Three internal nodes $\Rightarrow$ \textbf{three} full-length temporary arrays allocated.\\
+     Only the top one is the answer you wanted; the other two are pure overhead.};
+\end{tikzpicture}
+\end{center}
+
+For small $N$ this is invisible. But when $N$ is large the temporaries dominate, and the reason is not really the allocation \emph{count} --- it is the \emph{memory traffic}.
+
+\begin{keyidea}
+Modern CPUs are starved not for arithmetic but for \emph{data}. A floating-point multiply is nearly free; fetching the operands from main memory is the expensive part. The CPU has a small, fast \textbf{cache} (a few MB). If an array fits in cache, repeated passes over it are cheap. Each temporary that does \emph{not} fit forces the data to be streamed out to RAM and back, and that round trip --- the \textbf{memory bandwidth} bottleneck --- is what actually costs you. Allocating three $N$-element temporaries means writing and re-reading roughly $3N$ values through that bottleneck.
+\end{keyidea}
+
+\section{The fix: \texttt{numexpr} and element-wise fusion}
+
+The cure is to evaluate the whole expression \emph{element by element}, computing the final \code{result[i]} for each \code{i} before moving on --- never building the big intermediate arrays at all. For each index $i$ you compute $(A_i + B_i)(C_i - D_i)$ using a couple of scalar temporaries, store one number, and move on. The only $N$-element array that ever exists is the answer.
+
+This is exactly what the \textbf{numexpr} library does. You hand it the expression as a \emph{string}, and it compiles a little plan that walks all the arrays in lockstep in one fused pass. As a bonus, because the work is so regular, numexpr can split it across multiple CPU threads.
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily\small]
+  % left: naive
+  \node[font=\sffamily\bfseries\color{warn}] at (-3.4,2.2) {Naive: 3 passes};
+  \foreach \y/\lab in {1.5/{A+B \(\to\) temp\textsubscript{1}}, 0.7/{C-D \(\to\) temp\textsubscript{2}}, -0.1/{temp\textsubscript{1}*temp\textsubscript{2} \(\to\) out}} {
+    \node[draw=warn, fill=bgorange, rounded corners, minimum width=3.6cm, font=\footnotesize] at (-3.4,\y) {\lab};
+  }
+  \node[font=\sffamily\footnotesize\color{warn}, align=center] at (-3.4,-1.0)
+    {extra memory: \textbf{2} big temps\\traffic: \(\sim 3N\) writes};
+
+  % divider
+  \draw[rulegray, thick] (0,2.5) -- (0,-1.4);
+
+  % right: fused
+  \node[font=\sffamily\bfseries\color{accent2}] at (3.4,2.2) {Fused (numexpr): 1 pass};
+  \node[draw=accent2, fill=bggreen, rounded corners, minimum width=3.8cm, align=center, font=\footnotesize] at (3.4,0.9)
+    {for each i:\\ \(\;\)out[i] = (A[i]+B[i])*(C[i]-D[i])};
+  \node[font=\sffamily\footnotesize\color{accent2}, align=center] at (3.4,-1.0)
+    {extra memory: \textbf{0} big temps\\traffic: \(\sim N\) writes};
+\end{tikzpicture}
+\end{center}
+
+Pandas wraps numexpr in three friendly entry points: the top-level \code{pd.eval}, the method \code{DataFrame.eval}, and the method \code{DataFrame.query}. We will take them in turn.
+
+\begin{pyrefresh}
+A quick reminder on \emph{bitwise} versus \emph{logical} operators, because they matter below. On NumPy/Pandas boolean arrays you must use the bitwise operators \code{&} (and) and \code{|} (or), element by element. The Python keywords \code{and}/\code{or} do \emph{not} work on arrays --- they try to collapse the whole array to a single \code{True}/\code{False} and raise an error. Inside an \code{eval}/\code{query} string, however, you may write the \emph{words} \code{and} and \code{or}, and Pandas maps them to the elementwise versions for you.
+\end{pyrefresh}
+
+\section{\texttt{pd.eval}: evaluating a string across whole objects}
+
+\code{pd.eval} takes a string, parses it, and evaluates it with numexpr. Suppose we build four large DataFrames:
+
+\begin{lstlisting}
+import numpy as np
+import pandas as pd
+
+rng = np.random.default_rng(0)
+nrows, ncols = 1_000_000, 4
+A, B, C, D = (pd.DataFrame(rng.random((nrows, ncols))) for _ in range(4))
+\end{lstlisting}
+
+The ordinary way and the \code{eval} way give identical numbers:
+
+\begin{lstlisting}
+direct = (A + B) * (C - D)              # 3 temporaries
+fused  = pd.eval('(A + B) * (C - D)')   # numexpr, no big temporaries
+np.allclose(direct, fused)
+\end{lstlisting}
+
+\begin{outblock}
+True
+\end{outblock}
+
+The two results agree, but the second never materialized \code{temp1} or \code{temp2}. The variable names inside the string (\code{A}, \code{B}, \code{C}, \code{D}) are looked up in the surrounding Python namespace, so the expression reads just like the real one.
+
+\begin{intuition}
+Think of \code{pd.eval} as handing Pandas a \emph{recipe} (the string) instead of forcing it to cook each step and plate the result before reading the next instruction. With the recipe in hand, Pandas can see the whole dish at once and skip dirtying every pan along the way.
+\end{intuition}
+
+\subsection{What you can and cannot put in the string}
+
+numexpr is fast precisely because it supports a \emph{restricted} mini-language, not arbitrary Python. Inside a \code{pd.eval} string you may use:
+
+\begin{itemize}
+  \item \textbf{Arithmetic:} \code{+}, \code{-}, \code{*}, \code{/}, and even \code{**} and \code{\%}.
+  \item \textbf{Comparisons:} \code{<}, \code{<=}, \code{==}, \code{!=}, \code{>=}, \code{>}, including chained forms like \code{a < b <= c}.
+  \item \textbf{Boolean logic:} the bitwise \code{&} and \code{|}, \emph{and} the literal words \code{and}/\code{or}.
+  \item \textbf{Attribute access and indexing:} \code{df.A}, \code{arr[0]}.
+\end{itemize}
+
+What you may \emph{not} do is call arbitrary functions, run loops, comprehensions, or conditionals. There is no \code{np.sqrt(...)} of your choosing, no \code{for}, no \code{if/else}. If you need those, fall back to ordinary syntax --- numexpr's whole bargain is that it only handles the simple, regular operations it can fuse and thread.
+
+\begin{pitfall}
+\code{pd.eval} compares \emph{aligned} objects by name, but it does \emph{not} replace ordinary Pandas alignment subtleties. If \code{A} and \code{B} have mismatched indices, you still get \code{NaN} where they fail to line up --- \code{eval} changes \emph{how fast} the arithmetic runs, not \emph{what} arithmetic means. Always sanity-check with \code{np.allclose} against the direct expression the first time you convert a hot path.
+\end{pitfall}
+
+\section{\texttt{DataFrame.eval}: column names become variables}
+
+\code{pd.eval} is global; you pass full objects by name. Far more ergonomic for day-to-day work is the \emph{method} form, \code{DataFrame.eval}, which evaluates an expression \emph{within the context of one DataFrame}. The payoff: bare \textbf{column names} act as variables.
+
+\begin{lstlisting}
+df = pd.DataFrame(rng.random((1_000_000, 3)), columns=['A', 'B', 'C'])
+
+# 'A', 'B', 'C' refer to columns -- no df['...'] noise
+result = df.eval('(A + B) / (C - 1)')
+\end{lstlisting}
+
+Compare that to the equivalent direct version, \code{(df['A'] + df['B']) / (df['C'] - 1)}, and you can see why \code{eval} is easier to read: the algebra is right there, undiluted by indexing brackets.
+
+\subsection{Reaching outside: the \texttt{@} prefix}
+
+Sometimes you want to mix a column with a plain Python variable. Inside the string, a bare name is assumed to be a \emph{column}, so to point at a local Python variable instead you prefix it with \code{@}:
+
+\begin{lstlisting}
+offset = 0.5
+df.eval('A + @offset')   # column A plus the Python scalar offset
+\end{lstlisting}
+
+\begin{keyidea}
+The \code{@} symbol is the namespace switch. \textbf{Bare name $=$ a column of this DataFrame; \code{@}name $=$ a variable from the surrounding Python scope.} Without it, \code{eval} would look for a column literally named ``offset,'' not find one, and raise an error. This same rule applies in \code{query} below.
+\end{keyidea}
+
+\subsection{Creating and modifying columns in place}
+
+\code{DataFrame.eval} can also \emph{assign}. Putting a name and \code{=} on the left creates (or overwrites) a column:
+
+\begin{lstlisting}
+df.eval('D = (A + B) / C', inplace=True)
+df.head(3)
+\end{lstlisting}
+
+\begin{outbox}
+\quad\quad A \quad\quad\;\; B \quad\quad\;\; C \quad\quad\;\; D \\
+0 \;\; 0.6369 \;\; 0.2697 \;\; 0.0409 \;\; 22.654 \\
+1 \;\; 0.0165 \;\; 0.8132 \;\; 0.9127 \;\; 0.9089 \\
+2 \;\; 0.6066 \;\; 0.7295 \;\; 0.5436 \;\; 2.4576
+\end{outbox}
+
+With \code{inplace=True} the new column \code{D} is written straight into \code{df}; with \code{inplace=False} (the default) you get back a \emph{copy} carrying the extra column and leave the original untouched. You can also \emph{overwrite} an existing column the same way, e.g. \code{df.eval('D = D + 1', inplace=True)}.
+
+\section{\texttt{DataFrame.query}: filtering rows cleanly}
+
+\code{eval} computes new \emph{values}. The closely related \code{query} method selects \emph{rows} --- it is for filtering. The classic boolean-mask idiom for ``rows where A is small and B is large'' looks like this:
+
+\begin{lstlisting}
+mask_form = df[(df.A < 0.5) & (df.B > 0.5)]
+\end{lstlisting}
+
+That single line quietly builds several temporaries: the boolean array \code{df.A < 0.5}, the boolean array \code{df.B > 0.5}, and their combined \code{&}. \code{query} expresses the same filter as one string and lets numexpr do it in a fused pass:
+
+\begin{lstlisting}
+query_form = df.query('A < 0.5 and B > 0.5')
+np.allclose(mask_form, query_form)
+\end{lstlisting}
+
+\begin{outblock}
+True
+\end{outblock}
+
+Notice we wrote the word \code{and} rather than \code{&} --- inside the string both are allowed, and the word reads more naturally. \code{query} understands the same \code{@} convention for local variables:
+
+\begin{lstlisting}
+cutoff = 0.5
+df.query('A < @cutoff and B > @cutoff')
+\end{lstlisting}
+
+\begin{intuition}
+A useful way to remember the division of labor: \textbf{\code{eval} makes columns, \code{query} keeps rows.} If the result you want is a new Series/column of computed values, reach for \code{eval}; if the result you want is a subset of the existing rows, reach for \code{query}. Both run through the same numexpr engine, so both dodge the temporaries that the equivalent bracket syntax would spawn.
+\end{intuition}
+
+\section{When is it actually worth it?}
+
+Here is the part people skip, and then misuse these tools. The fused-evaluation trick pays for itself only when the \emph{memory savings} outweigh the \emph{fixed overhead} of parsing a string and dispatching to numexpr. That fixed cost is small but not zero, and it does not shrink with your data.
+
+\begin{pitfall}
+\textbf{On small data, \code{eval} and \code{query} are no faster --- often slower.} For a DataFrame of a few hundred rows, the intermediate ``temporaries'' fit comfortably in cache, so building them costs almost nothing, while the string-parsing and function-call overhead of \code{eval}/\code{query} is now a relatively large tax. You can spend more time setting up the fused evaluation than you would have spent just doing the arithmetic. Do not sprinkle \code{eval} everywhere ``for speed'' --- on small frames it is pure ceremony.
+\end{pitfall}
+
+The break-even point is roughly when your arrays stop fitting in the CPU cache --- think tens of MB and up. A cheap way to build intuition is to look at the raw size of the data the expression touches:
+
+\begin{lstlisting}
+df.values.nbytes    # bytes backing the DataFrame
+\end{lstlisting}
+
+\begin{outblock}
+24000000
+\end{outblock}
+
+If \code{df.values.nbytes} is in the megabytes-and-beyond range (comfortably larger than your CPU's cache), the temporaries genuinely hurt and \code{eval}/\code{query} can win on both speed \emph{and} memory. If it is a few kilobytes, you are well inside cache and the ordinary syntax will be at least as fast.
+
+\begin{keyidea}
+Two independent reasons to reach for these tools, and they apply at different scales:
+\begin{itemize}
+  \item \textbf{Memory / speed} --- only on \emph{large} data (data $\gtrsim$ cache, roughly MBs+), where avoiding temporaries cuts memory traffic and peak RAM.
+  \item \textbf{Readability} --- at \emph{any} scale, \code{df.query('A < 0.5 and B > 0.5')} is simply clearer than the bracketed mask. On small data, use them \emph{only} for this reason, accepting that they are not faster.
+\end{itemize}
+\end{keyidea}
+
+\section*{Section recap}
+\addcontentsline{toc}{section}{Section recap}
+\begin{itemize}
+  \item Compound array expressions like \code{(A + B) * (C - D)} allocate one full-length \emph{temporary} per internal operator. For large data those temporaries blow past the CPU cache and the cost is \emph{memory bandwidth}, not arithmetic.
+  \item \textbf{numexpr} evaluates the whole expression element-by-element in a single fused (and optionally multi-threaded) pass, so the only big array created is the answer.
+  \item \code{pd.eval('...')} runs a string expression across whole objects; supports arithmetic, comparisons, bitwise \code{&}/\code{|} and the words \code{and}/\code{or}, attribute access, and indexing --- \emph{not} arbitrary function calls or loops.
+  \item \code{DataFrame.eval('...')} treats bare column names as variables, uses \code{@name} for local Python variables, and can create/overwrite columns (\code{df.eval('D = (A + B) / C', inplace=True)}).
+  \item \code{DataFrame.query('...')} filters rows and is both cleaner and more memory-efficient than the \code{df[(df.A < 0.5) & (df.B > 0.5)]} mask form; it also supports \code{@}.
+  \item \textbf{Worth it only on large data} (check \code{df.values.nbytes} vs.\ cache). On small frames the overhead makes them no faster --- keep them there purely for readability.
+\end{itemize}
+
+\end{document}

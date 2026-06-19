@@ -1,0 +1,350 @@
+\documentclass[11pt]{article}
+\usepackage{notesstyle}
+
+\begin{document}
+\notesheader{3.2}{Data Indexing and Selection}{Getting data \emph{out} of Series and DataFrames --- and the label-vs-position trap that \code{loc} and \code{iloc} were built to defuse.}
+
+\section{Why this section deserves its own chapter slot}
+
+In section 3.1 we built \code{Series} and \code{DataFrame} objects. The obvious next question is the most practical one in all of data work: \emph{how do I pull out the piece I want?} A single value, a column, a block of rows, every row that satisfies a condition.
+
+\begin{background}
+You already know two indexing vocabularies from your first year of Python, and Pandas deliberately speaks \emph{both at once}:
+\begin{itemize}
+  \item \textbf{The dictionary vocabulary:} \code{d[key]} looks something up by a meaningful label. Order is irrelevant; the key is what matters.
+  \item \textbf{The array/list vocabulary:} \code{a[3]}, \code{a[1:4]}, \code{a[mask]} address data by integer \emph{position} and support slices, boolean masks, and fancy indexing.
+\end{itemize}
+A \code{Series} carries an explicit index (labels) on top of an implicit one (integer positions). So both vocabularies apply to the same object --- and when the labels themselves happen to be integers, the two collide. Most of this section is about understanding that collision and the tools (\code{loc}, \code{iloc}) that make your intent unambiguous.
+\end{background}
+
+\section{Series as a dictionary}
+
+The cleanest mental model for a \code{Series} is a dictionary whose keys are kept in a typed, ordered \code{Index}. Let us build a tiny one --- the land area, in thousands of square kilometers, of four U.S. states:
+
+\begin{lstlisting}
+import pandas as pd
+
+area = pd.Series({'California': 424, 'Texas': 696,
+                  'Florida': 170, 'NewYork': 141})
+area['Texas']        # -> 696
+\end{lstlisting}
+
+Every dictionary idiom you know carries over. You can test membership, list the keys, and iterate over key--value pairs:
+
+\begin{lstlisting}
+'Texas' in area      # -> True
+'Ohio' in area       # -> False
+area.keys()          # -> Index(['California','Texas','Florida','NewYork'], ...)
+list(area.items())   # -> [('California', 424), ('Texas', 696), ...]
+\end{lstlisting}
+
+\begin{pyrefresh}
+\code{.items()} mirrors \code{dict.items()}: it yields \code{(label, value)} tuples, which is exactly what you would iterate over in a \code{for} loop. The membership operator \code{in} checks the \emph{index} (the keys), not the values --- just as \code{'x' in some_dict} checks keys. If you want to ask whether a \emph{value} occurs, use something like \code{(area == 696).any()} instead.
+\end{pyrefresh}
+
+A \code{Series} is also mutable in the dictionary sense: assigning to a brand-new key extends it in place, growing the index by one entry.
+
+\begin{lstlisting}
+area['Ohio'] = 116
+print(area)
+\end{lstlisting}
+
+\begin{outblock}
+California    424
+Texas         696
+Florida       170
+NewYork       141
+Ohio          116
+dtype: int64
+\end{outblock}
+
+\begin{keyidea}
+This dictionary-like flexibility is what separates a \code{Series} from a raw NumPy array. A NumPy array has a fixed size and an implicit integer index you cannot rename; a \code{Series} lets you \emph{add} keys, look up by meaningful labels, and still keep the underlying values in a fast NumPy buffer.
+\end{keyidea}
+
+\section{Series as a one-dimensional array}
+
+The same object also behaves like a NumPy array: it supports slices, boolean masks, and fancy indexing. Here is where the subtlety begins. Reset to a small alphabetic index so we can see both index systems clearly:
+
+\begin{lstlisting}
+data = pd.Series([0.25, 0.50, 0.75, 1.00],
+                 index=['a', 'b', 'c', 'd'])
+\end{lstlisting}
+
+\subsection{Two kinds of slice, two different rules}
+
+\begin{lstlisting}
+data['a':'c']   # slice by EXPLICIT label
+data[0:2]       # slice by IMPLICIT integer position
+\end{lstlisting}
+
+\begin{outbox}
+\# data['a':'c'] \\
+a \quad 0.25 \\
+b \quad 0.50 \\
+c \quad 0.75 \\
+\\
+\# data[0:2] \\
+a \quad 0.25 \\
+b \quad 0.50
+\end{outbox}
+
+Look closely. The label slice \code{'a':'c'} returns \emph{three} elements --- it \textbf{includes} the endpoint \code{'c'}. The positional slice \code{0:2} returns \emph{two} elements --- it \textbf{excludes} position \code{2}, the ordinary Python ``stop is exclusive'' rule.
+
+\begin{pitfall}
+\textbf{The single most confusing thing in all of Pandas.} Label-based slices are \emph{inclusive} of the final label; integer-position slices are \emph{exclusive} of the final position. Two opposite conventions live inside one object. The reason is sensible --- with labels, you often do not know or care what position \code{'c'} sits at, so ``up to and including \code{'c'}'' is the intuitive meaning --- but it means you must always know \emph{which} kind of slice you are writing.
+\end{pitfall}
+
+Boolean masking and fancy indexing work just like NumPy:
+
+\begin{lstlisting}
+data[(data > 0.3) & (data < 0.8)]   # boolean mask
+data[['a', 'd']]                    # fancy indexing
+\end{lstlisting}
+
+\begin{outbox}
+\# masked \\
+b \quad 0.50 \\
+c \quad 0.75 \\
+\\
+\# fancy \\
+a \quad 0.25 \\
+d \quad 1.00
+\end{outbox}
+
+\subsection{The integer-index disaster, and how \code{loc}/\code{iloc} fix it}
+
+Now make the labels themselves integers --- but \emph{not} the usual \code{0,1,2}\dots:
+
+\begin{lstlisting}
+weird = pd.Series(['a', 'b', 'c'], index=[1, 3, 5])
+weird[1]      # explicit-index lookup -> 'a'  (label 1)
+weird[1:3]    # implicit-position slice -> labels 3 and 5
+\end{lstlisting}
+
+\begin{outblock}
+weird[1]
+'a'
+
+weird[1:3]
+3    b
+5    c
+dtype: object
+\end{outblock}
+
+Notice the schizophrenia: when you \emph{index} with a single integer, Pandas uses the \emph{explicit label} (so \code{weird[1]} is the element labelled \code{1}); but when you \emph{slice} with integers, Pandas falls back to \emph{implicit position} (so \code{weird[1:3]} means positions 1 and 2). Same brackets, two different index systems, chosen by whether you passed a scalar or a slice. This is a bug factory.
+
+Pandas resolves it with two explicit accessors:
+
+\begin{itemize}
+  \item \code{.loc[...]} \emph{always} uses the \textbf{explicit label}, for both indexing and slicing (and label slices stay endpoint-inclusive).
+  \item \code{.iloc[...]} \emph{always} uses the \textbf{implicit integer position}, NumPy-style (endpoint-exclusive).
+\end{itemize}
+
+\begin{lstlisting}
+weird.loc[1]       # -> 'a'        (label 1)
+weird.loc[1:3]     # -> labels 1 and 3, INCLUSIVE
+weird.iloc[1]      # -> 'b'        (position 1)
+weird.iloc[1:3]    # -> positions 1 and 2, EXCLUSIVE
+\end{lstlisting}
+
+\begin{keyidea}
+The Zen of Python says \emph{``explicit is better than implicit.''} That line is practically the motto of \code{loc} and \code{iloc}. Bare-bracket indexing on a \code{Series} guesses your intent from context; \code{loc} and \code{iloc} never guess. In production code and shared notebooks, reach for them by default --- they make your code read the same way it behaves, and they are immune to the integer-label trap above.
+\end{keyidea}
+
+For grabbing or setting a \emph{single scalar} as fast as possible, Pandas also offers \code{.at} (label-based) and \code{.iat} (position-based). They skip the machinery that lets \code{loc}/\code{iloc} return slices and masks, so \code{df.at['Texas', 'area']} is a touch quicker than \code{df.loc['Texas', 'area']} when you truly want exactly one cell.
+
+\section{DataFrame as a dictionary of Series}
+
+Step up one dimension. Build a small table by pairing our \code{area} with a population \code{Series}, then derive a density column:
+
+\begin{lstlisting}
+pop = pd.Series({'California': 39.5, 'Texas': 29.0,
+                 'Florida': 21.5, 'NewYork': 19.5})   # millions
+states = pd.DataFrame({'pop': pop, 'area': area})
+states['density'] = states['pop'] / states['area']     # people per 1000 km^2
+\end{lstlisting}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{l r r r}
+\toprule
+ & \textbf{pop} & \textbf{area} & \textbf{density} \\
+\midrule
+California & 39.5 & 424 & 0.0932 \\
+Texas      & 29.0 & 696 & 0.0417 \\
+Florida    & 21.5 & 170 & 0.1265 \\
+NewYork    & 19.5 & 141 & 0.1383 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{intuition}
+Read a \code{DataFrame} as a dictionary whose \emph{keys are column names} and whose \emph{values are \code{Series}}. That is why a single bracketed key returns a column:
+\code{states['area']} hands you the \code{area} \code{Series}, not a row. (Coming from NumPy this surprises people, because there \code{a[0]} is a row. Hold that thought --- the convention flips for slices.)
+\end{intuition}
+
+There are two ways to pull out a column:
+
+\begin{lstlisting}
+states['area']    # dictionary-style: always works
+states.area       # attribute-style: convenient, but fragile
+\end{lstlisting}
+
+Attribute access is sugar that works only when the column name is a valid Python identifier \emph{and} does not collide with an existing \code{DataFrame} method or attribute.
+
+\begin{pitfall}
+\textbf{Three ways attribute access bites you.}
+\begin{enumerate}
+  \item \textbf{Name collisions.} A \code{DataFrame} already has a \code{.pop()} method (it removes a column). If your column is called \code{pop}, then \code{states.pop} returns the \emph{method}, not your data --- silently wrong. Bracket access \code{states['pop']} is unambiguous.
+  \item \textbf{Illegal identifiers.} A column named \code{'mean temp'} (with a space) or \code{'2020'} cannot be reached as \code{states.mean temp}; only \code{states['mean temp']} works.
+  \item \textbf{You cannot create a column by attribute.} \code{states.newcol = ...} does \emph{not} add a column --- it just tacks an ordinary attribute onto the object. To create a column you must assign through brackets: \code{states['newcol'] = ...}.
+\end{enumerate}
+The safe habit: \emph{read} with either style, but \emph{write} (and resolve any doubt) with brackets.
+\end{pitfall}
+
+\section{DataFrame as a two-dimensional array}
+
+The other face of a \code{DataFrame} is an enhanced 2-D NumPy array. The raw grid lives in \code{.values}, and you can transpose with \code{.T}:
+
+\begin{lstlisting}
+states.values     # the underlying 2-D NumPy array (no labels)
+states.T          # swap rows and columns (states become columns)
+\end{lstlisting}
+
+\begin{pyrefresh}
+\code{.T} is the same transpose idea as NumPy's \code{a.T} or a math textbook's $A^{\mathsf{T}}$: element $(i,j)$ becomes element $(j,i)$. After \code{states.T}, the column labels (\code{pop, area, density}) become the row index and the state names become the columns. Transpose is purely a relabeling-and-reshaping view; it does no arithmetic.
+\end{pyrefresh}
+
+For genuine two-dimensional selection --- pick rows \emph{and} columns at once --- use \code{loc} and \code{iloc} with two arguments, exactly like NumPy's \code{a[rows, cols]} but with labels available:
+
+\begin{lstlisting}
+states.iloc[:2, :2]                  # first 2 rows, first 2 cols (by position)
+states.loc[:'Texas', :'area']        # up to row 'Texas', up to col 'area' (labels, inclusive)
+states.loc['Florida', 'density']     # a single labelled cell
+\end{lstlisting}
+
+\begin{outbox}
+\# states.iloc[:2, :2] \\
+\quad\quad\quad\quad pop \quad area \\
+California \quad 39.5 \quad 424 \\
+Texas \quad\quad\;\, 29.0 \quad 696
+\end{outbox}
+
+The real power appears when you combine masking (which rows) with fancy indexing (which columns) inside one \code{loc} call:
+
+\begin{lstlisting}
+states.loc[states['density'] > 0.1, ['pop', 'density']]
+\end{lstlisting}
+
+\begin{outbox}
+\quad\quad\quad\quad pop \quad density \\
+Florida \quad\, 21.5 \quad 0.1265 \\
+NewYork \quad 19.5 \quad 0.1383
+\end{outbox}
+
+Read that left to right: ``from \code{states}, take the rows where density exceeds 0.1, and from those rows keep only the \code{pop} and \code{density} columns.'' This one-liner is the workhorse pattern of exploratory analysis.
+
+\subsection{A picture of \texorpdfstring{\code{loc}}{loc} versus \texorpdfstring{\code{iloc}}{iloc}}
+
+Both accessors can reach the very same cell; they differ only in the \emph{address system} they use to name it. The diagram below shows our \code{states} table with its labels (outside, blue/green) and its implicit integer positions (inside each header, gray). The highlighted cell --- Texas's area --- is reached by \code{.loc['Texas','area']} or equivalently \code{.iloc[1, 1]}.
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily\small,
+   collab/.style={font=\sffamily\footnotesize\color{accent2}},
+   rowlab/.style={font=\sffamily\footnotesize\color{accent}},
+   poslab/.style={font=\sffamily\scriptsize\color{codecom}},
+   cell/.style={draw=rulegray, minimum width=1.7cm, minimum height=0.85cm},
+   hd/.style={cell, fill=bggreen},
+   rh/.style={cell, fill=bgblue},
+   val/.style={cell, fill=white},
+   hit/.style={cell, fill=bgorange, very thick, draw=warn}]
+
+  % column headers
+  \node[hd] at (1.7,3) {pop};
+  \node[hd] at (3.4,3) {area};
+  \node[hd] at (5.1,3) {density};
+  \node[poslab] at (1.7,2.62) {iloc col 0};
+  \node[poslab] at (3.4,2.62) {iloc col 1};
+  \node[poslab] at (5.1,2.62) {iloc col 2};
+
+  % rows
+  \foreach \y/\name/\pp/\aa/\dd/\i [count=\k] in {%
+     2/California/39.5/424/0.093/0,
+     1/Texas/29.0/696/0.042/1,
+     0/Florida/21.5/170/0.127/2}{
+    \node[rh] at (0,\y*0.85) {\name};
+    \node[poslab, anchor=west] at (-1.05,\y*0.85) {r\i};
+    \node[val] at (1.7,\y*0.85) {\pp};
+    \ifnum\i=1
+       \node[hit] at (3.4,\y*0.85) {\aa};
+    \else
+       \node[val] at (3.4,\y*0.85) {\aa};
+    \fi
+    \node[val] at (5.1,\y*0.85) {\dd};
+  }
+
+  % annotation for the hit cell
+  \node[font=\sffamily\footnotesize\color{warn}, align=center]
+     at (3.4,-1.3)
+     {\code{states.loc['Texas','area']}\\[2pt]$\equiv$\;\code{states.iloc[1, 1]}};
+  \draw[-{Latex[length=2mm]}, warn, thick] (3.4,-0.75) -- (3.4,0.45);
+\end{tikzpicture}
+\end{center}
+
+\begin{intuition}
+\code{loc} navigates by the \emph{names written on the outside} of the grid (blue rows, green columns); \code{iloc} navigates by the \emph{counting numbers} \code{0,1,2}\dots\ regardless of what the labels say. Pick \code{loc} when you think ``the Texas row, the area column''; pick \code{iloc} when you think ``the second row, the second column.''
+\end{intuition}
+
+\section{The conventions that surprise everyone}
+
+Bare-bracket indexing on a \code{DataFrame} (no \code{loc}/\code{iloc}) follows a small set of rules that feel inconsistent until you memorize them. They exist because they cover the two most common everyday actions: ``give me a column'' and ``give me some rows.''
+
+\begin{lstlisting}
+states['area']         # a bare KEY  -> a COLUMN
+states['California':'Texas']  # a SLICE -> ROWS (label, inclusive)
+states[1:3]            # a positional SLICE -> ROWS (exclusive)
+states[states['density'] > 0.1]  # a MASK -> ROWS
+\end{lstlisting}
+
+\begin{keyidea}
+The rule of thumb for bare brackets on a \code{DataFrame}:
+\begin{itemize}
+  \item A \textbf{single key} selects a \textbf{column} (dictionary view).
+  \item A \textbf{slice} or a \textbf{boolean mask} selects \textbf{rows} (array view).
+\end{itemize}
+So \code{df['x']} and \code{df['a':'c']} address \emph{different axes} despite using the same brackets. When this ever feels ambiguous --- and it will --- stop and rewrite it with \code{loc} or \code{iloc}, which name the axis explicitly: \code{df.loc[:, 'x']} for the column, \code{df.loc['a':'c', :]} for the rows.
+\end{keyidea}
+
+\subsection{Chained indexing and the \texorpdfstring{\code{SettingWithCopyWarning}}{SettingWithCopyWarning}}
+
+A final, very practical trap. Suppose you want to bump Texas's density. The tempting two-step write is:
+
+\begin{lstlisting}
+states['density']['Texas'] = 0.05     # chained indexing -- avoid
+\end{lstlisting}
+
+This is \emph{chained indexing}: two bracket operations back to back. The first, \code{states['density']}, may return either a view onto the original data or a fresh copy --- Pandas does not guarantee which. If it returns a copy, your assignment lands on a temporary that is thrown away, and your \code{DataFrame} is silently \emph{not} updated. To warn you that the outcome is undefined, Pandas raises a \code{SettingWithCopyWarning}.
+
+\begin{pitfall}
+\textbf{Never assign through chained brackets.} Do the row-and-column selection in a \emph{single} \code{loc} call, which Pandas guarantees writes back to the original:
+\begin{itemize}
+  \item Wrong: \code{states['density']['Texas'] = 0.05}
+  \item Right: \code{states.loc['Texas', 'density'] = 0.05}
+\end{itemize}
+The single-\code{loc} form is unambiguous about which cell you mean and is guaranteed to mutate the original frame. (In Pandas 3.0 the underlying copy-on-write behavior makes the old chained form fail more loudly, but the single-\code{loc} habit is correct under every version.)
+\end{pitfall}
+
+\section*{Section recap}
+\addcontentsline{toc}{section}{Section recap}
+\begin{itemize}
+  \item A \code{Series} acts like a dict (\code{in}, \code{.keys()}, \code{.items()}, assign a new key to extend) and like a 1-D array (slices, masks, fancy indexing).
+  \item Label slices include the endpoint; positional slices exclude it. With integer labels, bare brackets index by label but slice by position --- a genuine trap.
+  \item \code{.loc} = explicit labels (inclusive slices); \code{.iloc} = implicit integer positions (exclusive slices). \code{.at}/\code{.iat} are their fast single-scalar cousins. Prefer them: explicit beats implicit.
+  \item A \code{DataFrame} is a dict of \code{Series}: a bare key returns a \emph{column}. Attribute access (\code{df.col}) is convenient but breaks on method-name collisions, spaces, and cannot create new columns --- write with brackets.
+  \item As a 2-D array it offers \code{.values}, \code{.T}, and combined row+column selection via \code{loc}/\code{iloc}, e.g. \code{df.loc[df['density'] > 0.1, ['pop','density']]}.
+  \item Bare-bracket surprise: a key $\to$ column, but a slice or mask $\to$ rows.
+  \item Never assign through chained indexing; use one \code{loc} assignment to avoid \code{SettingWithCopyWarning}.
+\end{itemize}
+
+\end{document}

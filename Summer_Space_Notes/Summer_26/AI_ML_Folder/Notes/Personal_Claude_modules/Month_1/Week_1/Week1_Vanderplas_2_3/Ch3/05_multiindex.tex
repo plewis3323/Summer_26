@@ -1,0 +1,468 @@
+\documentclass[11pt]{article}
+\usepackage{notesstyle}
+
+\begin{document}
+\notesheader{3.5}{Hierarchical Indexing}{The \code{MultiIndex} --- packing extra dimensions of labels into a 1-D \code{Series} or 2-D \code{DataFrame}.}
+
+\section{Why you would ever want a second level of index}
+
+So far an index has been a flat list of labels: one label per row. That is enough for genuinely two-dimensional data (rows $\times$ columns). But an enormous amount of real data is naturally \emph{three} or more dimensions: sales by \emph{store} and \emph{month}, gene expression by \emph{patient} and \emph{tissue}, sensor readings by \emph{location} and \emph{timestamp}. You want to keep indexing data --- looking it up by meaningful labels --- but now along more than one axis at once.
+
+\begin{background}
+The cleanest tool for $N$-dimensional labeled data is a genuinely $N$-dimensional container (the \code{xarray} library exists for exactly this). But in day-to-day work we usually want to stay inside the \code{Series}/\code{DataFrame} world, because all the alignment, grouping, and plotting machinery lives there. \textbf{Hierarchical indexing} (a.k.a. multi-level indexing) is Pandas's answer: it encodes the extra axes as nested \emph{levels} of a single index, so a 1-D \code{Series} can stand in for 2-D data, and a 2-D \code{DataFrame} can stand in for 3-D or 4-D data.
+\end{background}
+
+\subsection{The naive approach: Python tuples as keys}
+
+Suppose we have a population figure for a few US states, but at \emph{two different years}. The label for each value is really a pair \code{(state, year)}. A first instinct is to use tuples as the index keys:
+
+\begin{lstlisting}
+import numpy as np
+import pandas as pd
+
+index = [('California', 2010), ('California', 2020),
+         ('New York',   2010), ('New York',   2020),
+         ('Texas',      2010), ('Texas',      2020)]
+populations = [37_253_956, 39_538_223,
+               19_378_102, 20_201_249,
+               25_145_561, 29_145_505]
+pop = pd.Series(populations, index=index)
+print(pop)
+\end{lstlisting}
+
+\begin{outblock}
+(California, 2010)    37253956
+(California, 2020)    39538223
+(New York, 2010)      19378102
+(New York, 2020)      20201249
+(Texas, 2010)         25145561
+(Texas, 2020)         29145505
+dtype: int64
+\end{outblock}
+
+This \emph{works}: \code{pop[('California', 2020)]} returns the right number. But it is clumsy the moment you want a \emph{slice}. The index is, as far as Pandas is concerned, a flat list of opaque tuple objects. There is no notion that the first element is a ``state level'' and the second a ``year level.'' So a natural question like ``give me every state's 2020 figure'' has no clean expression:
+
+\begin{lstlisting}
+# Select all years 2020 -- ugly: we must loop the tuples by hand
+pop[[i for i in pop.index if i[1] == 2020]]
+\end{lstlisting}
+
+\begin{outblock}
+(California, 2020)    39538223
+(New York, 2020)      20201249
+(Texas, 2020)         29145505
+dtype: int64
+\end{outblock}
+
+That list comprehension is exactly the kind of manual bookkeeping Pandas is supposed to eliminate. It is also slow (a Python loop over every label) and it does not generalize: slicing on the \emph{outer} level, partial selection, sorting by one level --- all become bespoke code.
+
+\begin{keyidea}
+A list of tuples \emph{looks} hierarchical but is not. Pandas sees a flat sequence of tuple objects with no level structure, so none of the level-aware operations (partial indexing, cross-section, group-by-level) are available. The fix is to promote those tuples into a real \code{MultiIndex}.
+\end{keyidea}
+
+\subsection{The clean solution: \code{pd.MultiIndex}}
+
+A \code{MultiIndex} is an index object that explicitly stores \emph{multiple levels}, each its own array of labels, plus the integer codes that say which label of each level a given row uses. We can build one straight from our tuples:
+
+\begin{lstlisting}
+mi = pd.MultiIndex.from_tuples(index)
+pop = pop.reindex(mi)
+print(pop)
+\end{lstlisting}
+
+\begin{outblock}
+California  2010    37253956
+            2020    39538223
+New York    2010    19378102
+            2020    20201249
+Texas       2010    25145561
+            2020    29145505
+dtype: int64
+\end{outblock}
+
+Two things changed. Visually, the repeated outer label (\code{California}, \code{New York}, \dots) is now collapsed --- the blank space under \code{California} means ``same as above,'' signalling the level structure. Functionally, we now get the slice we wanted with trivial syntax:
+
+\begin{lstlisting}
+pop[:, 2020]      # all rows whose SECOND level == 2020
+\end{lstlisting}
+
+\begin{outblock}
+California    39538223
+New York      20201249
+Texas         29145505
+dtype: int64
+\end{outblock}
+
+The result is a single-level \code{Series} indexed only by state --- Pandas dropped the level we fully specified. This is shorter, faster, and far more readable than the list comprehension.
+
+\section{A MultiIndex is literally an extra dimension}
+
+Here is the mental model worth internalizing. Our \code{pop} Series has six entries laid out along one axis, but its \emph{meaning} is a $3 \times 2$ grid (three states, two years). The \code{MultiIndex} is what lets a 1-D container carry 2-D meaning. The conversion between ``stacked into a column'' and ``spread into a grid'' is so common it has two named methods: \code{unstack} and \code{stack}.
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily\small,
+   lvl/.style={font=\sffamily\footnotesize\color{accent}},
+   cell/.style={draw=rulegray, minimum width=2.0cm, minimum height=0.62cm, anchor=center},
+   outer/.style={cell, fill=bgblue, font=\sffamily\small\color{accent}},
+   inner/.style={cell, fill=bggreen, font=\sffamily\small\color{accent2}},
+   val/.style={cell, fill=white},
+   col/.style={cell, fill=bggreen, font=\sffamily\small\color{accent2}, minimum width=1.6cm}]
+
+  % ---- LEFT: multiply-indexed Series ----
+  \node[lvl] at (1.0,4.55) {\textbf{Series} with 2-level index};
+  % California
+  \node[outer, minimum height=1.24cm] (ca) at (0,3.5) {California};
+  \node[inner] (ca1) at (1.5,3.81) {2010};
+  \node[inner] (ca2) at (1.5,3.19) {2020};
+  \node[val]   at (3.4,3.81) {37253956};
+  \node[val]   at (3.4,3.19) {39538223};
+  % New York
+  \node[outer, minimum height=1.24cm] (ny) at (0,2.26) {New York};
+  \node[inner] at (1.5,2.57) {2010};
+  \node[inner] at (1.5,1.95) {2020};
+  \node[val]   at (3.4,2.57) {19378102};
+  \node[val]   at (3.4,1.95) {20201249};
+  % Texas
+  \node[outer, minimum height=1.24cm] (tx) at (0,1.02) {Texas};
+  \node[inner] at (1.5,1.33) {2010};
+  \node[inner] at (1.5,0.71) {2020};
+  \node[val]   at (3.4,1.33) {25145561};
+  \node[val]   at (3.4,0.71) {29145505};
+
+  \node[lvl] at (0,0.05)   {outer level};
+  \node[lvl] at (1.5,0.05) {inner level};
+  \node[lvl] at (3.4,0.05) {values};
+
+  % ---- arrows ----
+  \draw[-{Stealth[length=3mm]}, accent, line width=1pt]
+      (4.55,2.7) -- node[above, font=\sffamily\footnotesize\color{accent}]{unstack()}
+                    node[below, font=\sffamily\footnotesize\color{accent}]{(inner $\to$ cols)} (6.6,2.7);
+  \draw[-{Stealth[length=3mm]}, accent2, line width=1pt]
+      (6.6,2.15) -- node[above, font=\sffamily\footnotesize\color{accent2}]{stack()} (4.55,2.15);
+
+  % ---- RIGHT: 2-D DataFrame ----
+  \node[lvl] at (8.7,4.55) {\textbf{DataFrame} (2-D grid)};
+  \node[col] at (8.1,3.95) {2010};
+  \node[col] at (9.7,3.95) {2020};
+  \node[outer, minimum width=1.8cm] at (6.55,3.33) {California};
+  \node[outer, minimum width=1.8cm] at (6.55,2.71) {New York};
+  \node[outer, minimum width=1.8cm] at (6.55,2.09) {Texas};
+  \node[val, minimum width=1.6cm] at (8.1,3.33) {37253956};
+  \node[val, minimum width=1.6cm] at (9.7,3.33) {39538223};
+  \node[val, minimum width=1.6cm] at (8.1,2.71) {19378102};
+  \node[val, minimum width=1.6cm] at (9.7,2.71) {20201249};
+  \node[val, minimum width=1.6cm] at (8.1,2.09) {25145561};
+  \node[val, minimum width=1.6cm] at (9.7,2.09) {29145505};
+\end{tikzpicture}
+\end{center}
+
+\begin{lstlisting}
+pop_df = pop.unstack()   # inner level (year) becomes the columns
+pop_df
+\end{lstlisting}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{l r r}
+\toprule
+ & \textbf{2010} & \textbf{2020} \\
+\midrule
+California & 37253956 & 39538223 \\
+New York   & 19378102 & 20201249 \\
+Texas      & 25145561 & 29145505 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{lstlisting}
+pop_df.stack()   # columns fold back into a second index level
+\end{lstlisting}
+
+And \code{stack} returns us exactly to the original multiply-indexed \code{Series}. The pair is a lossless round trip.
+
+\begin{intuition}
+\code{unstack} pivots one index level ``up'' to become columns (data gets \emph{wider}); \code{stack} pivots columns ``down'' to become an index level (data gets \emph{taller}). It is the same numbers, reshaped --- a \code{MultiIndex} on rows and a column axis are two views of the same higher-dimensional cube.
+\end{intuition}
+
+\subsection{Why bother --- just add a column?}
+
+Why not keep a plain \code{DataFrame} with a \code{year} \emph{column} instead of a year index level? You can, and often should. But once a quantity is a label rather than a value, treating it as an index level unlocks alignment and group-by-level operations, lets you add \emph{more} columns of actual measurements without confusion, and gives you the \code{stack}/\code{unstack} reshaping for free. The \code{MultiIndex} earns its keep precisely when you have several measured columns indexed by the same set of label axes:
+
+\begin{lstlisting}
+pop_df = pd.DataFrame({'total': pop,
+                       'under18': [9_284_094, 8_898_092,
+                                   4_687_374, 4_318_033,
+                                   6_879_014, 7_503_437]})
+pop_df['frac_under18'] = pop_df['under18'] / pop_df['total']
+pop_df['frac_under18'].unstack()
+\end{lstlisting}
+
+\begin{outblock}
+                2010      2020
+California   0.249265  0.225041
+New York     0.241886  0.213750
+Texas        0.273568  0.257619
+dtype: float64
+\end{outblock}
+
+The arithmetic ran row-by-row honoring both index levels, then \code{unstack} reshaped the answer into a readable grid --- no manual joining of state and year keys anywhere.
+
+\section{Constructing a MultiIndex}
+
+You rarely call \code{from\_tuples} by hand. More often a \code{MultiIndex} appears \emph{implicitly}, or you build it from arrays/products.
+
+\subsection{Implicit construction}
+
+If you pass a \emph{list of two or more lists} as the \code{index} to a \code{Series} or \code{DataFrame}, Pandas builds the \code{MultiIndex} for you:
+
+\begin{lstlisting}
+df = pd.DataFrame(np.round(np.random.rand(4, 2), 2),
+                  index=[['a', 'a', 'b', 'b'], [1, 2, 1, 2]],
+                  columns=['data1', 'data2'])
+\end{lstlisting}
+
+Likewise, passing a dictionary whose \emph{keys are tuples} makes Pandas recognize the levels automatically:
+
+\begin{lstlisting}
+data = {('California', 2010): 37_253_956,
+        ('California', 2020): 39_538_223,
+        ('Texas',      2010): 25_145_561,
+        ('Texas',      2020): 29_145_505}
+pd.Series(data)   # -> a MultiIndexed Series, no extra work
+\end{lstlisting}
+
+\subsection{Explicit constructors}
+
+When you want to be deliberate, the \code{pd.MultiIndex} class has three workhorse class methods:
+
+\begin{lstlisting}
+# From a list of (level0, level1) tuples
+pd.MultiIndex.from_tuples([('a', 1), ('a', 2), ('b', 1), ('b', 2)])
+
+# From a list of arrays, one array per level (parallel, row-aligned)
+pd.MultiIndex.from_arrays([['a', 'a', 'b', 'b'], [1, 2, 1, 2]])
+
+# From the CARTESIAN PRODUCT of single-level iterables
+pd.MultiIndex.from_product([['a', 'b'], [1, 2]])
+\end{lstlisting}
+
+\begin{intuition}
+Choose by how your levels relate. \code{from\_product} when every combination of level values exists (a full grid --- e.g. every state crossed with every year). \code{from\_arrays} when you already have the levels as parallel columns and not all combinations occur. \code{from\_tuples} when the pairs arrive naturally as tuples. They all produce the same kind of object.
+\end{intuition}
+
+\subsection{Naming the levels}
+
+An unnamed level is hard to refer to later. Every \code{MultiIndex} has a \code{names} attribute --- a list with one name per level --- and you should set it:
+
+\begin{lstlisting}
+pop.index.names = ['state', 'year']
+print(pop)
+\end{lstlisting}
+
+\begin{outblock}
+state       year
+California  2010    37253956
+            2020    39538223
+New York    2010    19378102
+            2020    20201249
+Texas       2010    25145561
+            2020    29145505
+dtype: int64
+\end{outblock}
+
+Now the level names print as a header, and you can use them in \code{groupby(level='year')}, \code{xs(level='state')}, and so on, instead of remembering that ``year is level 1.''
+
+\section{Hierarchical indexing on columns too}
+
+Rows are not special. A \code{DataFrame}'s \emph{columns} are themselves an \code{Index}, so they can be a \code{MultiIndex} as well. This gives you fully four-dimensional tables: two label axes down the rows, two across the columns. A classic use is repeated measurements --- several subjects, each measured for several quantities, across several visits.
+
+\begin{lstlisting}
+# hierarchical row index: (year, visit)
+rows = pd.MultiIndex.from_product([[2024, 2025], [1, 2]],
+                                  names=['year', 'visit'])
+# hierarchical column index: (subject, measurement-type)
+cols = pd.MultiIndex.from_product([['Ada', 'Bo'], ['hr', 'temp']],
+                                  names=['subject', 'type'])
+
+rng = np.random.default_rng(0)
+data = np.round(37 + 3 * rng.standard_normal((4, 4)), 1)
+data[:, ::2] = np.round(data[:, ::2] * 2)   # make hr look heart-rate-ish
+health = pd.DataFrame(data, index=rows, columns=cols)
+health
+\end{lstlisting}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{l l r r r r}
+\toprule
+ & \textbf{subject} & \multicolumn{2}{c}{\textbf{Ada}} & \multicolumn{2}{c}{\textbf{Bo}} \\
+ & \textbf{type} & \textbf{hr} & \textbf{temp} & \textbf{hr} & \textbf{temp} \\
+\textbf{year} & \textbf{visit} & & & & \\
+\midrule
+2024 & 1 & 74.0 & 37.4 & 78.0 & 36.6 \\
+     & 2 & 76.0 & 38.1 & 72.0 & 37.0 \\
+2025 & 1 & 80.0 & 36.9 & 74.0 & 37.7 \\
+     & 2 & 70.0 & 37.2 & 82.0 & 36.8 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Because the columns are hierarchical, a top-level key selects a whole sub-table --- everything for one subject:
+
+\begin{lstlisting}
+health['Ada']            # a DataFrame with columns ['hr', 'temp']
+health['Ada', 'hr']      # a single Series: Ada's heart rate over time
+\end{lstlisting}
+
+\begin{keyidea}
+The same partial-indexing rule applies on both axes. A single bare key reaches into the \emph{outermost} level and returns the corresponding lower-dimensional slice. \code{health['Ada']} is to columns what \code{pop['California']} is to rows.
+\end{keyidea}
+
+\section{Indexing and slicing multiply-indexed objects}
+
+\subsection{On a Series}
+
+Take the named \code{pop} from above. The pattern is: supply labels for levels left-to-right, and Pandas returns whatever is left.
+
+\begin{lstlisting}
+pop['California']          # partial index, outer level -> a Series over year
+pop['California', 2010]    # both levels -> a single scalar, 37253956
+pop['California':'New York']        # outer-level slice (endpoint INCLUSIVE)
+pop[:, 2020]               # fix the INNER level, keep all outer labels
+pop[pop > 22_000_000]      # boolean mask works as usual
+pop[['California', 'Texas']]        # fancy indexing on the outer level
+\end{lstlisting}
+
+\begin{pitfall}
+\code{pop[:, 2020]} --- using the empty slice \code{:} as a placeholder to ``keep everything at the outer level while pinning the inner level'' --- only works because this is a \code{Series}. On a \code{DataFrame}, a bare bracket lookup \code{df[...]} indexes \emph{columns}, so this trick does not transfer; you need \code{.loc} and (often) \code{pd.IndexSlice}, covered next.
+\end{pitfall}
+
+\subsection{On a DataFrame}
+
+\code{DataFrame} selection goes through \code{.loc} and \code{.iloc}. With a row \code{MultiIndex}, the \code{.loc} key is itself a tuple of per-level labels:
+
+\begin{lstlisting}
+health.loc[2024]               # partial: all visits in 2024 (a DataFrame)
+health.loc[(2024, 1)]          # both row levels -> one row (a Series)
+health.loc[(2024, 1), ('Ada', 'hr')]   # one cell, addressing all 4 levels
+\end{lstlisting}
+
+The trouble starts when you want to slice the \emph{inner} level. You might reach for \code{health.loc[(:, 1), :]} to mean ``visit 1 in every year,'' but a bare colon is illegal \emph{inside} a tuple --- Python parses \code{:} as slice syntax only in subscripts, not inside parentheses. That syntax error is what \code{pd.IndexSlice} exists to dodge.
+
+\subsection{\code{pd.IndexSlice} for inner-level slicing}
+
+\code{pd.IndexSlice} is a tiny helper object whose only job is to let you write slice syntax (\code{:}, \code{start:stop}) \emph{inside} a \code{.loc} key, per level:
+
+\begin{lstlisting}
+idx = pd.IndexSlice
+
+# every year, but only visit 1; and only the 'hr' column of each subject
+health.loc[idx[:, 1], idx[:, 'hr']]
+\end{lstlisting}
+
+\begin{outblock}
+subject         Ada    Bo
+                 hr    hr
+year visit
+2024 1         74.0  78.0
+2025 1         80.0  74.0
+\end{outblock}
+
+Read \code{idx[:, 1]} as ``all of level 0 (year), level 1 (visit) equal to 1,'' and \code{idx[:, 'hr']} as the analogous slice across the column levels. \code{IndexSlice} is purely syntactic sugar --- it builds the right tuple of slice objects so you can express row \emph{and} column inner-level selection in a single \code{.loc} call.
+
+\section{Rearranging multi-indexed data}
+
+\subsection{Sorting: why slicing demands a sorted index}
+
+A \code{MultiIndex} stores its labels as \emph{codes} pointing into per-level label arrays. Range slicing on those levels (\code{'California':'New York'}, or any partial outer slice) is only well-defined and only \emph{fast} when the index is \textbf{lexically sorted} --- because a slice is internally a search for a contiguous block of codes, and ``contiguous'' only means anything if the labels are in order. If you try to slice an unsorted \code{MultiIndex}, Pandas refuses:
+
+\begin{lstlisting}
+bad = pd.Series(range(4),
+                index=pd.MultiIndex.from_tuples(
+                    [('b', 1), ('a', 1), ('b', 2), ('a', 2)]))
+bad['a':'b']
+# UnsortedIndexError: 'Key length (1) was greater than MultiIndex
+#   lexsort depth (0)'
+\end{lstlisting}
+
+The cure is one call:
+
+\begin{lstlisting}
+good = bad.sort_index()
+good['a':'b']          # now works -- the block ('a',1),('a',2) is contiguous
+\end{lstlisting}
+
+\begin{pitfall}
+\code{UnsortedIndexError} (or the older \code{KeyError} about lexsort depth) almost always means ``you sliced a \code{MultiIndex} you never sorted.'' The fix is essentially always \code{df = df.sort\_index()} right after you build or load the data. Sorting once up front makes every later partial slice both legal and fast.
+\end{pitfall}
+
+\subsection{\code{reset\_index} and \code{set\_index}}
+
+Sometimes a flat table with the levels as ordinary columns is more convenient (for merging, plotting, or writing to CSV). \code{reset\_index} turns index levels into columns; \code{set\_index} does the reverse.
+
+\begin{lstlisting}
+flat = pop.reset_index(name='population')
+#   state        year   population
+# 0 California   2010    37253956
+# 1 California   2020    39538223
+# ...
+flat.set_index(['state', 'year'])   # back to a MultiIndexed object
+\end{lstlisting}
+
+\begin{intuition}
+\code{reset\_index} $\leftrightarrow$ \code{set\_index} is the ``index $\leftrightarrow$ column'' round trip, just as \code{stack} $\leftrightarrow$ \code{unstack} is the ``rows $\leftrightarrow$ columns'' round trip. Between these two pairs you can move any label axis to wherever it is most convenient for the operation at hand.
+\end{intuition}
+
+\subsection{\code{stack}/\code{unstack} with a chosen level}
+
+When more than two levels are in play, tell \code{unstack} \emph{which} level to pivot using \code{level=} (by position or by name):
+
+\begin{lstlisting}
+pop.unstack(level=0)    # 'state' becomes the columns
+pop.unstack(level=1)    # 'year' becomes the columns (the default: innermost)
+pop.unstack(level='year')   # same, by name -- clearer
+\end{lstlisting}
+
+\section{Aggregating across a level}
+
+The real payoff of named levels is group-wise reduction. To collapse one axis --- say, average over years to get a per-state mean --- group by the levels you want to \emph{keep} and reduce:
+
+\begin{lstlisting}
+pop.groupby(level='state').mean()
+\end{lstlisting}
+
+\begin{outblock}
+state
+California    38396089.5
+New York      19789675.5
+Texas         27145533.0
+dtype: float64
+\end{outblock}
+
+For a \code{DataFrame} with hierarchical columns, \code{groupby} also accepts an \code{axis} and a column-level name, so you can aggregate across, say, subjects while keeping measurement type:
+
+\begin{lstlisting}
+# mean over both subjects, per (year, visit) row and per measurement type
+health.groupby(level='type', axis=1).mean()
+\end{lstlisting}
+
+\begin{pitfall}
+You may see older code written as \code{pop.mean(level='state')} --- passing \code{level=} straight to a reduction like \code{mean}, \code{sum}, or \code{std}. That form is \textbf{deprecated} (removed in pandas 2.0). Always spell it \code{pop.groupby(level='state').mean()} instead. It is more explicit about what is happening (group, then reduce) and it is the form that will keep working.
+\end{pitfall}
+
+\begin{keyidea}
+\code{groupby(level=...)} is just \code{groupby} where the grouping keys come from \emph{index levels} rather than columns. Everything you know about \code{groupby} --- multiple aggregations via \code{.agg}, custom functions, transform --- applies unchanged. The \code{MultiIndex} simply hands \code{groupby} a ready-made set of keys.
+\end{keyidea}
+
+\section*{Section recap}
+\addcontentsline{toc}{section}{Section recap}
+\begin{itemize}
+  \item A \code{MultiIndex} packs $N$-dimensional labeled data into a 1-D \code{Series} or 2-D \code{DataFrame} by giving the index multiple \emph{levels}. Tuples-as-keys look similar but lack level structure --- promote them with \code{pd.MultiIndex}.
+  \item Build one implicitly (list-of-lists index, or dict with tuple keys) or explicitly via \code{from\_tuples}, \code{from\_arrays}, \code{from\_product}; always set \code{index.names}.
+  \item A row \code{MultiIndex} and the column axis are two views of one cube: \code{unstack} widens (level $\to$ columns), \code{stack} narrows (columns $\to$ level). Columns can be hierarchical too.
+  \item Index left-to-right by level; a bare outer key returns a lower-dimensional slice. Use \code{.loc} with \code{pd.IndexSlice} to slice \emph{inner} levels on a \code{DataFrame}.
+  \item \code{sort\_index()} before slicing a \code{MultiIndex}, or you get \code{UnsortedIndexError}. \code{reset\_index}/\code{set\_index} move levels to and from columns.
+  \item Aggregate across a level with \code{groupby(level=...)}; the older \code{.mean(level=...)} form is deprecated.
+\end{itemize}
+
+\end{document}

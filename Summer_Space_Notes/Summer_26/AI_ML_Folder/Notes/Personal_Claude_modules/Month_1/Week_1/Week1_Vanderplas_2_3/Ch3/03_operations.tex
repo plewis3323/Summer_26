@@ -1,0 +1,339 @@
+\documentclass[11pt]{article}
+\usepackage{notesstyle}
+
+\begin{document}
+\notesheader{3.3}{Operating on Data in Pandas}{Ufuncs that keep your labels, and the index alignment that turns ``mismatched data'' from a bug into a feature.}
+
+\section{Why this section matters}
+
+\begin{background}
+By now you know that a \code{Series} is a 1-D array with labels and a \code{DataFrame} is a table of label-aligned columns. This section answers the obvious next question: \emph{what happens when you do math on them?}
+
+The short version is that Pandas inherits NumPy's two superpowers and then adds a twist:
+\begin{itemize}
+  \item \textbf{From NumPy:} \emph{vectorization} via \emph{universal functions} (ufuncs). You write \code{np.exp(x)} once and a fast compiled loop runs over every element. No Python \code{for} loop, no per-element overhead.
+  \item \textbf{Pandas' twist:} those operations \emph{preserve and align labels}. A ufunc applied to a \code{Series} hands you back a \code{Series} with the same index. A binary operation between two objects first \emph{lines up their labels} and only then does the arithmetic.
+\end{itemize}
+That second point is the whole story of this section. It is also where missing values (\S3.4) sneak in --- so we will meet \code{NaN} as a natural by-product, not an accident.
+\end{background}
+
+\subsection*{A two-minute refresher on ufuncs and vectorization}
+
+\begin{pyrefresh}
+A \emph{ufunc} (``universal function'') is a NumPy function that operates \emph{elementwise} on arrays. The reason it matters is speed. Compare summing reciprocals two ways:
+
+\begin{itemize}
+  \item \textbf{Pure Python loop:} the interpreter dispatches on the type of every element, boxes/unboxes each number, and walks a Python-level loop. For a million elements this is painfully slow.
+  \item \textbf{Vectorized ufunc:} \code{1.0 / arr} pushes the entire loop down into a single precompiled C routine that runs over a contiguous block of memory. Often $50$--$100\times$ faster.
+\end{itemize}
+The mental rule: \emph{if you find yourself writing a Python \code{for} loop over array elements, there is probably a ufunc that does it faster.}
+\end{pyrefresh}
+
+The convention, as always:
+
+\begin{lstlisting}
+import numpy as np
+import pandas as pd
+\end{lstlisting}
+
+\section{Unary ufuncs: labels ride along}
+
+A \emph{unary} ufunc takes one array and returns one array of the same shape: \code{np.exp}, \code{np.sin}, \code{np.log}, \code{np.sqrt}, and so on. Apply one to a \code{Series} or \code{DataFrame} and you get the same kind of object back, with its index and columns untouched.
+
+Let us build a small \code{Series} of random integers to play with:
+
+\begin{lstlisting}
+rng = np.random.default_rng(7)
+ser = pd.Series(rng.integers(0, 10, 4),
+                index=['w', 'x', 'y', 'z'])
+print(ser)
+\end{lstlisting}
+
+\begin{outblock}
+w    5
+x    9
+y    0
+z    4
+dtype: int64
+\end{outblock}
+
+Now apply a ufunc. NumPy is perfectly happy to receive a Pandas object:
+
+\begin{lstlisting}
+print(np.exp(ser))
+\end{lstlisting}
+
+\begin{outblock}
+w     148.413159
+x    8103.083928
+y       1.000000
+z      54.598150
+dtype: float64
+\end{outblock}
+
+\begin{keyidea}
+The index \code{['w','x','y','z']} survived the trip. NumPy computed \code{np.exp} on the underlying values array (fast, in C), and Pandas re-wrapped the result with the \emph{same} labels. You never have to manually carry the index along --- it is glued to the data.
+\end{keyidea}
+
+The same holds for a \code{DataFrame}: the operation hits every cell and both axes' labels are preserved.
+
+\begin{lstlisting}
+df = pd.DataFrame(rng.integers(0, 10, (3, 2)),
+                  columns=['A', 'B'],
+                  index=['r0', 'r1', 'r2'])
+print(np.sin(df * np.pi / 4))
+\end{lstlisting}
+
+\begin{outbox}
+\begin{tabular}{l r r}
+\toprule
+ & \textbf{A} & \textbf{B} \\
+\midrule
+r0 & $0.707107$ & $1.000000$ \\
+r1 & $-0.707107$ & $0.000000$ \\
+r2 & $1.000000$ & $-0.707107$ \\
+\bottomrule
+\end{tabular}
+\end{outbox}
+
+\begin{intuition}
+Think of a Pandas object as a \emph{box} with two parts: a NumPy values array inside, and a label sticker (index, columns) on the outside. A unary ufunc reaches inside, transforms the numbers, and puts the same sticker back on. Nothing about \emph{which} row or column a number belongs to ever changes --- only the numbers do.
+\end{intuition}
+
+\section{Binary operations and index alignment in Series}
+
+Unary ufuncs are easy because there is only one set of labels. The interesting case is a \emph{binary} operation --- \code{+}, \code{-}, \code{*}, \code{/} --- between \emph{two} labeled objects. What if their indices do not match?
+
+This is where Pandas departs sharply from NumPy. In NumPy, \code{a + b} adds element 0 to element 0 by \emph{position}; if the shapes differ it errors. In Pandas, addition is done by \emph{label}: Pandas first forms the \textbf{union} of the two indices, lines up matching labels, and only then adds.
+
+A worked example. Suppose we track land area for one set of regions and population for an overlapping but not identical set:
+
+\begin{lstlisting}
+area = pd.Series({'Alpha': 4000, 'Bravo': 9000,
+                  'Charlie': 2500},
+                 name='area')
+pop  = pd.Series({'Bravo': 8.1e5, 'Charlie': 2.3e5,
+                  'Delta': 5.0e5},
+                 name='pop')
+print(pop / area)
+\end{lstlisting}
+
+\begin{outblock}
+Alpha           NaN
+Bravo      90.000000
+Charlie    92.000000
+Delta           NaN
+dtype: float64
+\end{outblock}
+
+Read that result carefully. The index of the output is $\{\text{Alpha}, \text{Bravo}, \text{Charlie}, \text{Delta}\}$ --- the \emph{union} of the two inputs. Where a label appears in only one of the two operands (\code{Alpha} has area but no pop; \code{Delta} has pop but no area), the result is \code{NaN}, ``not a number,'' Pandas' marker for missing data.
+
+\begin{keyidea}
+\textbf{The alignment rule, stated once.} For a binary op between Series $A$ and $B$, the result index is the set union of their labels,
+\[
+  I_{\text{result}} \;=\; I_A \cup I_B,
+\]
+the arithmetic is applied label-by-label on the matched entries, and any label present in only one operand yields \code{NaN}. Order does not matter: $A + B$ and $B + A$ share the same result index.
+\end{keyidea}
+
+\subsection{Picture: aligning two indices}
+
+The diagram below shows the union at work. Solid arrows pair up labels that exist on both sides; the dashed entries are present on only one side, so they fall through to \code{NaN}.
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily\small,
+   cell/.style={draw=rulegray, minimum width=2.0cm, minimum height=0.62cm},
+   src/.style={cell, fill=bgblue},
+   srcg/.style={cell, fill=bggreen},
+   res/.style={cell, fill=white},
+   nan/.style={cell, fill=bgorange, text=warn},
+   lbl/.style={font=\sffamily\footnotesize\color{accent}}]
+
+  % left column: area
+  \node[lbl] at (0,3.0) {\textbf{area} ($I_A$)};
+  \node[src] (a1) at (0,2.3) {Alpha};
+  \node[src] (a2) at (0,1.6) {Bravo};
+  \node[src] (a3) at (0,0.9) {Charlie};
+
+  % right column: pop
+  \node[lbl] at (6,3.0) {\textbf{pop} ($I_B$)};
+  \node[srcg] (b1) at (6,1.6) {Bravo};
+  \node[srcg] (b2) at (6,0.9) {Charlie};
+  \node[srcg] (b3) at (6,0.2) {Delta};
+
+  % result column (center)
+  \node[lbl] at (3,3.0) {\textbf{result} ($I_A \cup I_B$)};
+  \node[nan] (r1) at (3,2.3) {Alpha = NaN};
+  \node[res] (r2) at (3,1.6) {Bravo};
+  \node[res] (r3) at (3,0.9) {Charlie};
+  \node[nan] (r4) at (3,0.2) {Delta = NaN};
+
+  % matched (solid) arrows
+  \draw[-{Stealth[length=2mm]},accent] (a2.east) -- (r2.west);
+  \draw[-{Stealth[length=2mm]},accent2] (b1.west) -- (r2.east);
+  \draw[-{Stealth[length=2mm]},accent] (a3.east) -- (r3.west);
+  \draw[-{Stealth[length=2mm]},accent2] (b2.west) -- (r3.east);
+
+  % unmatched (dashed) arrows
+  \draw[-{Stealth[length=2mm]},warn,dashed] (a1.east) -- (r1.west);
+  \draw[-{Stealth[length=2mm]},warn,dashed] (b3.west) -- (r4.east);
+\end{tikzpicture}
+\end{center}
+
+\begin{pitfall}
+A single stray \code{NaN} \emph{propagates}. Downstream sums, means, and especially comparisons can silently inherit it (and \code{NaN} is never equal to anything, even itself: \code{np.nan == np.nan} is \code{False}). If an arithmetic result has unexpected \code{NaN} holes, suspect a label mismatch before you suspect your math.
+\end{pitfall}
+
+\subsection{Filling instead of dropping: the object-method form}
+
+\code{NaN} is the right default --- ``I genuinely have no value here'' --- but sometimes a missing operand should be treated as a known quantity (often $0$). For that, every operator has a \emph{method} twin that accepts a \code{fill\_value}:
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{l l}
+\toprule
+\textbf{Operator} & \textbf{Method form} \\
+\midrule
+\code{a + b} & \code{a.add(b)} \\
+\code{a - b} & \code{a.sub(b)} \\
+\code{a * b} & \code{a.mul(b)} \\
+\code{a / b} & \code{a.truediv(b)} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The method form takes a keyword argument:
+
+\begin{lstlisting}
+print(area.add(pop, fill_value=0))
+\end{lstlisting}
+
+\begin{outblock}
+Alpha        4000.0
+Bravo      819000.0
+Charlie    232500.0
+Delta      500000.0
+dtype: float64
+\end{outblock}
+
+\begin{intuition}
+\code{fill\_value} does \emph{not} mean ``replace \code{NaN} with this after the fact.'' It means: \emph{before} the operation, pretend any label missing from one operand has this value there. So \code{Alpha} (missing from \code{pop}) is treated as $4000 + 0$, and \code{Delta} (missing from \code{area}) as $0 + 500000$. The union still drives the index; the fill value just plugs the holes \emph{before} the arithmetic so no \code{NaN} survives.
+\end{intuition}
+
+\section{Index alignment in DataFrames}
+
+Everything above generalizes cleanly to two dimensions, except now there are \emph{two} axes to align --- rows \emph{and} columns --- and Pandas aligns both at once.
+
+\begin{lstlisting}
+rng = np.random.default_rng(0)
+left  = pd.DataFrame(rng.integers(0, 10, (2, 2)),
+                     columns=['A', 'B'])
+right = pd.DataFrame(rng.integers(0, 10, (3, 3)),
+                     columns=['B', 'A', 'C'])
+print(left + right)
+\end{lstlisting}
+
+\begin{outbox}
+\begin{tabular}{l r r r}
+\toprule
+ & \textbf{A} & \textbf{B} & \textbf{C} \\
+\midrule
+0 & $6.0$ & $13.0$ & NaN \\
+1 & $11.0$ & $7.0$ & NaN \\
+2 & NaN & NaN & NaN \\
+\bottomrule
+\end{tabular}
+\end{outbox}
+
+Two things happened simultaneously. The \emph{columns} were aligned by name: \code{A} and \code{B} appear in both, so they add; \code{C} exists only in \code{right}, so its whole column is \code{NaN}. The \emph{rows} were aligned by index: rows \code{0} and \code{1} exist in both, but row \code{2} only exists in \code{right}, so that whole row is \code{NaN}. Note also that \code{right}'s columns were given in the order \code{B, A, C} --- alignment is by \emph{label}, so the swapped order is irrelevant and the result comes out in sorted union order.
+
+\begin{keyidea}
+For a \code{DataFrame} binary op, the result's row index is $I^{\text{rows}}_{\text{left}} \cup I^{\text{rows}}_{\text{right}}$ and its columns are $I^{\text{cols}}_{\text{left}} \cup I^{\text{cols}}_{\text{right}}$. Both unions are taken independently, so a cell is non-\code{NaN} only if \emph{both} its row label and its column label are present in \emph{both} frames. The same \code{fill\_value} trick (\code{left.add(right, fill\_value=0)}) works here too.
+\end{keyidea}
+
+\section{Operations between a DataFrame and a Series: broadcasting}
+
+The last case mixes dimensions: a 2-D \code{DataFrame} with a 1-D \code{Series}. To predict the result, recall how NumPy \emph{broadcasts} a 2-D array against a 1-D one.
+
+\begin{pyrefresh}
+\textbf{NumPy broadcasting, in one line.} When you subtract a 1-D array from a 2-D array, NumPy ``stretches'' the 1-D array across the matching axis. By default a length-$n$ row vector is matched against the \emph{columns} of an $m\times n$ array and subtracted from \emph{each row}:
+\[
+  M_{ij} - v_j \quad\text{for every row } i.
+\]
+That is a \emph{row-wise} operation: the vector lines up with the columns and sweeps down the rows.
+\end{pyrefresh}
+
+Pandas follows the same default. Subtracting a \code{Series} from a \code{DataFrame} matches the \code{Series}' index against the \code{DataFrame}'s \emph{columns} and applies the op row by row.
+
+\begin{lstlisting}
+grid = pd.DataFrame(rng.integers(1, 10, (3, 3)),
+                    columns=['Q', 'R', 'S'])
+print(grid - grid.iloc[0])     # subtract the first row from all rows
+\end{lstlisting}
+
+\begin{outbox}
+\begin{tabular}{l r r r}
+\toprule
+ & \textbf{Q} & \textbf{R} & \textbf{S} \\
+\midrule
+0 & $0$ & $0$ & $0$ \\
+1 & $-3$ & $2$ & $-1$ \\
+2 & $4$ & $-1$ & $5$ \\
+\bottomrule
+\end{tabular}
+\end{outbox}
+
+Here \code{grid.iloc[0]} is a \code{Series} indexed by the column names \code{['Q','R','S']}; it lines up with the columns and is subtracted from every row (so row $0$ minus itself is all zeros). This is the default and it is what you usually want for ``center each column'' style operations.
+
+\subsection{Going column-wise with \texttt{axis=0}}
+
+What if you instead want to operate \emph{down} a column --- subtract a per-row quantity from every column? Then you must say so explicitly, using the method form and \code{axis=0}:
+
+\begin{lstlisting}
+col = grid['R']                     # a Series indexed by ROW labels
+print(grid.subtract(col, axis=0))   # subtract col from every column
+\end{lstlisting}
+
+\begin{outbox}
+\begin{tabular}{l r r r}
+\toprule
+ & \textbf{Q} & \textbf{R} & \textbf{S} \\
+\midrule
+0 & $\cdots$ & $0$ & $\cdots$ \\
+1 & $\cdots$ & $0$ & $\cdots$ \\
+2 & $\cdots$ & $0$ & $\cdots$ \\
+\bottomrule
+\end{tabular}
+\end{outbox}
+
+The \code{R} column comes out all zeros because we subtracted \code{R} from itself, while every other column has \code{R} subtracted row by row. The argument \code{axis=0} reads as ``align this \code{Series} along axis 0 (the rows / index) instead of the columns.''
+
+\begin{intuition}
+The mnemonic: a \code{Series} can only line up with \emph{one} of the two axes, and you are telling Pandas which.
+\begin{itemize}
+  \item \textbf{Default (no \code{axis}):} the \code{Series} index $\to$ DataFrame \emph{columns}. Broadcast \emph{down the rows}. Use when the \code{Series} is ``a row.''
+  \item \textbf{\code{axis=0}:} the \code{Series} index $\to$ DataFrame \emph{rows}. Broadcast \emph{across the columns}. Use when the \code{Series} is ``a column.''
+\end{itemize}
+And crucially: in \emph{both} directions, labels are still matched, not positions. A \code{Series} entry whose label is missing from the chosen axis produces \code{NaN}, exactly as before.
+\end{intuition}
+
+\section{The tie-in to missing data}
+
+Notice the recurring character in every example above: \code{NaN}. It showed up the moment two label sets failed to match perfectly --- in Series arithmetic, in DataFrame arithmetic, and in broadcasting.
+
+\begin{keyidea}
+This is by design, and it motivates the next section. Because Pandas aligns on \emph{labels}, ``this label exists on one side but not the other'' is a completely ordinary situation --- the kind of thing that happens constantly when you join two real datasets. Rather than crash, Pandas fills the gap with \code{NaN} and keeps going. That makes missing data a \emph{first-class, expected} citizen of the type system, which is precisely why \S3.4 (``Handling Missing Data'') is devoted to detecting, filling, and dropping these holes.
+\end{keyidea}
+
+\section*{Section recap}
+\addcontentsline{toc}{section}{Section recap}
+\begin{itemize}
+  \item \textbf{Unary ufuncs} (\code{np.exp}, \code{np.sin}, \dots) act elementwise and \emph{preserve} the index/columns: same-shape object out, labels intact.
+  \item \textbf{Binary ops on Series} align on the \emph{union} of indices, $I_{\text{result}} = I_A \cup I_B$; labels present on only one side become \code{NaN}. Order is irrelevant.
+  \item \textbf{Method forms} (\code{add}, \code{sub}, \code{mul}, \code{truediv}) accept \code{fill\_value} to plug holes \emph{before} the operation, so no \code{NaN} survives.
+  \item \textbf{DataFrame ops} align rows \emph{and} columns simultaneously, each by its own union; a cell is non-\code{NaN} only if both labels exist in both frames.
+  \item \textbf{DataFrame $\pm$ Series} broadcasts \emph{row-wise} by default (Series index $\to$ columns); pass \code{axis=0} to go \emph{column-wise} (Series index $\to$ rows). Labels are matched in either direction.
+  \item Every mismatch yields \code{NaN} --- not a bug but the on-ramp to missing-data handling in \S3.4.
+\end{itemize}
+
+\end{document}

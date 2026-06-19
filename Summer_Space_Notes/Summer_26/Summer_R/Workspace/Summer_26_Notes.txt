@@ -4,42 +4,6 @@
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
- * eta/pio O + O R_aa and R_cp plan: 
-
-- Build, test, and verify Data Framework for p+p and O+O (use Au + Au as the tester) reconstruction () 
-
-- Sim reconstruction/Occ effect Efficiencies Framework for O+O (use Au + Au as tester for body) () 
-
-- Sim Single particle or p+p reconstruction eff corr for eta/pi0 () 
-
-- OutLine, Research, plan, and build other steps in R_aa or R_cp that's missing () (**Machine learning elements could go here **) 
-  (** could include uncertainty quantification **) 
-
-
-
-* Summer-26 machine/AI Learning tools: 
-
-- Codecadamy Modules, anthropic modules, Claude-personal modules () 
-
-- Ideas, Outline when/where to implement tools () 
-
-(** Readings textbooks/Papers (general research when neccessay) **) 
-
-
-
-* Paper Reading: (** Add more here when needed **) 
-
-- Justins Bryans, Dr. Frantz, and Shyam's Ph.D Theses () 
-
-- Mid-z R_aa paper, recent one () 
-
-- Sijons O+O Calibration updates and recent ppg-12 invenio notes () 
-
-- Double Isolated photon signature (learn it) () 
-
-** Machine Learning/AI nuclear physics papers helpful: () 
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 
 
 * O+O Calibrations tasks: 
@@ -87,19 +51,12 @@
 
 3.) Build/Run new eff for p+p with & without smearing for p+p 
 
+
 4.) Collect/Read Jet/pion literature:
 4a.) Sijans Result. 
 4b.) PHENIX p+p Cross-Section fot pions (eta/pi0) 
-4c.) Unfolding for Jet analysis and learning more about it
-
-5.) Possible Pileup effects/Unfolding Strategy and Use. (Note: Unfolding eff. Mult-Spect to eff Correction (Jet analysis unfolding) 
-
-
-
-
-
-
-
+4c.) Unfolding for Jet analysis and learning more about it (PPG-12)
+4d.) Other Literatures Assigned in (Phone notes) 
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -250,7 +207,20 @@ Primary — Direct pi0/pion analysis
 
 ** Next: Read PPG-12 & Blair's Presentations, Extract Smearing Info in standalone txt, Copy/paste Codes (index them) **
 
-6/16/26: 
+6/16/26 - 6/17/26: 
+
+- Nonlinearity task #1-2 completed. Smearing info and Sim information are 
+  inside Paths /sphenix/tg/tg01/bulk/plewis3323/P+P_NonLin_Run24_Space (specific: Notes, Outputs, and Blair's Code directory) 
+
+** Next: Read PPG-12 (& easier format) & Blair's Presentations (Final & inital should be enough); start building/reproducing this 
+  for just to confirm how to build it for eff** 
+
+
+
+
+
+ 
+
 
 
 

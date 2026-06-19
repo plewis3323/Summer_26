@@ -1,0 +1,382 @@
+\documentclass[11pt]{article}
+\usepackage{notesstyle}
+
+\begin{document}
+\notesheader{3.7}{Combining Datasets: Merge and Join}{High-performance relational joins --- the workhorse for stitching together tables that share keys.}
+
+\section{Why we need joins at all}
+
+\begin{background}
+Real data almost never arrives in one tidy table. Instead it lives in several tables that each describe one ``thing'' and refer to each other through shared keys. You might have one table of employees (name, department, hire date), a separate table describing departments (name, manager, building), and a third holding monthly sales. Storing the data this way --- each fact recorded exactly once, in the table where it belongs --- is called \emph{normalization}, and it is the design principle behind every relational database.
+
+The price you pay for normalization is that, to answer an interesting question (``what is the average sales figure per building?''), you must first \emph{recombine} the tables. The operation that does this is the \textbf{join}, and it comes straight out of \emph{relational algebra}, the formal theory underneath SQL. Pandas gives you that same machinery on in-memory \code{DataFrame}s through one extremely capable function, \code{pd.merge}, plus a convenience wrapper, \code{DataFrame.join}.
+\end{background}
+
+In the previous section we met \code{pd.concat}, which \emph{stacks} tables --- gluing them edge to edge along an axis. Concatenation is purely structural: it lines rows up by position or by index and asks no questions about the contents. A join is different in kind.
+
+\begin{intuition}
+\textbf{Concat stacks; merge matches.}
+\begin{itemize}
+  \item \code{pd.concat} is like piling sheets of paper on top of one another (or laying them side by side). It cares about \emph{shape}, not \emph{meaning}.
+  \item \code{pd.merge} is like a librarian cross-referencing two card catalogs: for each card in one, find the matching card in the other \emph{by a shared value} (the \emph{key}), and splice their information together. It cares about \emph{content}.
+\end{itemize}
+If your two tables describe the \emph{same rows} and you just want more columns or more rows of the same kind, reach for \code{concat}. If they describe \emph{related but different} things linked by a common column, reach for \code{merge}.
+\end{intuition}
+
+\section{A one-minute tour of relational algebra}
+
+\begin{background}
+Relational algebra, formulated by E.\ F.\ Codd in 1970, treats a table as a \emph{relation}: a set of rows (tuples) over a fixed set of named columns (attributes). It defines a handful of operators that take relations in and produce relations out --- selection (keep some rows), projection (keep some columns), union, intersection, and the \emph{join}. SQL is essentially a friendly syntax over these operators, and Pandas re-implements them for arrays in memory.
+
+The \textbf{join} combines two relations by pairing rows whose key attributes agree. Everything else in this section --- one-to-one, many-to-one, inner, outer --- is just a special case or a policy choice layered on top of that single idea: \emph{pair the rows whose keys match}.
+\end{background}
+
+\section{\texttt{pd.merge} and the three cardinalities}
+
+The behavior of a join depends entirely on whether the key is \emph{unique} on each side. There are three cases, and recognizing which one you are in is the single most important diagnostic skill for debugging a merge.
+
+\subsection{One-to-one}
+
+When the key is unique on \emph{both} sides, each row in the left table matches at most one row on the right. The result simply lines the matching rows up and concatenates their columns --- the row count cannot grow.
+
+\begin{lstlisting}
+import pandas as pd
+
+employees = pd.DataFrame({
+    'name': ['Ada', 'Bhavin', 'Cleo', 'Dmitri'],
+    'dept': ['Engineering', 'Sales', 'Engineering', 'Finance']
+})
+hires = pd.DataFrame({
+    'name': ['Ada', 'Bhavin', 'Cleo', 'Dmitri'],
+    'hire_year': [2019, 2021, 2018, 2022]
+})
+\end{lstlisting}
+
+\begin{pyrefresh}
+Notice the deliberate typo: the \code{employees} table spells the second person \code{Bhavin}, but \code{hires} spells it \code{Bhavin}. (Look again --- they differ.) Mismatched keys are the \#1 source of ``my merge lost rows'' bugs. We will see the consequence in a moment; for now, assume the keys agree.
+\end{pyrefresh}
+
+Assume both tables spell every name identically. Merging on the shared \code{name} column:
+
+\begin{lstlisting}
+pd.merge(employees, hires)   # 'name' inferred as the key
+\end{lstlisting}
+
+\begin{outblock}
+     name         dept  hire_year
+0     Ada  Engineering       2019
+1  Bhavin        Sales       2021
+2    Cleo  Engineering       2018
+3  Dmitri      Finance       2022
+\end{outblock}
+
+Four rows in, four rows out: a clean one-to-one join. Because \code{name} is the only column the two frames share, \code{merge} infers it as the key automatically.
+
+\subsection{Many-to-one}
+
+Now suppose the key repeats on \emph{one} side. Each department appears once in a department-info table, but many employees belong to the same department. Matching ``many'' employees against ``one'' department row copies that department's information down onto every matching employee.
+
+\begin{lstlisting}
+dept_info = pd.DataFrame({
+    'dept': ['Engineering', 'Sales', 'Finance'],
+    'building': ['B1', 'B2', 'B1']
+})
+pd.merge(employees, dept_info)   # key = 'dept', repeats on the left
+\end{lstlisting}
+
+\begin{outblock}
+     name         dept building
+0     Ada  Engineering       B1
+1  Bhavin        Sales       B2
+2    Cleo  Engineering       B1
+3  Dmitri      Finance       B1
+\end{outblock}
+
+\begin{keyidea}
+In a \textbf{many-to-one} join the result has the \emph{same number of rows as the ``many'' side} (assuming every key finds a match). The unique side's columns are \emph{broadcast} down onto each repeated key --- here \code{Engineering} appears twice on the left, so its \code{building} value \code{B1} is duplicated into both rows. This is the most common join in practice: attaching reference/lookup information to a fact table.
+\end{keyidea}
+
+\subsection{Many-to-many}
+
+When the key repeats on \emph{both} sides, the join produces a \emph{cross-product within each matching key}: every left row with key $k$ is paired with every right row with key $k$. This can make the result \emph{larger} than either input.
+
+\begin{lstlisting}
+skills = pd.DataFrame({
+    'dept': ['Engineering', 'Engineering', 'Sales', 'Finance'],
+    'skill': ['Python', 'SQL', 'Negotiation', 'Excel']
+})
+pd.merge(employees, skills)   # 'dept' repeats on BOTH sides
+\end{lstlisting}
+
+\begin{outblock}
+     name         dept        skill
+0     Ada  Engineering       Python
+1     Ada  Engineering          SQL
+2    Cleo  Engineering       Python
+3    Cleo  Engineering          SQL
+4  Bhavin        Sales  Negotiation
+5  Dmitri      Finance        Excel
+\end{outblock}
+
+\begin{pitfall}
+\textbf{Many-to-many joins can explode your row count.} Two engineers $\times$ two engineering skills produced $2\times2=4$ rows for Engineering alone. If \code{Engineering} had 50 employees and 10 listed skills, that one key would yield $500$ rows. Accidental many-to-many joins (usually because you forgot the key was non-unique on a side you assumed was unique) are a classic cause of mysteriously bloated \code{DataFrame}s and out-of-memory errors. When in doubt, check \code{df['key'].is\_unique} on each side \emph{before} merging, or pass \code{validate='one\_to\_many'} to make Pandas raise if the cardinality is not what you expect.
+\end{pitfall}
+
+\section{Specifying the merge key}
+
+So far \code{merge} guessed the key. You will often need to be explicit.
+
+\subsection{The \texttt{on} keyword}
+
+When the frames share more than one column name, or you simply want to be unambiguous, name the key directly:
+
+\begin{lstlisting}
+pd.merge(employees, dept_info, on='dept')
+\end{lstlisting}
+
+The \code{on} column must exist in \emph{both} frames. You can also pass a list, \code{on=['key1', 'key2']}, to join on a composite key.
+
+\subsection{Differently-named columns: \texttt{left\_on} and \texttt{right\_on}}
+
+Sometimes the same concept is named differently in two tables --- \code{name} here, \code{employee} there. Use \code{left\_on} and \code{right\_on} to point at each:
+
+\begin{lstlisting}
+salaries = pd.DataFrame({
+    'employee': ['Ada', 'Bhavin', 'Cleo', 'Dmitri'],
+    'salary': [120, 95, 115, 130]
+})
+pd.merge(employees, salaries, left_on='name', right_on='employee')
+\end{lstlisting}
+
+\begin{outblock}
+     name         dept employee  salary
+0     Ada  Engineering      Ada     120
+1  Bhavin        Sales   Bhavin      95
+2    Cleo  Engineering     Cleo     115
+3  Dmitri      Finance   Dmitri     130
+\end{outblock}
+
+\begin{pitfall}
+This leaves you with \emph{two} redundant columns, \code{name} and \code{employee}, holding identical information. Pandas does not drop either for you. Clean it up explicitly:
+\begin{lstlisting}
+result.drop(columns='employee')
+\end{lstlisting}
+\end{pitfall}
+
+\subsection{Joining on the index}
+
+If the key you want to join on is the \emph{row index} rather than a column, set \code{left\_index=True} and/or \code{right\_index=True}:
+
+\begin{lstlisting}
+emp_idx = employees.set_index('name')
+sal_idx = salaries.set_index('employee')
+pd.merge(emp_idx, sal_idx, left_index=True, right_index=True)
+\end{lstlisting}
+
+You can even mix the two styles --- join a column on one side against the index on the other (\code{left\_on='name', right\_index=True}). Because index-based joins are so common, Pandas gives them a dedicated shortcut: \code{DataFrame.join} merges on indices by default.
+
+\begin{lstlisting}
+emp_idx.join(sal_idx)   # equivalent to the merge above, by index
+\end{lstlisting}
+
+\begin{intuition}
+\code{df.join(other)} is just \code{pd.merge} with \code{left\_index=True, right\_index=True} pre-filled, and (historically) a \emph{left} join by default. Reach for \code{join} when both frames are already indexed by the key; reach for \code{pd.merge} when you need the full control of \code{on}/\code{left\_on}/\code{right\_on} or non-default join types.
+\end{intuition}
+
+\section{Set arithmetic: the \texttt{how} parameter}
+
+This is the conceptual heart of the section. When some keys appear in one table but not the other, what should the join do with the unmatched rows? The \code{how} parameter answers exactly that, and it maps directly onto \emph{set operations} on the two key columns.
+
+Let two tables share the key \code{dept} but disagree on which departments they cover:
+
+\begin{lstlisting}
+left = pd.DataFrame({'dept': ['Eng', 'Sales', 'Finance'],
+                     'head': ['Ada', 'Bhavin', 'Cleo']})
+right = pd.DataFrame({'dept': ['Eng', 'Sales', 'Legal'],
+                      'floor': [3, 2, 5]})
+\end{lstlisting}
+
+The key sets are $\{\text{Eng}, \text{Sales}, \text{Finance}\}$ on the left and $\{\text{Eng}, \text{Sales}, \text{Legal}\}$ on the right. They share \code{Eng} and \code{Sales}; \code{Finance} is left-only; \code{Legal} is right-only. Each value of \code{how} keeps a different subset:
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{l l l}
+\toprule
+\textbf{\code{how=}} & \textbf{Set operation on keys} & \textbf{Keys kept} \\
+\midrule
+\code{'inner'} (default) & intersection & Eng, Sales \\
+\code{'outer'}           & union        & Eng, Sales, Finance, Legal \\
+\code{'left'}            & left set     & Eng, Sales, Finance \\
+\code{'right'}           & right set    & Eng, Sales, Legal \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Wherever a kept key has no partner on the other side, Pandas fills the missing columns with \code{NaN}.
+
+\subsection{The four joins, visualized}
+
+The diagram below shows the two key sets and, for each \code{how}, which rows survive and where \code{NaN} appears. Read each column as ``what the result table looks like.''
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily\footnotesize,
+   keep/.style={draw=accent, fill=bgblue, minimum width=1.55cm, minimum height=0.55cm, inner sep=1pt},
+   nanc/.style={draw=warn, fill=bgorange, minimum width=1.55cm, minimum height=0.55cm, inner sep=1pt, text=warn},
+   drop/.style={draw=rulegray, fill=white, minimum width=1.55cm, minimum height=0.55cm, inner sep=1pt, text=rulegray},
+   hd/.style={font=\sffamily\bfseries\footnotesize\color{accent}}]
+
+  % column headers (the four join types)
+  \node[hd] at (2.0,3.4) {inner};
+  \node[hd] at (4.0,3.4) {left};
+  \node[hd] at (6.0,3.4) {right};
+  \node[hd] at (8.0,3.4) {outer};
+
+  % row labels = the four keys
+  \node[hd, anchor=east] at (0.7,2.6) {Eng};
+  \node[hd, anchor=east] at (0.7,1.9) {Sales};
+  \node[hd, anchor=east] at (0.7,1.2) {Finance};
+  \node[hd, anchor=east] at (0.7,0.5) {Legal};
+
+  % Eng : matches both sides everywhere -> kept in all
+  \foreach \x in {2,4,6,8} {\node[keep] at (\x,2.6) {match};}
+  % Sales : matches both sides everywhere -> kept in all
+  \foreach \x in {2,4,6,8} {\node[keep] at (\x,1.9) {match};}
+
+  % Finance : left-only. inner drops; left keeps (NaN right); right drops; outer keeps (NaN right)
+  \node[drop] at (2,1.2) {--};
+  \node[nanc] at (4,1.2) {NaN$\,\to$};
+  \node[drop] at (6,1.2) {--};
+  \node[nanc] at (8,1.2) {NaN$\,\to$};
+
+  % Legal : right-only. inner drops; left drops; right keeps (NaN left); outer keeps (NaN left)
+  \node[drop] at (2,0.5) {--};
+  \node[drop] at (4,0.5) {--};
+  \node[nanc] at (6,0.5) {$\gets$NaN};
+  \node[nanc] at (8,0.5) {$\gets$NaN};
+
+  % legend
+  \node[keep, anchor=west] at (1.2,-0.5) {};
+  \node[anchor=west] at (1.6,-0.5) {row kept, both sides present};
+  \node[nanc, anchor=west] at (1.2,-1.1) {};
+  \node[anchor=west] at (1.6,-1.1) {row kept, other side filled with NaN};
+  \node[drop, anchor=west] at (1.2,-1.7) {};
+  \node[anchor=west] at (1.6,-1.7) {row dropped from result};
+
+  % brackets summarizing set ops
+  \draw[decorate,decoration={brace,amplitude=4pt},accent] (1.25,3.0) -- (8.75,3.0);
+\end{tikzpicture}
+\end{center}
+
+Concretely, the \emph{outer} join --- the union, which keeps everything --- looks like this:
+
+\begin{lstlisting}
+pd.merge(left, right, how='outer')
+\end{lstlisting}
+
+\begin{outblock}
+      dept    head  floor
+0      Eng     Ada    3.0
+1    Sales  Bhavin    2.0
+2  Finance    Cleo    NaN
+3    Legal     NaN    5.0
+\end{outblock}
+
+\begin{keyidea}
+Two consequences of \code{NaN}-filling are worth internalizing. First, the \code{floor} column came in as integers but prints as \code{3.0} --- introducing \code{NaN} forced the column to \emph{float}, because classic NumPy integer arrays have no missing value. (Pandas' newer nullable \code{Int64} dtype avoids this, but the default does not.) Second, an \emph{inner} join silently \emph{discards} unmatched rows. If your merged frame has fewer rows than you expected, an unintended inner join on a mismatched key is the usual culprit --- which loops right back to the \code{Bhavin}/\code{Bhavin} typo from earlier: a misspelled key simply fails to match and vanishes under the default inner join.
+\end{keyidea}
+
+\section{Overlapping non-key columns: \texttt{suffixes}}
+
+What if both frames carry a column of the same name that is \emph{not} the key? Pandas cannot keep both under one name, so it disambiguates by appending suffixes --- \code{\_x} for the left, \code{\_y} for the right by default.
+
+\begin{lstlisting}
+q1 = pd.DataFrame({'dept': ['Eng', 'Sales'], 'rank': [1, 2]})
+q2 = pd.DataFrame({'dept': ['Eng', 'Sales'], 'rank': [2, 1]})
+pd.merge(q1, q2, on='dept')
+\end{lstlisting}
+
+\begin{outblock}
+    dept  rank_x  rank_y
+0    Eng       1       2
+1  Sales       2       1
+\end{outblock}
+
+The cryptic \code{\_x}/\code{\_y} are rarely what you want in a report. Override them with meaningful labels:
+
+\begin{lstlisting}
+pd.merge(q1, q2, on='dept', suffixes=('_q1', '_q2'))
+\end{lstlisting}
+
+\begin{outblock}
+    dept  rank_q1  rank_q2
+0    Eng        1        2
+1  Sales        2        1
+\end{outblock}
+
+\section{Mini case study: states $\times$ population $\times$ area}
+
+Let us put every piece together on three small, original tables: a list of states, their populations, and their land areas. We want one tidy frame and then a derived quantity, population density.
+
+\begin{lstlisting}
+states = pd.DataFrame({
+    'state': ['California', 'Texas', 'Florida', 'Alaska'],
+    'abbrev': ['CA', 'TX', 'FL', 'AK']
+})
+population = pd.DataFrame({
+    'state': ['California', 'Texas', 'Florida', 'Alaska'],
+    'pop_millions': [39.0, 30.0, 22.0, 0.73]
+})
+area = pd.DataFrame({
+    'state': ['California', 'Texas', 'Florida'],   # Alaska missing!
+    'area_kkm2': [424.0, 696.0, 170.0]
+})
+\end{lstlisting}
+
+First, a clean many-to-one chain joining states to their populations (one-to-one here), then to area. We deliberately left \code{Alaska} out of the \code{area} table to exercise the missing-key behavior:
+
+\begin{lstlisting}
+merged = (states
+          .merge(population, on='state')        # one-to-one
+          .merge(area, on='state', how='left')) # keep all states
+\end{lstlisting}
+
+\begin{outblock}
+        state abbrev  pop_millions  area_kkm2
+0  California     CA         39.00      424.0
+1       Texas     TX         30.00      696.0
+2     Florida     FL         22.00      170.0
+3      Alaska     AK          0.73        NaN
+\end{outblock}
+
+Using \code{how='left'} guarantees every state survives even though \code{Alaska} has no area row; its \code{area\_kkm2} is \code{NaN}. Now a derived column, density (people per km\textsuperscript{2}), computed only where area is known:
+
+\begin{lstlisting}
+merged['density'] = merged['pop_millions'] * 1e6 / (merged['area_kkm2'] * 1e3)
+merged[['state', 'density']]
+\end{lstlisting}
+
+\begin{outblock}
+        state    density
+0  California  91.981132
+1       Texas  43.103448
+2     Florida  129.41176
+3      Alaska        NaN
+\end{outblock}
+
+\begin{intuition}
+Notice how the \code{NaN} \emph{propagates} cleanly through the arithmetic --- Alaska's missing area yields a missing density rather than crashing the computation. This is the payoff of Pandas' labeled, missing-aware design from \S3.1: joins introduce \code{NaN} where data is absent, and downstream vectorized math simply carries it along, so partial data never derails the whole pipeline.
+\end{intuition}
+
+The chained \code{.merge(...).merge(...)} style reads top to bottom like a recipe and is the idiom you will reach for constantly: start from the ``spine'' table you want one row per, then left-join each source of additional columns onto it.
+
+\section*{Section recap}
+\addcontentsline{toc}{section}{Section recap}
+\begin{itemize}
+  \item A \textbf{join} pairs rows from two tables by a shared \textbf{key}; it comes from relational algebra and is the content-aware counterpart to the purely structural \code{pd.concat}.
+  \item \textbf{Cardinality} drives behavior: \emph{one-to-one} lines rows up; \emph{many-to-one} broadcasts the unique side onto repeats; \emph{many-to-many} forms a per-key cross-product and can blow up row counts.
+  \item \textbf{Specifying the key:} \code{merge} infers shared columns by default; use \code{on=}, or \code{left\_on}/\code{right\_on} for differently-named columns (then drop the redundant copy), or \code{left\_index}/\code{right\_index} (and the \code{join} shortcut) for index-based joins.
+  \item \textbf{\code{how=}} chooses the set operation on keys: \code{inner} (intersection, default), \code{outer} (union), \code{left}, \code{right}. Unmatched rows are \code{NaN}-filled, which can promote integer columns to float; a stray \code{inner} join silently drops unmatched rows.
+  \item Overlapping non-key columns get \code{suffixes=('\_x','\_y')}; rename them for readable output.
+\end{itemize}
+
+\end{document}

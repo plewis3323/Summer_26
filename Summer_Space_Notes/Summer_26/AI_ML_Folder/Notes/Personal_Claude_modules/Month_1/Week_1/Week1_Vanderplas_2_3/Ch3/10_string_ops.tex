@@ -1,0 +1,346 @@
+\documentclass[11pt]{article}
+\usepackage{notesstyle}
+
+\begin{document}
+\notesheader{3.10}{Vectorized String Operations}{The \texttt{.str} accessor --- bringing NumPy-style vectorization, and missing-value sanity, to columns of text.}
+
+\section{Why text needs its own machinery}
+
+\begin{background}
+By now you have seen the central promise of NumPy and Pandas: \emph{vectorization}. Instead of writing a Python \code{for} loop over the elements of an array, you write one expression that operates on the whole array at once. NumPy pushes that loop down into fast compiled C, so \code{2 * np.arange(5)} doubles every element with no visible iteration.
+
+The catch is that this magic is built for \emph{numbers}. NumPy knows how to add, multiply, and compare element by element because those operations have a uniform machine-level meaning. It does \emph{not} know how to uppercase, strip, or split a string element by element --- string methods live on Python's \code{str} type, not on the array. So the moment your data is text (names, city labels, product codes, free-form survey answers), the clean vectorized style seems to evaporate and you are back to hand-rolled loops.
+\end{background}
+
+Suppose you have a list of names and you want them all capitalized. The pure-Python answer is a comprehension calling \code{str.capitalize} on each one:
+
+\begin{lstlisting}
+names = ['guido', 'lin', 'travis', 'wes']
+[s.capitalize() for s in names]
+# -> ['Guido', 'Lin', 'Travis', 'Wes']
+\end{lstlisting}
+
+That works, but it has two real problems once the data is messy.
+
+\begin{pitfall}
+\textbf{The manual loop breaks on missing data.} Real datasets have holes. In Pandas a hole is usually \code{None} or \code{NaN}, and a hole is \emph{not} a string --- it has no \code{.capitalize()} method. The instant one shows up, the comprehension throws:
+\begin{lstlisting}
+names = ['guido', None, 'travis', 'wes']
+[s.capitalize() for s in names]
+# AttributeError: 'NoneType' object has no attribute 'capitalize'
+\end{lstlisting}
+You then have to litter the loop with \code{if s is not None} guards. Multiply that across every text transformation in a real cleaning pipeline and it becomes both verbose and error-prone.
+\end{pitfall}
+
+Pandas solves both problems at once. A \code{Series} of strings carries a special attribute, \code{.str}, that exposes vectorized versions of the familiar Python string methods. They run element by element \emph{and} they quietly skip over missing values, propagating \code{NaN} through untouched instead of crashing.
+
+\begin{lstlisting}
+import pandas as pd
+names = pd.Series(['guido', None, 'travis', 'wes'])
+names.str.capitalize()
+\end{lstlisting}
+
+\begin{outblock}
+0     Guido
+1      None
+2    Travis
+3       Wes
+dtype: object
+\end{outblock}
+
+\begin{keyidea}
+\code{Series.str} is the bridge that gives text the same vectorized, missing-value-aware treatment that NumPy gives numbers. Mentally, reach for \code{.str} whenever you would otherwise write a Python loop over the strings in a column. The method name after the dot is almost always the same one you already know from plain \code{str}.
+\end{keyidea}
+
+\subsection{What the accessor actually is}
+
+\code{.str} is not a method --- it is an \emph{accessor object}. When you type \code{s.str}, Pandas hands you a small helper bound to the underlying Series; the real method comes next: \code{s.str.lower()}, \code{s.str.len()}, and so on. The accessor only makes sense when the Series holds text (dtype \code{object} containing strings, or the newer dedicated string dtype). Each call returns a \emph{new} Series of the same length, aligned to the same index, with missing entries left as \code{NaN}.
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily\small,
+   cell/.style={draw=rulegray, minimum width=2.2cm, minimum height=0.62cm, anchor=center},
+   raw/.style={cell, fill=bgblue},
+   outc/.style={cell, fill=bggreen},
+   nan/.style={cell, fill=bgorange, font=\sffamily\small\itshape},
+   op/.style={draw=accent, fill=white, rounded corners, minimum height=0.9cm, inner sep=6pt, font=\sffamily\bfseries\color{accent}},
+   lbl/.style={font=\sffamily\footnotesize\color{codecom}}]
+  % input column
+  \node[lbl] at (0,2.6) {input Series};
+  \node[raw] (i0) at (0,2.0) {"guido"};
+  \node[nan] (i1) at (0,1.38) {NaN};
+  \node[raw] (i2) at (0,0.76) {"travis"};
+  \node[raw] (i3) at (0,0.14) {"wes"};
+  % operator
+  \node[op] (f) at (3.6,1.07) {.str.capitalize()};
+  % output column
+  \node[lbl] at (7.2,2.6) {result Series};
+  \node[outc] (o0) at (7.2,2.0) {"Guido"};
+  \node[nan] (o1) at (7.2,1.38) {NaN};
+  \node[outc] (o2) at (7.2,0.76) {"Travis"};
+  \node[outc] (o3) at (7.2,0.14) {"Wes"};
+  % arrows
+  \foreach \a/\b in {i0/o0,i2/o2,i3/o3} {
+    \draw[-{Stealth[length=2mm]}, accent] (\a.east) -- (f.west);
+    \draw[-{Stealth[length=2mm]}, accent2] (f.east) -- (\b.west);
+  }
+  \draw[-{Stealth[length=2mm]}, warn, dashed] (i1.east) -- (f.west);
+  \draw[-{Stealth[length=2mm]}, warn, dashed] (f.east) -- (o1.west);
+  \node[lbl, text=warn] at (3.6,-0.35) {missing values pass straight through};
+\end{tikzpicture}
+\end{center}
+
+\section{Methods that mirror Python's \texttt{str}}
+
+The largest group of \code{.str} methods are direct vectorized copies of the methods you already use on a single string. They take the same arguments and return a Series whose dtype depends on the method: text methods give back strings, length and counting methods give back integers, and tests like ``does it start with\dots'' give back booleans (handy as masks for filtering).
+
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{l l l}
+\toprule
+\textbf{\code{.str} method} & \textbf{Returns} & \textbf{What it does (per element)} \\
+\midrule
+\code{lower()}, \code{upper()}      & string  & change case of every character \\
+\code{capitalize()}, \code{title()} & string  & capitalize first letter / each word \\
+\code{swapcase()}                   & string  & flip the case of each character \\
+\code{len()}                        & int     & number of characters \\
+\code{strip()}                      & string  & drop leading/trailing whitespace \\
+\code{lstrip()}, \code{rstrip()}    & string  & strip one side only \\
+\code{startswith(pat)}              & bool    & does the string begin with \code{pat}? \\
+\code{endswith(pat)}                & bool    & does it end with \code{pat}? \\
+\code{isalpha()}, \code{isdigit()}  & bool    & character-class tests \\
+\code{isnumeric()}, \code{isspace()}& bool    & more character-class tests \\
+\code{center(w)}, \code{ljust(w)}   & string  & pad to width \code{w} \\
+\code{find(sub)}                    & int     & first index of \code{sub} ($-1$ if absent) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+A quick tour on a small Series:
+
+\begin{lstlisting}
+monte = pd.Series(['Graham Chapman', 'John Cleese',
+                   'Terry Gilliam', 'Eric Idle',
+                   'Terry Jones', 'Michael Palin'])
+
+monte.str.lower()          # all lowercase
+monte.str.len()            # character counts: 14, 11, 13, ...
+monte.str.startswith('T')  # boolean mask: which names start with 'T'
+monte.str.split()          # each name -> list of words
+\end{lstlisting}
+
+\begin{outblock}
+# monte.str.startswith('T')
+0    False
+1    False
+2     True
+3    False
+4     True
+5    False
+dtype: bool
+\end{outblock}
+
+\begin{intuition}
+Because the boolean methods return a Series of \code{True}/\code{False}, they slot straight into Pandas' boolean-mask selection. \code{monte[monte.str.startswith('T')]} keeps only the rows whose name begins with \texttt{T}. This is the same masking pattern you use with numeric comparisons (\code{df[df.age > 30]}); the \code{.str} methods just let text participate in it.
+\end{intuition}
+
+\section{Methods that use regular expressions}
+
+The second family is more powerful: methods that accept a \emph{regular expression} (regex) and apply Python's \code{re} module element by element. A regex is a tiny pattern language for describing \emph{shapes} of text --- ``a run of letters,'' ``four digits,'' ``an @ followed by a domain'' --- without spelling out every literal case. This is what makes Pandas genuinely good at parsing semi-structured text.
+
+\begin{pyrefresh}
+\textbf{Just enough regex to read the examples below.} A regex is a string of literal characters plus a few special operators:
+\begin{itemize}
+  \item \textbf{Character classes} match ``one character of a kind.'' \verb![A-Za-z]! is any single letter, \verb![0-9]! any digit. Shorthands: \verb!\d! is a digit, \verb!\w! a ``word'' character (letter, digit, or underscore), \verb!\s! whitespace.
+  \item \textbf{Quantifiers} say ``how many.'' \verb!+! means one-or-more, \verb!*! means zero-or-more, \verb!?! means optional (zero-or-one), and \verb!{n}! means exactly \texttt{n} times. So \verb![A-Za-z]+! is ``a run of one or more letters'' and \verb!\d{4}! is ``exactly four digits.''
+  \item \textbf{Groups} are written with parentheses, \verb!(...)!. They mark the sub-part of the match you want to pull \emph{out}. \code{extract} returns whatever a group captured.
+  \item \textbf{Anchors} \verb!^! and \verb!$! mean ``start of string'' and ``end of string.''
+\end{itemize}
+A few characters are special and must be \emph{escaped} with a backslash to be taken literally: \verb!.!, \verb!+!, \verb!*!, \verb!?!, \verb!(!, \verb!)!, \verb!$!, \verb!^!. Always write regex patterns as Python raw strings, e.g. \code{r'\d+'}, so the backslashes survive.
+\end{pyrefresh}
+
+The methods in this family map onto functions from the \code{re} module:
+
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{l l l}
+\toprule
+\textbf{\code{.str} method} & \textbf{re analogue} & \textbf{What it gives back} \\
+\midrule
+\code{match(pat)}    & \code{re.match}    & bool: does the pattern match at the \emph{start}? \\
+\code{contains(pat)} & \code{re.search}   & bool: does the pattern appear \emph{anywhere}? \\
+\code{extract(pat)}  & \code{re.match}    & the text captured by each group \\
+\code{findall(pat)}  & \code{re.findall}  & list of \emph{all} matches in each string \\
+\code{count(pat)}    & --                 & int: how many times the pattern occurs \\
+\code{replace(p, r)} & \code{re.sub}      & string with matches of \code{p} replaced by \code{r} \\
+\code{split(pat)}    & \code{re.split}    & list: split each string on the pattern \\
+\code{rsplit(pat)}   & --                 & like \code{split}, but scanning from the right \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{A worked extraction}
+
+Say we want each person's first name --- the leading run of letters. The pattern ``one or more letters'' is a single group:
+
+\begin{lstlisting}
+monte.str.extract(r'([A-Za-z]+)', expand=False)
+\end{lstlisting}
+
+\begin{outblock}
+0    Graham
+1      John
+2     Terry
+3      Eric
+4     Terry
+5    Michael
+dtype: object
+\end{outblock}
+
+\code{extract} returns whatever the \emph{first group} captured at the start of each string. With \code{expand=False} you get a single Series back; with \code{expand=True} (the default for multiple groups) each group becomes its own column.
+
+A second example pulls structured fields out of messy strings. Suppose a column holds entries like \verb!"Order 1043 - 2021"! and we want the order number and the year as separate columns. Two groups, two columns:
+
+\begin{lstlisting}
+orders = pd.Series(['Order 1043 - 2021',
+                    'Order 88 - 2019',
+                    'Order 5567 - 2022'])
+orders.str.extract(r'Order (\d+) - (\d{4})')
+\end{lstlisting}
+
+\begin{outblock}
+      0     1
+0  1043  2021
+1    88  2019
+2  5567  2022
+\end{outblock}
+
+If instead you want \emph{every} number in each string regardless of position, reach for \code{findall}, which returns a list per element:
+
+\begin{lstlisting}
+orders.str.findall(r'\d+')
+# 0 -> ['1043', '2021']
+# 1 -> ['88', '2019']
+# 2 -> ['5567', '2022']
+\end{lstlisting}
+
+\begin{pitfall}
+\textbf{\code{match} and \code{contains} are not the same.} \code{match} anchors at the \emph{start} of the string (like \code{re.match}), so \code{s.str.match(r'\d+')} is \code{True} only when the string \emph{begins} with a digit. \code{contains} searches \emph{anywhere} (like \code{re.search}). If you are filtering for ``rows that mention a year somewhere,'' you almost always want \code{contains}, not \code{match}. Reaching for \code{match} by habit is a classic silently-wrong filter.
+\end{pitfall}
+
+\section{Miscellaneous methods: slicing, indicators, and expansion}
+
+A final group does not correspond to a single Python \code{str} method but is enormously useful in practice.
+
+\subsection{Vectorized indexing and slicing: \texttt{get} and \texttt{slice}}
+
+You can index or slice \emph{into} each string elementwise. \code{s.str.get(i)} pulls the $i$-th character of every string (equivalent to writing \code{x[i]} on each), and \code{s.str.slice(i, j)} takes the substring \code{x[i:j]} from each. In fact, ordinary slice syntax works directly on the accessor: \code{s.str[0:3]} is shorthand for \code{s.str.slice(0, 3)}.
+
+\begin{lstlisting}
+monte.str.slice(0, 3)   # first three characters of each name
+monte.str[0:3]          # same thing, slice syntax on the accessor
+monte.str.get(-1)       # last character of each name
+\end{lstlisting}
+
+\begin{outblock}
+0    Gra
+1    Joh
+2    Ter
+3    Eri
+4    Ter
+5    Mic
+dtype: object
+\end{outblock}
+
+A neat idiom combines \code{split} with \code{get} to grab the last name: split on whitespace, then take element \code{-1} of each resulting list.
+
+\begin{lstlisting}
+monte.str.split().str.get(-1)   # surnames: Chapman, Cleese, ...
+\end{lstlisting}
+
+Notice the \emph{chained} \code{.str}: the first \code{.str.split()} yields a Series of lists, and a second \code{.str} accessor indexes into those lists. The \code{.str} accessor works on Series of lists too, not just Series of strings.
+
+\subsection{Splitting into columns with \texttt{expand=True}}
+
+When each string packs several fields separated by a delimiter, \code{split(..., expand=True)} explodes them into a DataFrame of columns --- one of the most common real-world cleaning moves.
+
+\begin{lstlisting}
+full = pd.Series(['Graham Chapman', 'John Cleese', 'Eric Idle'])
+full.str.split(' ', expand=True)
+\end{lstlisting}
+
+\begin{outblock}
+        0        1
+0  Graham  Chapman
+1    John   Cleese
+2    Eric     Idle
+\end{outblock}
+
+\subsection{Indicator variables with \texttt{get\_dummies}}
+
+When a single field encodes several flags joined by a delimiter --- think a survey answer like \verb!"A|C|D"! listing which options a respondent chose --- \code{get_dummies} expands it into a one-hot (indicator) DataFrame: one boolean column per distinct token. This is the text-cleaning entry point to building features for a model.
+
+\begin{lstlisting}
+info = pd.Series(['A|B', 'B|C', 'A', 'A|C|D'])
+info.str.get_dummies('|')
+\end{lstlisting}
+
+\begin{outblock}
+   A  B  C  D
+0  1  1  0  0
+1  0  1  1  0
+2  1  0  0  0
+3  1  0  1  1
+\end{outblock}
+
+\begin{intuition}
+\code{get_dummies} turns a ``which categories apply'' field into the matrix shape that machine-learning models expect: each category becomes a column, each row a 0/1 membership vector. You are converting human-readable, delimiter-packed text into numeric features in a single call.
+\end{intuition}
+
+\section{Mini case study: cleaning a messy ``City, ST'' column}
+
+Let us combine several tools on a realistically grubby column: city/state strings with inconsistent casing and stray whitespace, plus one missing value.
+
+\begin{lstlisting}
+raw = pd.Series(['  austin, TX ', 'Boston,MA', 'denver , co',
+                 None, ' SEATTLE, wa'])
+
+# 1. Trim outer whitespace and impose a consistent case on the whole field.
+clean = raw.str.strip()
+
+# 2. Split into city and state on the comma; expand into two columns.
+parts = clean.str.split(',', expand=True)
+
+# 3. Tidy each piece: strip inner whitespace, fix casing.
+cities = parts[0].str.strip().str.title()   # 'Austin', 'Boston', ...
+states = parts[1].str.strip().str.upper()    # 'TX', 'MA', 'CO', ...
+
+result = pd.DataFrame({'city': cities, 'state': states})
+\end{lstlisting}
+
+\begin{outblock}
+      city state
+0   Austin    TX
+1   Boston    MA
+2   Denver    CO
+3      NaN   NaN
+4  Seattle    WA
+\end{outblock}
+
+Two things to appreciate here. First, every step is a one-line vectorized expression --- no explicit loops, no index bookkeeping. Second, the \code{None} in row 3 flowed through the entire pipeline as \code{NaN} without raising a single error; the same code that would have crashed a hand-written comprehension at step 1 just left the hole in place. That graceful missing-value behavior, repeated across every method, is the quiet payoff of doing string work through \code{.str}.
+
+\begin{keyidea}
+The shape of almost every text-cleaning task is: \emph{normalize} (strip, case), \emph{parse} (split or regex-extract into columns), then \emph{tidy} each resulting column. The \code{.str} accessor gives you a composable, missing-value-safe verb for each stage, and you can chain them (\code{.str.split().str.get(-1)}) to read the pipeline top to bottom.
+\end{keyidea}
+
+\section*{Section recap}
+\addcontentsline{toc}{section}{Section recap}
+\begin{itemize}
+  \item NumPy vectorizes numeric operations but not string ones; a manual loop over \code{str} methods is verbose and \emph{crashes} on missing values.
+  \item \code{Series.str} is an accessor exposing vectorized string methods that run elementwise and propagate \code{NaN} untouched.
+  \item One family mirrors Python's \code{str} (\code{lower}, \code{len}, \code{startswith}, \code{strip}, \dots), returning strings, ints, or boolean masks.
+  \item A second family applies regular expressions via \code{re}: \code{match}/\code{contains} (test), \code{extract}/\code{findall} (capture), \code{replace}, \code{count}, \code{split}. Remember \code{match} anchors at the start while \code{contains} searches anywhere.
+  \item Utility methods round it out: \code{get}/\code{slice} (and \code{s.str[i:j]}) for elementwise indexing, \code{split(expand=True)} to break a field into columns, and \code{get_dummies} to one-hot a delimited field.
+  \item Typical pipeline: normalize $\rightarrow$ parse $\rightarrow$ tidy, all chainable and missing-value-safe.
+\end{itemize}
+
+\end{document}

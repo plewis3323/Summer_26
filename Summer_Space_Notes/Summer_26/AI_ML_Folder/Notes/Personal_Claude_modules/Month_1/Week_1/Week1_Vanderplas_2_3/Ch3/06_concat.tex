@@ -1,0 +1,309 @@
+\documentclass[11pt]{article}
+\usepackage{notesstyle}
+
+\begin{document}
+\notesheader{3.6}{Combining Datasets: Concat and Append}{Stacking and gluing frames together --- and why Pandas keeps your indices even when they collide.}
+
+\section{Why combining is its own topic}
+
+Real analysis almost never starts from one tidy table. You pull last month's sales from one export, this month's from another, and you need them as a single frame. You scrape two columns of metadata from one source and three from another, all describing the same rows. The mechanical act of \emph{gluing tables together} is so common that Pandas gives it a dedicated, deceptively simple tool: \code{pd.concat}.
+
+The catch --- and the reason this short section deserves real attention --- is that ``glue two tables together'' hides a surprising amount of decision-making. Along which axis? What happens when the row labels of the two pieces \emph{overlap}? What if the two pieces don't have the same columns? Pandas makes a specific default choice for each of these, and the defaults are not always what someone coming from SQL would expect.
+
+\begin{background}
+\textbf{The NumPy foundation: \code{np.concatenate}.} Before Pandas, the array world already had a concatenation primitive. \code{np.concatenate} takes a \emph{list} of arrays and joins them end-to-end along a chosen axis:
+\begin{lstlisting}
+import numpy as np
+x = np.array([[1, 2],
+              [3, 4]])
+np.concatenate([x, x], axis=0)   # stack rows -> shape (4, 2)
+np.concatenate([x, x], axis=1)   # stack cols -> shape (2, 4)
+\end{lstlisting}
+Two things carry straight over into Pandas: (1) you pass a \emph{list} of objects, not two positional arguments, and (2) \code{axis} chooses the direction of growth --- \code{axis=0} adds rows (the array gets taller), \code{axis=1} adds columns (the array gets wider). The crucial \emph{new} thing Pandas adds is that the pieces carry \emph{labels}, and those labels must be reconciled. That reconciliation is the whole story below.
+\end{background}
+
+\subsection{A toy-frame helper}
+
+To see the label behavior clearly, it helps to make small frames whose every cell announces where it came from. We'll use a tiny factory function throughout:
+
+\begin{lstlisting}
+import pandas as pd
+
+def make_df(cols, ind):
+    """Build a small DataFrame whose cell 'C0', 'C1', ... is labeled by
+    its column letter and row number, e.g. cell 'B2'."""
+    data = {c: [str(c) + str(i) for i in ind] for c in cols}
+    return pd.DataFrame(data, ind)
+
+make_df('ABC', range(3))
+\end{lstlisting}
+
+\begin{outblock}
+    A   B   C
+0  A0  B0  C0
+1  A1  B1  C1
+2  A2  B2  C2
+\end{outblock}
+
+Every value tells you its address: \code{B2} is column \code{B}, row \code{2}. When we concatenate frames, we can read off exactly which original cell landed where --- and, more importantly, what happened to the row \emph{labels} on the left.
+
+\section{\texorpdfstring{\code{pd.concat}}{pd.concat}: the main tool}
+
+The signature you'll use ninety percent of the time is just \code{pd.concat([df1, df2])}. By default it concatenates along \code{axis=0}, stacking the second frame's rows below the first:
+
+\begin{lstlisting}
+df1 = make_df('AB', [1, 2])
+df2 = make_df('AB', [3, 4])
+pd.concat([df1, df2])
+\end{lstlisting}
+
+\begin{outblock}
+    A   B
+1  A1  B1
+2  A2  B2
+3  A3  B3
+4  A4  B4
+\end{outblock}
+
+The columns \code{A} and \code{B} matched up, the rows stacked, and the original index labels (\code{1,2} then \code{3,4}) were preserved. Switch to \code{axis=1} (equivalently \code{axis='columns'}) and the frames sit side by side, now aligning on the \emph{row} index instead:
+
+\begin{lstlisting}
+df3 = make_df('AB', [0, 1])
+df4 = make_df('CD', [0, 1])
+pd.concat([df3, df4], axis=1)
+\end{lstlisting}
+
+\begin{outblock}
+    A   B   C   D
+0  A0  B0  C0  D0
+1  A1  B1  C1  D1
+\end{outblock}
+
+\begin{intuition}
+The mental model is a T-shaped choice. \code{axis=0} grows the table \emph{downward} and lines the pieces up by matching \emph{column} names. \code{axis=1} grows the table \emph{rightward} and lines the pieces up by matching \emph{row} index labels. Whichever axis you concatenate \emph{along}, the \emph{other} axis is the one Pandas aligns on. So column-wise concatenation that fails to line up rows, or row-wise concatenation across mismatched columns, will quietly produce \code{NaN}s --- not an error.
+\end{intuition}
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily\small,
+   cell/.style={draw=rulegray, minimum width=0.85cm, minimum height=0.55cm, font=\ttfamily\footnotesize},
+   a/.style={cell, fill=bgblue}, b/.style={cell, fill=bggreen},
+   lbl/.style={font=\sffamily\footnotesize\color{accent}}]
+
+  % ---- axis=0 (row-wise) ----
+  \node[lbl] at (1.7,3.0) {\textbf{axis=0}\, (stack rows; match columns)};
+  % header
+  \node[cell, fill=white] at (0.85,2.4) {A};
+  \node[cell, fill=white] at (1.70,2.4) {B};
+  % df1
+  \node[a] at (0.85,1.85) {A1}; \node[a] at (1.70,1.85) {B1};
+  \node[a] at (0.85,1.30) {A2}; \node[a] at (1.70,1.30) {B2};
+  % df2
+  \node[b] at (0.85,0.65) {A3}; \node[b] at (1.70,0.65) {B3};
+  \node[b] at (0.85,0.10) {A4}; \node[b] at (1.70,0.10) {B4};
+  \draw[{Latex}-, accent, thick] (2.45,0.4) -- (2.45,1.5);
+  \node[lbl, rotate=-90] at (2.75,0.95) {grows down};
+
+  % ---- axis=1 (column-wise) ----
+  \node[lbl] at (6.3,3.0) {\textbf{axis=1}\, (stack cols; match index)};
+  \node[cell, fill=white] at (5.0,2.4) {A};
+  \node[cell, fill=white] at (5.85,2.4) {B};
+  \node[cell, fill=white] at (6.70,2.4) {C};
+  \node[cell, fill=white] at (7.55,2.4) {D};
+  \node[a] at (5.0,1.85) {A0}; \node[a] at (5.85,1.85) {B0};
+  \node[a] at (5.0,1.30) {A1}; \node[a] at (5.85,1.30) {B1};
+  \node[b] at (6.70,1.85) {C0}; \node[b] at (7.55,1.85) {D0};
+  \node[b] at (6.70,1.30) {C1}; \node[b] at (7.55,1.30) {D1};
+  \draw[{Latex}-, accent, thick] (4.55,1.55) -- (8.0,1.55);
+  \node[lbl] at (6.3,1.85) {};
+  \node[lbl] at (6.3,0.7) {grows right $\rightarrow$};
+\end{tikzpicture}
+\end{center}
+
+\section{The catch: duplicate indices survive}
+
+Here is the single most important behavioral fact in this section, and the one that separates \code{pd.concat} from a database table's \code{INSERT}/\code{APPEND}. \textbf{Pandas preserves index labels even when they collide.} It does \emph{not} silently renumber the result.
+
+\begin{lstlisting}
+x = make_df('AB', [0, 1])
+y = make_df('AB', [0, 1])    # same index labels as x!
+pd.concat([x, y])
+\end{lstlisting}
+
+\begin{outblock}
+    A   B
+0  A0  B0
+1  A1  B1
+0  A0  B0
+1  A1  B1
+\end{outblock}
+
+Look at the index: \code{0, 1, 0, 1}. The label \code{0} now appears \emph{twice}. The result is a perfectly valid DataFrame, but a treacherous one: \code{result.loc[0]} no longer returns a single row, it returns \emph{two}, and many downstream operations that assume unique labels will behave strangely.
+
+\begin{keyidea}
+A SQL \code{APPEND} produces a table with fresh, automatically managed row identity --- you never see two rows with the same primary key just because they came from different sources. \code{pd.concat} is more literal: it treats the index as \emph{data you chose}, and it will not throw your labels away on your behalf. That is the right default for a library where the index often carries real meaning (dates, ids, state names). But it means \emph{you} are responsible for deciding what should happen on overlap.
+\end{keyidea}
+
+Pandas gives you three explicit remedies, depending on what you actually want.
+
+\subsection{Remedy 1: \texorpdfstring{\code{verify\_integrity=True}}{verify integrity} --- refuse to overlap}
+
+If overlapping labels would be a \emph{bug} in your pipeline, ask Pandas to police it. Setting \code{verify_integrity=True} makes \code{concat} check for duplicate labels on the concatenation axis and raise a \code{ValueError} if it finds any:
+
+\begin{lstlisting}
+try:
+    pd.concat([x, y], verify_integrity=True)
+except ValueError as e:
+    print("ValueError:", e)
+\end{lstlisting}
+
+\begin{outblock}
+ValueError: Indexes have overlapping values: Int64Index([0, 1], dtype='int64')
+\end{outblock}
+
+This is the cheap insurance option: it costs a little time (Pandas has to build the index and check uniqueness) but turns a silent data-quality problem into a loud failure. Reach for it when the indices are \emph{supposed} to be disjoint and an overlap means something upstream went wrong.
+
+\subsection{Remedy 2: \texorpdfstring{\code{ignore\_index=True}}{ignore index} --- throw the labels away}
+
+Sometimes the original index is meaningless (it's just ``row 0, row 1\ldots'' from each source) and all you want is a clean, continuous numbering for the combined frame. \code{ignore_index=True} discards both input indices and builds a fresh \code{RangeIndex}:
+
+\begin{lstlisting}
+pd.concat([x, y], ignore_index=True)
+\end{lstlisting}
+
+\begin{outblock}
+    A   B
+0  A0  B0
+1  A1  B1
+2  A0  B0
+3  A1  B1
+\end{outblock}
+
+Now the index reads \code{0, 1, 2, 3}: unique, contiguous, and forgettable. This is the right call whenever the index was incidental record-keeping rather than meaningful labels.
+
+\subsection{Remedy 3: \texorpdfstring{\code{keys=[...]}}{keys} --- remember the source}
+
+The third option \emph{keeps} the original indices but disambiguates them by adding an outer level that records which frame each row came from. The result is a hierarchically indexed (MultiIndex) DataFrame:
+
+\begin{lstlisting}
+pd.concat([x, y], keys=['first', 'second'])
+\end{lstlisting}
+
+\begin{outblock}
+           A   B
+first  0  A0  B0
+       1  A1  B1
+second 0  A0  B0
+       1  A1  B1
+\end{outblock}
+
+Now \code{result.loc['first']} cleanly recovers the original \code{x}, and the source label travels with the data. This is the most \emph{informative} remedy: it doesn't discard anything, it adds structure. It's the natural choice when the provenance matters --- ``these rows are January, those are February'' --- because you can later group, slice, or unstack on that outer level.
+
+\begin{intuition}
+Read the three remedies as three answers to the question ``what do these colliding labels \emph{mean}?'' If they mean \emph{a mistake}, use \code{verify_integrity}. If they mean \emph{nothing}, use \code{ignore_index}. If they mean \emph{two different sources I want to keep track of}, use \code{keys}. There is no universal right answer --- only the one that matches your data's semantics.
+\end{intuition}
+
+\section{Concatenation with joins: mismatched columns}
+
+So far the frames shared columns. What happens when they don't? Suppose one frame has columns \code{A,B,C} and another has \code{B,C,D}, and we stack them row-wise:
+
+\begin{lstlisting}
+df5 = make_df('ABC', [1, 2])
+df6 = make_df('BCD', [3, 4])
+pd.concat([df5, df6])           # default join='outer'
+\end{lstlisting}
+
+\begin{outblock}
+     A   B   C    D
+1   A1  B1  C1  NaN
+2   A2  B2  C2  NaN
+3  NaN  B3  C3   D3
+4  NaN  B4  C4   D4
+\end{outblock}
+
+The default \code{join='outer'} takes the \emph{union} of the column sets ($\{A,B,C\}\cup\{B,C,D\}=\{A,B,C,D\}$). Where a frame lacked a column, Pandas fills \code{NaN}. This is the safe, lossless default: nothing is dropped, but you may inherit holes.
+
+Switch to \code{join='inner'} to keep only the columns the frames have in \emph{common} --- the \emph{intersection}:
+
+\begin{lstlisting}
+pd.concat([df5, df6], join='inner')
+\end{lstlisting}
+
+\begin{outblock}
+    B   C
+1  B1  C1
+2  B2  C2
+3  B3  C3
+4  B4  C4
+\end{outblock}
+
+Only $\{A,B,C\}\cap\{B,C,D\}=\{B,C\}$ survive, and there are no \code{NaN}s because every retained column exists in both frames.
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily\small,
+   cell/.style={draw=rulegray, minimum width=0.8cm, minimum height=0.5cm, font=\ttfamily\scriptsize},
+   hd/.style={cell, fill=white, font=\sffamily\scriptsize\bfseries},
+   a/.style={cell, fill=bgblue}, b/.style={cell, fill=bggreen},
+   nan/.style={cell, fill=bgorange, text=warn},
+   lbl/.style={font=\sffamily\footnotesize\color{accent}}]
+
+  \node[lbl] at (1.6,2.85) {\textbf{outer}\, (union of columns)};
+  \foreach \x/\c in {0/A,1/B,2/C,3/D} {\node[hd] at (\x*0.8,2.3) {\c};}
+  % df5 rows (ABC) -> D is NaN
+  \node[a] at (0,1.8) {A1}; \node[a] at (0.8,1.8) {B1}; \node[a] at (1.6,1.8) {C1}; \node[nan] at (2.4,1.8) {NaN};
+  \node[a] at (0,1.3) {A2}; \node[a] at (0.8,1.3) {B2}; \node[a] at (1.6,1.3) {C2}; \node[nan] at (2.4,1.3) {NaN};
+  % df6 rows (BCD) -> A is NaN
+  \node[nan] at (0,0.8) {NaN}; \node[b] at (0.8,0.8) {B3}; \node[b] at (1.6,0.8) {C3}; \node[b] at (2.4,0.8) {D3};
+  \node[nan] at (0,0.3) {NaN}; \node[b] at (0.8,0.3) {B4}; \node[b] at (1.6,0.3) {C4}; \node[b] at (2.4,0.3) {D4};
+
+  \node[lbl] at (6.6,2.85) {\textbf{inner}\, (intersection of columns)};
+  \foreach \x/\c in {0/B,1/C} {\node[hd] at (6.0+\x*0.8,2.3) {\c};}
+  \node[a] at (6.0,1.8) {B1}; \node[a] at (6.8,1.8) {C1};
+  \node[a] at (6.0,1.3) {B2}; \node[a] at (6.8,1.3) {C2};
+  \node[b] at (6.0,0.8) {B3}; \node[b] at (6.8,0.8) {C3};
+  \node[b] at (6.0,0.3) {B4}; \node[b] at (6.8,0.3) {C4};
+  \node[lbl, text=warn] at (6.6,-0.15) {only shared columns kept; no holes};
+\end{tikzpicture}
+\end{center}
+
+\begin{pitfall}
+\textbf{The old \code{join\_axes} parameter is gone.} Older tutorials (and earlier printings of the Handbook) show a \code{join_axes=[...]} argument that let you pin the result's columns to a specific frame's column list. That parameter was \emph{removed} in pandas 1.0. If you need the result to carry exactly some chosen set of columns, do the concat first and then \code{.reindex(columns=...)}:
+\begin{lstlisting}
+out = pd.concat([df5, df6])
+out = out.reindex(columns=df5.columns)   # keep A, B, C in that order
+\end{lstlisting}
+Same effect, explicit and future-proof.
+\end{pitfall}
+
+\section{\texorpdfstring{\code{DataFrame.append}}{DataFrame.append}: a deprecated shortcut you will still see}
+
+For years, Pandas offered a convenience method, \code{df1.append(df2)}, that was essentially \code{pd.concat([df1, df2])} for the common ``stack one frame under another'' case. You will encounter it constantly in older notebooks, Stack Overflow answers, and blog posts:
+
+\begin{lstlisting}
+# Historical one-liner (do NOT use in new code):
+df1.append(df2)            # was equivalent to pd.concat([df1, df2])
+\end{lstlisting}
+
+\begin{pitfall}
+\textbf{\code{DataFrame.append} is deprecated and has been removed.} It was deprecated in pandas 1.4 (early 2022) and \emph{removed entirely} in pandas 2.0 (April 2023). Calling it on a modern install raises \code{AttributeError: 'DataFrame' object has no attribute 'append'}. There were two good reasons to retire it:
+\begin{itemize}
+  \item \textbf{It was a performance trap.} Unlike Python's \code{list.append}, the Pandas method did \emph{not} mutate in place --- it built and returned a brand-new frame every call. Writing \code{for chunk in chunks: df = df.append(chunk)} therefore did $O(n^2)$ copying. The idiomatic replacement, \code{pd.concat([...])} over a \emph{list} of frames built once, is far faster.
+  \item \textbf{It was redundant.} Everything \code{append} did, \code{concat} does, with more control (axes, joins, keys).
+\end{itemize}
+\textbf{Migration is mechanical:} replace \code{a.append(b)} with \code{pd.concat([a, b])}, and replace any accumulation loop with ``collect frames in a list, \code{concat} once at the end.''
+\end{pitfall}
+
+\begin{pyrefresh}
+The name collision is worth pausing on, because it bites newcomers. Python's built-in \code{list.append} \emph{mutates} the list in place and returns \code{None}. The late Pandas \code{DataFrame.append} did the \emph{opposite}: it returned a new frame and left the original untouched. Same word, opposite contract. The cleanest way to avoid the confusion entirely is to forget the Pandas method exists and reach for \code{pd.concat} --- whose list-of-frames argument also nudges you toward the efficient ``build the list, concat once'' pattern.
+\end{pyrefresh}
+
+\section*{Section recap}
+\addcontentsline{toc}{section}{Section recap}
+\begin{itemize}
+  \item \code{pd.concat([...])} takes a \emph{list} of objects; \code{axis=0} (default) stacks rows and aligns on columns, \code{axis=1} stacks columns and aligns on the row index.
+  \item Unlike a database append, \code{concat} \textbf{preserves duplicate index labels} rather than renumbering --- a frequent source of surprise.
+  \item Three remedies for colliding labels: \code{verify_integrity=True} (raise on overlap), \code{ignore_index=True} (fresh \code{RangeIndex}), \code{keys=[...]} (add a MultiIndex source level).
+  \item With mismatched columns, \code{join='outer'} (default) takes the \emph{union} and fills \code{NaN}; \code{join='inner'} keeps only the \emph{intersection}. The old \code{join_axes} is gone --- use \code{reindex} instead.
+  \item \code{DataFrame.append} is \textbf{removed in pandas 2.0}; always use \code{pd.concat([...])}, and accumulate by collecting frames in a list and concatenating once.
+\end{itemize}
+
+\end{document}

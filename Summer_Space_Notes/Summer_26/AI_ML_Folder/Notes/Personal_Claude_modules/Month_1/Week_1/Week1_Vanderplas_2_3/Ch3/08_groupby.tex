@@ -1,0 +1,479 @@
+\documentclass[11pt]{article}
+\usepackage{notesstyle}
+
+\begin{document}
+\notesheader{3.8}{Aggregation and Grouping}{From whole-table summaries to per-group analytics: the split--apply--combine engine at the heart of Pandas.}
+
+\section{Why this section matters}
+
+\begin{background}
+A huge fraction of ``data analysis'' is really just two questions repeated over and over: \emph{what is the overall summary?} and \emph{how does that summary differ across categories?} The first question is answered by \emph{aggregation} --- collapsing many numbers into one (a sum, a mean, a maximum). The second is answered by \emph{grouping} --- splitting the data into buckets by some key and aggregating within each bucket.
+
+If you have ever written a SQL \code{GROUP BY}, or dragged a field into the ``rows'' shelf of a pivot table, you already know the shape of this idea. Pandas gives you the same power in code, but with two advantages: the result is itself a labeled Pandas object you can keep computing on, and the ``apply'' step can be an \emph{arbitrary} Python function, not just a fixed menu of SQL aggregates.
+\end{background}
+
+The convention we use throughout:
+
+\begin{lstlisting}
+import numpy as np
+import pandas as pd
+\end{lstlisting}
+
+\section{Simple aggregations: collapsing an axis}
+
+Before grouping, get comfortable with plain aggregation. Every \code{Series} and \code{DataFrame} carries a family of reduction methods --- \code{sum}, \code{mean}, \code{min}, \code{max}, \code{std}, \code{var}, \code{median}, \code{prod}, \code{count} --- each of which takes many values and returns few.
+
+\begin{lstlisting}
+rng = np.random.default_rng(42)
+s = pd.Series(rng.random(5))
+print(s.sum(), s.mean())
+\end{lstlisting}
+
+\begin{outblock}
+2.5613... 0.5122...
+\end{outblock}
+
+For a \code{DataFrame} the interesting wrinkle is the \code{axis} argument, because now there are \emph{two} directions you could collapse.
+
+\begin{lstlisting}
+df = pd.DataFrame({'A': rng.random(4),
+                   'B': rng.random(4)})
+df.mean()          # default axis=0: collapse the ROWS, one value per column
+df.mean(axis=1)    # axis=1: collapse the COLUMNS, one value per row
+\end{lstlisting}
+
+\begin{intuition}
+The \code{axis} argument names the axis that gets \emph{eaten}, not the one that survives. \code{axis=0} is the row axis, so \code{df.mean(axis=0)} consumes the rows and leaves one number per \emph{column}. This is the opposite of what many people guess on their first try. A useful phrasing: ``\code{axis=0} means \emph{down the rows}; \code{axis=1} means \emph{across the columns}.''
+\end{intuition}
+
+\begin{pitfall}
+Aggregations \textbf{skip \code{NaN} by default} (\code{skipna=True}). That is usually what you want, but it means \code{df.mean()} and \code{df.sum()} silently ignore missing values rather than propagating them. If a column is half missing, its reported mean is the mean of the half that exists --- not flagged, not warned. When that matters, check \code{df.count()} (which counts \emph{non-null} entries per column) alongside your aggregate.
+\end{pitfall}
+
+\subsection{\texttt{describe()}: the one-line reconnaissance}
+
+When you first meet a dataset, \code{describe()} runs a whole panel of aggregations at once for every numeric column:
+
+\begin{lstlisting}
+df.describe()
+\end{lstlisting}
+
+\begin{outblock}
+              A         B
+count  4.000000  4.000000
+mean   0.546...  0.471...
+std    0.233...  0.301...
+min    0.218...  0.122...
+25%    0.451...  0.275...
+50%    0.602...  0.470...
+75%    0.697...  0.666...
+max    0.760...  0.823...
+\end{outblock}
+
+That single call gives you count, mean, spread, and the five-number summary --- enough to spot an obviously broken column (a \code{max} of $10^9$, a \code{count} far below the others) in seconds.
+
+\begin{outbox}
+\textbf{Cheat sheet --- the common reductions:} \\[2pt]
+\code{count} (non-null), \code{sum}, \code{mean}, \code{median}, \code{min}, \code{max}, \\
+\code{std}, \code{var}, \code{prod}, \code{first}, \code{last}, \code{nunique}.
+\end{outbox}
+
+\section{The big idea: split--apply--combine}
+
+Whole-table aggregation throws away all the structure in your data. The real power comes when you aggregate \emph{conditionally} --- separately for each value of some key. The pattern that organizes this is called \textbf{split--apply--combine}, a name coined by Hadley Wickham (of R's \texttt{plyr}/\texttt{dplyr} fame). It breaks every grouped computation into three crisp phases.
+
+\begin{keyidea}
+\textbf{Split} the rows into groups according to the values of a key. \textbf{Apply} a function (usually an aggregation) independently within each group. \textbf{Combine} the per-group results back into a single output object, indexed by the group keys. Holding these three phases separate in your mind is the single most useful thing you can do when reasoning about \code{groupby}.
+\end{keyidea}
+
+Consider a tiny table whose key takes the values \code{A}, \code{B}, \code{C}, and whose \code{data} column holds some numbers. We want the \emph{sum within each key}. The diagram below traces all three phases.
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily\footnotesize,
+   row/.style={draw=rulegray, minimum width=0.9cm, minimum height=0.55cm},
+   keyA/.style={row, fill=bgblue},
+   keyB/.style={row, fill=bggreen},
+   keyC/.style={row, fill=bgorange},
+   val/.style={row, fill=white},
+   lbl/.style={font=\sffamily\footnotesize\color{accent}},
+   phase/.style={font=\sffamily\bfseries\small\color{accent}},
+   arr/.style={-{Stealth[length=2.2mm]}, rulegray, thick}]
+
+  % ---- original table ----
+  \node[phase] at (0,3.7) {Original};
+  \node[lbl] at (-0.55,3.15) {key};
+  \node[lbl] at (0.55,3.15) {data};
+  \foreach \i/\k/\v/\sty [count=\r from 0] in
+     {0/A/3/keyA, 1/B/8/keyB, 2/C/2/keyC, 3/A/5/keyA, 4/B/1/keyB, 5/C/4/keyC} {
+     \node[\sty] at (-0.55, 2.75-\r*0.55) {\k};
+     \node[val]  at ( 0.55, 2.75-\r*0.55) {\v};
+  }
+
+  % ---- split: three group bins ----
+  \node[phase] at (4.2,3.7) {Split};
+  % group A
+  \node[lbl] at (4.2,3.15) {key = A};
+  \node[keyA] at (3.85,2.75) {A}; \node[val] at (4.55,2.75) {3};
+  \node[keyA] at (3.85,2.20) {A}; \node[val] at (4.55,2.20) {5};
+  % group B
+  \node[lbl] at (4.2,1.65) {key = B};
+  \node[keyB] at (3.85,1.25) {B}; \node[val] at (4.55,1.25) {8};
+  \node[keyB] at (3.85,0.70) {B}; \node[val] at (4.55,0.70) {1};
+  % group C
+  \node[lbl] at (4.2,0.15) {key = C};
+  \node[keyC] at (3.85,-0.25) {C}; \node[val] at (4.55,-0.25) {2};
+  \node[keyC] at (3.85,-0.80) {C}; \node[val] at (4.55,-0.80) {4};
+
+  % ---- apply: sum() within each group ----
+  \node[phase] at (7.6,3.7) {Apply: sum};
+  \node[keyA] at (7.6,2.475) {$3+5$};
+  \node[keyB] at (7.6,0.975) {$8+1$};
+  \node[keyC] at (7.6,-0.525) {$2+4$};
+
+  % ---- combine ----
+  \node[phase] at (10.4,3.7) {Combine};
+  \node[lbl] at (9.9,3.15) {key};
+  \node[lbl] at (10.9,3.15) {data};
+  \node[keyA] at (9.9,2.475) {A}; \node[val] at (10.9,2.475) {8};
+  \node[keyB] at (9.9,0.975) {B}; \node[val] at (10.9,0.975) {9};
+  \node[keyC] at (9.9,-0.525) {C}; \node[val] at (10.9,-0.525) {6};
+
+  % ---- arrows ----
+  \draw[arr] (1.15,1.5) -- (3.2,1.5);
+  \draw[arr] (5.0,2.475) -- (6.7,2.475);
+  \draw[arr] (5.0,0.975) -- (6.7,0.975);
+  \draw[arr] (5.0,-0.525) -- (6.7,-0.525);
+  \draw[arr] (8.5,2.475) -- (9.3,2.475);
+  \draw[arr] (8.5,0.975) -- (9.3,0.975);
+  \draw[arr] (8.5,-0.525) -- (9.3,-0.525);
+\end{tikzpicture}
+\end{center}
+
+In code, this entire diagram is one line:
+
+\begin{lstlisting}
+df = pd.DataFrame({'key':  ['A', 'B', 'C', 'A', 'B', 'C'],
+                   'data': [3, 8, 2, 5, 1, 4]})
+df.groupby('key').sum()
+\end{lstlisting}
+
+\begin{outblock}
+     data
+key
+A       8
+B       9
+C       6
+\end{outblock}
+
+Notice that the group key has become the \emph{index} of the result. That is the ``combine'' phase choosing a sensible label for each row.
+
+\section{\texttt{groupby} is lazy}
+
+Here is a detail that surprises people. The call \code{df.groupby('key')} by itself does \emph{not} compute anything:
+
+\begin{lstlisting}
+df.groupby('key')
+\end{lstlisting}
+
+\begin{outblock}
+<pandas.core.groupby.generic.DataFrameGroupBy object at 0x...>
+\end{outblock}
+
+It hands back a \code{DataFrameGroupBy} object: a lightweight bundle that has merely \emph{worked out which rows belong to which group}, but has applied no function and collapsed nothing. The actual computation is deferred until you call an aggregation on it.
+
+\begin{intuition}
+Think of the \code{GroupBy} object as a \emph{recipe}, not a \emph{meal}. It knows how to slice the data into groups, and it is waiting to hear what you want done to each slice. Because nothing is computed yet, Pandas can be clever: it does not have to physically split the frame into a pile of sub-frames in memory. When you finally say \code{.sum()}, it can run a single fused pass over the data. This laziness is what makes \code{groupby('key').sum()} efficient even on large frames, and it is what lets you write fluent one-liners that read like the split--apply--combine story they implement.
+\end{intuition}
+
+\section{Living with a \texttt{GroupBy} object}
+
+Even though it is lazy, the \code{GroupBy} object supports a rich interface. Three capabilities show up constantly.
+
+\subsection{Column indexing: aggregate just one column}
+
+A \code{GroupBy} can be indexed by column name, exactly like the \code{DataFrame} it came from. This narrows the apply step to the columns you care about and is the idiomatic way to aggregate a single series by a key:
+
+\begin{lstlisting}
+df.groupby('key')['data'].mean()
+\end{lstlisting}
+
+\begin{outblock}
+key
+A    4.0
+B    4.5
+C    3.0
+Name: data, dtype: float64
+\end{outblock}
+
+This is itself still lazy: \code{df.groupby('key')['data']} returns a \code{SeriesGroupBy} object, and nothing is computed until \code{.mean()}.
+
+\subsection{Iteration: groups as (name, sub-frame) pairs}
+
+You can loop over a \code{GroupBy}. Each iteration yields a tuple of \emph{(group key, the sub-DataFrame for that key)}:
+
+\begin{lstlisting}
+for key, sub in df.groupby('key'):
+    print(key, 'has', len(sub), 'rows')
+\end{lstlisting}
+
+\begin{outblock}
+A has 2 rows
+B has 2 rows
+C has 2 rows
+\end{outblock}
+
+\begin{pitfall}
+Iterating in Python and processing groups one at a time \emph{works}, but it throws away the very efficiency that the lazy, vectorized \code{GroupBy} was built to give you. Reach for explicit iteration only for genuinely custom, hard-to-vectorize logic. For anything expressible as an aggregation, filter, or transform (the next sections), let Pandas do it in one fused pass instead.
+\end{pitfall}
+
+\subsection{Method dispatch: per-group convenience methods}
+
+Any \code{DataFrame} method that the \code{GroupBy} does not define itself is \emph{dispatched} to each group and the results combined. The classic example is \code{describe()}:
+
+\begin{lstlisting}
+df.groupby('key')['data'].describe()
+\end{lstlisting}
+
+\begin{outblock}
+     count  mean       std  min   25%  50%   75%  max
+key
+A      2.0   4.0  1.414214  3.0  3.50  4.0  4.50  5.0
+B      2.0   4.5  4.949747  4.5  ...   4.5  ...   8.0
+C      2.0   3.0  1.414214  2.0  2.50  3.0  3.50  4.0
+\end{outblock}
+
+You never wrote a loop, yet you got a full statistical summary \emph{per group}. That is dispatch plus combine working together.
+
+\section{The four operation families}
+
+Once you have a \code{GroupBy} object, there are four broad things you can do with it. Keeping their \emph{output shapes} straight is the key to using them correctly.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{l l l}
+\toprule
+\textbf{Operation} & \textbf{What you give it} & \textbf{Shape of result} \\
+\midrule
+\code{aggregate} & reduction(s) per column & one row per group \\
+\code{filter}    & group $\to$ True/False  & subset of original rows \\
+\code{transform} & group $\to$ same-shape  & same shape as input \\
+\code{apply}     & group $\to$ anything    & whatever you return \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+We will set up a slightly richer frame to exercise all four:
+
+\begin{lstlisting}
+df = pd.DataFrame({'key':  ['A', 'B', 'C', 'A', 'B', 'C'],
+                   'val1': [0, 1, 2, 3, 4, 5],
+                   'val2': [5, 0, 3, 3, 7, 9]})
+\end{lstlisting}
+
+\subsection{\texttt{aggregate}: one or more reductions}
+
+\code{aggregate} (alias \code{agg}) generalizes the simple \code{.sum()} call. You can hand it a single function, a \emph{list} of functions (to compute several reductions at once), or a \emph{dict} mapping columns to the functions you want for each.
+
+\begin{lstlisting}
+# A list of reductions, applied to every column
+df.groupby('key').aggregate(['min', 'median', 'max'])
+\end{lstlisting}
+
+\begin{outblock}
+    val1            val2
+     min median max  min median max
+key
+A      0    1.5   3    3    4.0   5
+B      1    2.5   4    0    3.5   7
+C      2    3.5   5    3    6.0   9
+\end{outblock}
+
+A list of functions produces a \emph{hierarchical} (MultiIndex) set of columns --- the outer level names the original column, the inner level names the reduction. To apply \emph{different} reductions to different columns, pass a dict:
+
+\begin{lstlisting}
+df.groupby('key').aggregate({'val1': 'min',
+                             'val2': 'max'})
+\end{lstlisting}
+
+\begin{outblock}
+     val1  val2
+key
+A       0     5
+B       1     7
+C       2     9
+\end{outblock}
+
+\subsubsection{Named aggregation}
+
+Modern Pandas offers \emph{named aggregation}, which lets you choose the output column names directly using \code{pd.NamedAgg} (or the equivalent tuple form). This avoids the MultiIndex columns and is much friendlier downstream:
+
+\begin{lstlisting}
+df.groupby('key').agg(
+    lo=pd.NamedAgg(column='val1', aggfunc='min'),
+    hi=pd.NamedAgg(column='val2', aggfunc='max'),
+)
+\end{lstlisting}
+
+\begin{outblock}
+     lo  hi
+key
+A     0   5
+B     1   7
+C     2   9
+\end{outblock}
+
+\subsection{\texttt{filter}: keep or drop \emph{whole} groups}
+
+\code{filter} makes a \emph{group-level} yes/no decision. You supply a function that receives each group's sub-frame and returns a single boolean; groups for which it returns \code{True} are kept \emph{in full}, the rest are dropped entirely.
+
+\begin{lstlisting}
+def spread_above(group):
+    return group['val2'].std() > 2.5
+
+df.groupby('key').filter(spread_above)
+\end{lstlisting}
+
+\begin{outblock}
+  key  val1  val2
+0   A     0     5
+2   C     2     3
+3   A     3     3
+5   C     5     9
+\end{outblock}
+
+\begin{intuition}
+\code{filter} is the only one of the four families whose \emph{rows} are a subset of the original. It does not transform values and it does not reduce them; it merely \emph{selects which groups survive}, then returns those groups' original rows untouched (note the preserved original index \code{0, 2, 3, 5}). Use it to answer questions like ``show me only the categories with enough variation / enough data / a high enough mean.''
+\end{intuition}
+
+\subsection{\texttt{transform}: same shape in, same shape out}
+
+\code{transform} is the family people forget exists, and it is enormously useful. Unlike \code{aggregate}, which \emph{collapses} each group to one row, \code{transform} returns an object the \emph{same shape} as the input, with each value replaced by something computed from its group. The canonical use is \emph{group-wise centering or standardization}:
+
+\begin{lstlisting}
+# Subtract each group's mean from its members (mean-centering)
+df.groupby('key')['val2'].transform(lambda x: x - x.mean())
+\end{lstlisting}
+
+\begin{outblock}
+0   -1.0
+1   -3.5
+2   -3.0
+3    1.0
+4    3.5
+5    3.0
+Name: val2, dtype: float64
+\end{outblock}
+
+\begin{keyidea}
+\code{aggregate} answers ``what is the summary \emph{of} each group?'' and shrinks the data. \code{transform} answers ``what does each row look like \emph{relative to} its group?'' and preserves the data's shape, so the result lines up row-for-row with the original frame. That alignment is exactly what makes \code{transform} the right tool for feature engineering: you can drop its output straight back in as a new column, e.g.\ assigning \code{df.groupby('key')['val2'].transform(...)} to a fresh column \code{df['val2_c']}.
+\end{keyidea}
+
+\subsection{\texttt{apply}: the general escape hatch}
+
+When none of the structured families fit, \code{apply} lets you run an \emph{arbitrary} function on each group's sub-frame. Whatever your function returns, Pandas tries to stitch the pieces back together. Here we normalize \code{val1} by the group's total of \code{val2}:
+
+\begin{lstlisting}
+def normalize(group):
+    group = group.copy()
+    group['val1'] = group['val1'] / group['val2'].sum()
+    return group
+
+df.groupby('key').apply(normalize)
+\end{lstlisting}
+
+\begin{intuition}
+\code{apply} is maximally flexible and therefore maximally slow and unpredictable: because it must call your Python function once per group and then guess how to recombine arbitrary return values, it cannot use the fused fast paths that \code{aggregate}, \code{filter}, and \code{transform} enjoy. Treat it as the escape hatch: reach for it only when your computation genuinely does not fit the other three. If it does fit, the specialized tool will be clearer \emph{and} faster.
+\end{intuition}
+
+\section{Specifying the split key flexibly}
+
+So far we have grouped by a single column name. But the ``split'' phase accepts the key in several forms, and knowing them turns awkward problems into one-liners. All of the following are valid arguments to \code{groupby}.
+
+\begin{outbox}
+\textbf{Ways to specify the grouping key:} \\[3pt]
+1. \textbf{A column name} (or list of names) --- group by those columns. \\
+2. \textbf{A list/array/Series} of labels aligned to the index --- one label per row. \\
+3. \textbf{A dict or Series} mapping index values $\to$ group names. \\
+4. \textbf{A function} applied to each index value to produce its group. \\
+5. \textbf{Any combination} of the above in a list.
+\end{outbox}
+
+\subsection{A list or array of labels}
+
+The key does not have to live in the frame at all. Any array the same length as the frame works --- each entry says which group its row belongs to:
+
+\begin{lstlisting}
+labels = ['x', 'x', 'y', 'y', 'x', 'y']
+df.groupby(labels)['val1'].sum()
+\end{lstlisting}
+
+\begin{outblock}
+x    5
+y   10
+Name: val1, dtype: int64
+\end{outblock}
+
+\subsection{A dict or Series mapping index \texttt{->} group}
+
+If the information you want to group by is a property of the \emph{index}, a mapping is cleanest. Suppose the index labels are codes and you have a lookup from code to category:
+
+\begin{lstlisting}
+df2 = df.set_index('key')          # index is now A,B,C,A,B,C
+mapping = {'A': 'vowel-ish', 'B': 'consonant',
+           'C': 'consonant'}
+df2.groupby(mapping)['val1'].sum()
+\end{lstlisting}
+
+\begin{outblock}
+consonant    12
+vowel-ish     3
+Name: val1, dtype: int64
+\end{outblock}
+
+\subsection{A function of the index}
+
+Pass any function and Pandas calls it on each index value to compute that row's group. A common idiom is to fold case or bucket the index:
+
+\begin{lstlisting}
+# Group by the lowercased first letter of the index label
+df2.groupby(str.lower)['val1'].sum()
+\end{lstlisting}
+
+\begin{outblock}
+a    3
+b    5
+c    7
+Name: val1, dtype: int64
+\end{outblock}
+
+\subsection{Combining keys for a MultiIndex result}
+
+Finally, pass a \emph{list} of any of the above to group hierarchically. The result is indexed by a \code{MultiIndex}, one level per key:
+
+\begin{lstlisting}
+df2.groupby([str.lower, mapping])['val1'].sum()
+\end{lstlisting}
+
+\begin{outblock}
+a  vowel-ish    3
+b  consonant    5
+c  consonant    7
+Name: val1, dtype: int64
+\end{outblock}
+
+\begin{pitfall}
+When you group by a \emph{column} of the frame, that column is consumed and reappears as the result's index. But when you group by an external array, dict, or function, the original columns are untouched --- and if you forget to select a numeric subset, Pandas may try to aggregate non-numeric columns too (or, in recent versions, raise rather than silently dropping them). Be explicit: index the column(s) you mean to aggregate, as in \code{groupby(...)['val1']}.
+\end{pitfall}
+
+\section*{Section recap}
+\addcontentsline{toc}{section}{Section recap}
+\begin{itemize}
+  \item Simple aggregations (\code{sum}, \code{mean}, \code{std}, \code{describe}, \ldots) collapse an axis; \code{axis=0} eats rows (one value per column), \code{axis=1} eats columns. They skip \code{NaN} by default.
+  \item \textbf{Split--apply--combine} (Wickham) is the organizing idea: split rows into groups by a key, apply a function within each, combine the results into a key-indexed output.
+  \item \code{groupby(...)} is \textbf{lazy} --- it returns a \code{GroupBy} recipe that computes nothing until you aggregate, which is what makes it efficient and chainable.
+  \item A \code{GroupBy} supports column indexing, iteration over \code{(key, sub-frame)} pairs, and method dispatch (e.g.\ per-group \code{describe()}).
+  \item Four operation families, distinguished by output shape: \code{aggregate} (one row per group), \code{filter} (a subset of whole groups), \code{transform} (same shape, group-relative values), \code{apply} (arbitrary, the escape hatch).
+  \item The split key is flexible: a column name, an aligned array/Series, a dict/Series mapping the index, a function of the index, or a list combining these for a \code{MultiIndex} result.
+\end{itemize}
+
+\end{document}

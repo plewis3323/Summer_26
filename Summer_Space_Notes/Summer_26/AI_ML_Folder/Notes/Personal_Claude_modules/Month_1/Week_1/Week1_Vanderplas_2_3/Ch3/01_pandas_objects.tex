@@ -1,0 +1,244 @@
+\documentclass[11pt]{article}
+\usepackage{notesstyle}
+
+\begin{document}
+\notesheader{3.1}{Introducing Pandas Objects}{Series, DataFrame, and Index --- the three data structures everything else is built on.}
+
+\section{Where Pandas comes from, and why you need it}
+
+\begin{background}
+If you have spent your first year of Python mostly with lists, dictionaries, and maybe a little NumPy, here is the mental gap that Pandas fills.
+
+\textbf{NumPy} gives you the \code{ndarray}: a fast, homogeneous, $N$-dimensional grid of numbers. It is brilliant for math, but it has two blind spots that show up the moment you touch \emph{real} data:
+\begin{itemize}
+  \item \textbf{Positions, not labels.} A NumPy array is addressed by integer position (\code{a[0]}, \code{a[3]}). Real datasets are addressed by \emph{meaning}: the row for ``California,'' the column named ``population.''
+  \item \textbf{One dtype, no gaps.} A NumPy array is a single data type with no natural notion of ``missing.'' Real tables mix strings, floats, dates, and holes.
+\end{itemize}
+\textbf{Pandas} is a thin, powerful layer \emph{on top of} NumPy that attaches \emph{labels} to the axes of an array and gracefully handles missing values. Underneath, your numbers are still NumPy arrays (so you keep the speed); on top, you get a spreadsheet-like, database-like interface.
+\end{background}
+
+The convention everyone uses, and the one we use for the rest of these notes:
+
+\begin{lstlisting}
+import numpy as np
+import pandas as pd
+\end{lstlisting}
+
+\begin{intuition}
+Think of the three core objects as a ladder of dimensionality, each one a labeled version of a NumPy array:
+\begin{itemize}
+  \item \textbf{\code{Series}} $=$ a 1-D NumPy array $+$ an explicit index (labels for each element). Like a cross between a NumPy array and a Python dict.
+  \item \textbf{\code{DataFrame}} $=$ a 2-D table $=$ an ordered collection of \code{Series} that all \emph{share the same row index}. Like a dict of columns.
+  \item \textbf{\code{Index}} $=$ the immutable label array that both of the above use to align data.
+\end{itemize}
+\end{intuition}
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily\small,
+   lbl/.style={font=\sffamily\footnotesize\color{accent}},
+   cell/.style={draw=rulegray, minimum width=1.5cm, minimum height=0.7cm},
+   idx/.style={cell, fill=bgblue, font=\sffamily\small\color{accent}},
+   val/.style={cell, fill=white}]
+  % Series
+  \node[lbl] at (0,2.2) {\textbf{Series} (1-D + index)};
+  \foreach \y/\lab/\v [count=\i] in {3/a/0.25, 2/b/0.50, 1/c/0.75, 0/d/1.00} {
+    \node[idx] at (0,\y*0.75) {\lab};
+    \node[val] at (1.5,\y*0.75) {\v};
+  }
+  \node[lbl] at (0,-0.35) {index};
+  \node[lbl] at (1.5,-0.35) {values};
+
+  % DataFrame
+  \node[lbl] at (6.4,2.2) {\textbf{DataFrame} (aligned columns)};
+  \foreach \x/\col [count=\j] in {0/pop, 1/area} {
+    \node[idx, fill=bggreen, text=accent2] at (5.6+\x*1.6, 2.25) {\col};
+  }
+  \foreach \y/\lab [count=\i] in {3/CA, 2/TX, 1/NY, 0/FL} {
+    \node[idx] at (4.0,\y*0.75) {\lab};
+    \node[val] at (5.6,\y*0.75) {$\bullet$};
+    \node[val] at (7.2,\y*0.75) {$\bullet$};
+  }
+  \node[lbl] at (4.0,-0.35) {shared index};
+  \draw[decorate,decoration={brace,amplitude=5pt},accent2] (4.8,2.55) -- (8.0,2.55);
+  \node[lbl, text=accent2] at (6.4,3.0) {columns};
+\end{tikzpicture}
+\end{center}
+
+\section{The Series object}
+
+A \code{Series} is a one-dimensional array of \emph{indexed} data. The simplest way to build one is from a list or NumPy array:
+
+\begin{lstlisting}
+data = pd.Series([0.25, 0.5, 0.75, 1.0])
+print(data)
+\end{lstlisting}
+
+\begin{outblock}
+0    0.25
+1    0.50
+2    0.75
+3    1.00
+dtype: float64
+\end{outblock}
+
+Notice that the printout has \emph{two} columns: the index on the left (here the default integers \code{0..3}) and the values on the right. Those are exactly the two attributes you can pull out:
+
+\begin{lstlisting}
+data.values   # -> array([0.25, 0.5 , 0.75, 1.  ])  (a NumPy array)
+data.index    # -> RangeIndex(start=0, stop=4, step=1)
+\end{lstlisting}
+
+\begin{keyidea}
+The \code{values} are a real NumPy array --- that is where the speed lives. The \code{index} is a separate, \emph{explicit} object. Standard NumPy arrays have only an \emph{implicit} integer index; the whole point of a \code{Series} is that you can make the index whatever you want.
+\end{keyidea}
+
+\subsection{An index of your own choosing}
+
+Unlike a NumPy array, the index need not be integers, and need not start at zero:
+
+\begin{lstlisting}
+data = pd.Series([0.25, 0.5, 0.75, 1.0],
+                 index=['a', 'b', 'c', 'd'])
+data['b']     # -> 0.5
+\end{lstlisting}
+
+This is what people mean when they say a \code{Series} is ``like a dictionary'': you look values up by a label key. The difference from a plain Python \code{dict} is that the keys (the index) are a \emph{typed, ordered} array, which makes slicing and vectorized math possible.
+
+\subsection{Series from a dictionary}
+
+Because a \code{Series} maps keys to values, building one directly from a \code{dict} is natural. Pandas sorts the keys into the index:
+
+\begin{lstlisting}
+population_dict = {'California': 39_512_223,
+                  'Texas':      28_995_881,
+                  'New York':   19_453_561,
+                  'Florida':    21_477_737}
+population = pd.Series(population_dict)
+\end{lstlisting}
+
+\begin{outbox}
+California \quad 39512223 \\
+Florida \quad\;\; 21477737 \\
+New York \quad\, 19453561 \\
+Texas \quad\quad 28995881 \\
+dtype: int64
+\end{outbox}
+
+Now it behaves like a dictionary --- \code{population['California']} returns the value --- \emph{and} like an array, supporting slicing such as \code{population['California':'New York']}.
+
+\begin{pitfall}
+\textbf{Label slicing includes the right endpoint.} With the default integer positions, \code{data[0:2]} gives 2 elements (the usual Python ``stop is exclusive'' rule). But when you slice by \emph{explicit labels}, e.g. \code{data['a':'c']}, Pandas includes \code{'c'}. Two different conventions live in the same object --- this is exactly the ambiguity that \code{loc} and \code{iloc} (next section) exist to resolve.
+\end{pitfall}
+
+\section{The DataFrame object}
+
+If a \code{Series} is a labeled 1-D array, a \code{DataFrame} is a labeled 2-D array: a table whose rows share a common index and whose columns each have a name. Equivalently, and more usefully: \emph{a \code{DataFrame} is a dictionary of \code{Series} that all share the same index.}
+
+Suppose we have a second \code{Series} for area, indexed by the same states:
+
+\begin{lstlisting}
+area = pd.Series({'California': 423_967, 'Texas': 695_662,
+                  'New York': 141_297, 'Florida': 170_312})
+states = pd.DataFrame({'population': population, 'area': area})
+\end{lstlisting}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{l r r}
+\toprule
+ & \textbf{population} & \textbf{area} \\
+\midrule
+California & 39512223 & 423967 \\
+Florida    & 21477737 & 170312 \\
+New York   & 19453561 & 141297 \\
+Texas      & 28995881 & 695662 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Like the \code{Series}, the \code{DataFrame} exposes its structure through attributes:
+
+\begin{lstlisting}
+states.index     # the row labels: ['California','Florida','New York','Texas']
+states.columns   # the column labels: ['population', 'area']
+states.values    # the underlying 2-D NumPy array
+\end{lstlisting}
+
+\begin{intuition}
+There are two ways to read a \code{DataFrame}, and you will switch between them constantly:
+\begin{itemize}
+  \item \textbf{As a dict of columns:} \code{states['area']} returns the \code{area} \code{Series}. This is the \emph{default} --- a single key indexes a \emph{column}, not a row. (This trips up people coming from NumPy, where \code{a[0]} is a row.)
+  \item \textbf{As an enhanced 2-D array:} you can transpose it (\code{states.T}), do matrix-style math, and use the \code{loc}/\code{iloc} accessors for row/column selection.
+\end{itemize}
+\end{intuition}
+
+\subsection{Many ways to construct a DataFrame}
+
+You will meet all of these in the wild:
+
+\begin{lstlisting}
+# 1. From a single Series (one column)
+pd.DataFrame(population, columns=['population'])
+
+# 2. From a list of dicts (each dict is a row)
+pd.DataFrame([{'a': 1, 'b': 2}, {'a': 3, 'b': 4}])
+
+# 3. From a dict of Series (each value is a column)  <- most common
+pd.DataFrame({'population': population, 'area': area})
+
+# 4. From a 2-D NumPy array, naming axes explicitly
+pd.DataFrame(np.random.rand(3, 2),
+             columns=['foo', 'bar'],
+             index=['x', 'y', 'z'])
+\end{lstlisting}
+
+\begin{pitfall}
+When you build from a \emph{list of dicts} and the dicts have different keys, Pandas fills the missing entries with \code{NaN} rather than erroring. That is convenient but can silently hide a typo in a key name --- always check \code{df.columns} after construction.
+\end{pitfall}
+
+\section{The Index object}
+
+Both \code{Series} and \code{DataFrame} contain an \code{Index}: a curious little object that is best thought of in two ways at once.
+
+\subsection{Index as an immutable array}
+
+You can slice and index it like a NumPy array, but you \emph{cannot} mutate it:
+
+\begin{lstlisting}
+ind = pd.Index([2, 3, 5, 7, 11])
+ind[1]      # -> 3
+ind[::2]    # -> Int64Index([2, 5, 11])
+ind[1] = 0  # TypeError: Index does not support mutable operations
+\end{lstlisting}
+
+\begin{background}
+\textbf{Why on earth make the index immutable?} Because several \code{Series}/\code{DataFrame} objects can \emph{share} the same index, and many operations \emph{align} on it. If you could mutate an index in place, you could silently corrupt every object that shares it --- like changing a primary key in a database while other tables still reference the old value. Immutability makes sharing safe and makes alignment (the topic of section 3.3) predictable.
+\end{background}
+
+\subsection{Index as an ordered set}
+
+Pandas indices support set operations, which is what makes joining and aligning datasets possible:
+
+\begin{lstlisting}
+indA = pd.Index([1, 3, 5, 7, 9])
+indB = pd.Index([2, 3, 5, 7, 11])
+indA.intersection(indB)   # -> [3, 5, 7]
+indA.union(indB)          # -> [1, 2, 3, 5, 7, 9, 11]
+indA.symmetric_difference(indB)  # -> [1, 2, 9, 11]
+\end{lstlisting}
+
+\begin{keyidea}
+Keep this picture in your head for the rest of Chapter 3: \textbf{every Pandas operation that combines data --- arithmetic, merging, grouping --- works by lining up \emph{labels} via these \code{Index} objects, not by lining up \emph{positions}.} Once labels drive everything, ``missing on one side'' becomes a normal, expected case rather than an error, which is why missing-data handling (section 3.4) is woven so deeply into the library.
+\end{keyidea}
+
+\section*{Section recap}
+\addcontentsline{toc}{section}{Section recap}
+\begin{itemize}
+  \item Pandas $=$ NumPy speed $+$ labeled axes $+$ missing-data support.
+  \item \code{Series}: 1-D values $+$ an explicit \code{Index}; behaves like a dict \emph{and} an array.
+  \item \code{DataFrame}: aligned columns sharing one row index; behaves like a dict of \code{Series}. A bare key selects a \emph{column}.
+  \item \code{Index}: immutable, set-like; it is the machinery that aligns data across objects.
+  \item Watch the slicing rule: label slices include the endpoint, positional slices do not.
+\end{itemize}
+
+\end{document}
