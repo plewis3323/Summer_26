@@ -51,7 +51,7 @@
 - Sijans PhD thesis () 
 - PHENIX p+p Cross-Section fot pions (eta/pi0) () 
 - PPG-12 and 22 () 
-- Blairs Presentations () 
+- Blairs Presentations (X) 
 - Jet and RHI literature (*find a book that covers this*) () 
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
