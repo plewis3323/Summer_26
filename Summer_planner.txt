@@ -13,8 +13,9 @@
 - Codecadamy: () ()
    - AI Engineer Career Path 
    - ML/AI engineer Career Path 
-   - Intro to NN 
+   - Intro to NN (X)
    - Notebook LM 
+   - Intro to LLM Class (X)
    - Deep Learning Class
    (*If you have time Data Science Class*) 
  
