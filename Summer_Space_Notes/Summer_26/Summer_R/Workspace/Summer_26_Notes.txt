@@ -49,14 +49,25 @@
     
 2.) Get Sim Files he used for files for smearing (us to use) (X)
 
-3.) Build/Run new eff for p+p with & without smearing for p+p 
+3.) Build/Run new eff for p+p with & without smearing for p+p (x)
 
 
-4.) Collect/Read Jet/pion literature:
-4a.) Sijans Result. 
-4b.) PHENIX p+p Cross-Section fot pions (eta/pi0) 
-4c.) Unfolding for Jet analysis and learning more about it (PPG-12)
-4d.) Other Literatures Assigned in (Phone notes) 
+* 6/25/26 Meeting Notes: 
+
+- NonLin -> 
+
+1.) Run With Analysis build have eff vs pt curve (compare to Sijan's) 
+
+2.) Add Pixel Smearing/Occ Build and prod 
+
+3.) Z-vertex/pileup effects Framework and Prod (Look in Blairs enviorment) 
+
+
+
+
+
+
+
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -214,6 +225,11 @@ Primary — Direct pi0/pion analysis
 
 ** Next: Read PPG-12 (& easier format) & Blair's Presentations (Final & inital should be enough); start building/reproducing this 
   for just to confirm how to build it for eff** 
+
+
+7/2/26: 
+
+
 
 
 
