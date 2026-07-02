@@ -230,7 +230,7 @@ Primary — Direct pi0/pion analysis
 - Mainly Try to understand how the AI built and how run, edit and overview of the analysis enviorment.  
   Made edits to src for it to comment out the centrality logic. also For Run edit 
   ./build.sh does the build when edit in src. ./pipeline.sh does the full production mechanism hadd outputs in the /output directory. 
-  Also runefficiency.C macro (need to take it hadd inputs, have sijans cuts for runEFF, hagedoen rewheighting, do this for eta).  
+  Also runefficiency.C macro (need to take it hadd inputs, have sijans cuts for runEFF, hagedoen rewheighting, do this for eta) and (redo embedding logic).  
 
 
 
