@@ -2,8 +2,6 @@
 
 
 * Week 6/1 - 6-15: 
-
-
 - Total Number of events: 
 1.) File list and Compare Builds 
 
@@ -32,6 +30,17 @@
 5.) Possible Pileup effects/Unfolding Strategy and Use. (Note: Unfolding eff. Mult Spect to eff Correction (Jet analysis unfolding) 
 
 
+
+
+*  6/25/26 Meeting Notes: 
+
+- NonLin -> 
+
+1.) Run With Analysis build have eff vs pt curve (compare to Sijan's) 
+
+2.) Add Pixel Smearing/Occ Build and prod 
+
+3.) Z-vertex/pileup effects Framework and Prod (Look in Blairs enviorment) 
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
