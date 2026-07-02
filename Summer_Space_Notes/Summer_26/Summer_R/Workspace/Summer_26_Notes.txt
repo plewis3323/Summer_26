@@ -52,9 +52,7 @@
 3.) Build/Run new eff for p+p with & without smearing for p+p (x)
 
 
-* 6/25/26 Meeting Notes: 
-
-- NonLin -> 
+ - Week 7/2 - 7/15: 
 
 1.) Run With Analysis build have eff vs pt curve (compare to Sijan's) 
 
