@@ -233,6 +233,13 @@ Primary — Direct pi0/pion analysis
   Also runefficiency.C macro (need to take it hadd inputs, have sijans cuts for runEFF, hagedoen rewheighting, do this for eta) and (redo embedding logic).  
 
 
+7/3/26: 
+- Currenly on Pi0's unweighted based efficiency pythia p+p reco eff analysis chain (production is running). Used Claude Code Fable-5 to make, design and test 
+ analysis framework Base + Smearing implementation let's see if the implementation, logic, and physics make sense and matches blairs implementation. 
+
+
+
+
 
 
 
