@@ -6,9 +6,9 @@
 
 ---
 
-## Status: ✅ COMPLETE 7/1/26 — all 3 sublessons folded in (filter methods + all 5 wrapper methods SFS/SBS/SFFS/SBFS/RFE). Wrapper-methods recap + TL;DR written. Notebook runs clean (`nbconvert --execute`, exit 0, verified twice). NOT yet committed (awaiting go-ahead).
+## Status: ✅ COMPLETE 7/1/26 — all 4 sublessons folded in (filter + 5 wrapper methods + **§4 Feature Importance**, reconciled against the real Codecademy article text + user's 2 images). TL;DR updated. Notebook runs clean (`nbconvert --execute`, exit 0, verified). NOT yet committed (awaiting go-ahead).
 
-**▶ DONE.** If resuming: only remaining action is the optional `git commit` (user hadn't confirmed at close of session).
+**▶ DONE.** If resuming: only remaining action is the optional `git commit`. (User may still add Q&A for §4 — none supplied yet.)
 
 ## Sublesson checklist
 Mark `[x]` when the summary + any Q/A + code exercise are folded in **from the real source**.
@@ -30,6 +30,15 @@ Mark `[x]` when the summary + any Q/A + code exercise are folded in **from the r
   - **RFE** ✅: top-down, ranks by |coef| (needs `StandardScaler` — coef size is scale-sensitive), drops smallest one at a time, refits, repeats. Only 1 model fit per elimination → cheaper than SBS (RFE 2 tests vs SBS 6+5=11 for 6→4). Counting **exercise** ✅ (rfe_test_count=2, sbs_test_count=11). sklearn `RFE(lr, n_features_to_select=3).fit(X,y)` on standardized data → kept **BMI, Glucose, Resistin** acc **0.7328**; `ranking_=[4 1 1 2 3 5 7 1 6]`, elim order Adiponectin→MCP.1→Leptin→Age→HOMA→Insulin. Eval via `.support_`/`.ranking_`/list-comp/`.score`. Both **exercises** ✅ (setup+fit; rfe_features+score vs 0.802 baseline). Verified clean.
   - **SFFS/SBFS mlxtend page** ✅: already covered by existing floating section; added the official code-exercise marker (build sffs/sbfs, print names; CP4 = SFFS=SFS, SBFS=SBS).
   - **Wrapper recap** ✅: 5-method comparison table + results table (only Glucose picked by all 5; RFE the lone BMI-picker; floating changed nothing here; pick k at the plateau).
+- [x] **Sublesson 4 — Feature Importance** ✅ folded in from the **real article text** + user's 2 images (hiring Gini-tree diagram; Wisconsin feature-importance bar chart). 7 cells:
+  - **Intro** ✅: importance = per-feature association score (embedded family); workflow uses (dim. reduction / filter / wrapper-RFE / model inspection & communication).
+  - **Gini concept** ✅: hiring example (experience vs certification); Gini impurity $G=1-\sum p_i^2$ + Gini gain (parent − weighted-child impurity); certification = perfect split → higher gain → more important. `feature_importances_` = normalized total Gini gain.
+  - **Article code** ✅: `datasets.load_breast_cancer` (30 feats) + `DecisionTreeClassifier(criterion='gini')` + seaborn bar plot. **Fixed the article's 2 bugs** (`data.feature_names`→`dataset.feature_names`; positional `sns.barplot`→`x=`/`y=`). Used `random_state=6` to reproduce the article's headline → **worst concave points 0.748, worst radius #2**; **19/30** feats ~0 importance; tree test acc 0.881.
+  - **Pros/cons** ✅: cheap (free from training); biased to numeric/high-cardinality; ignores correlation (credit dumped on one twin); single tree unstable (top feature is seed-dependent — verified across 12 seeds).
+  - **Other measures** ✅ (table): aggregate RF / permutation / standardized coefficients; all still correlation-blind.
+  - **Other-methods code** ✅: RF aggregate (worst concave points 0.178, steadier spread) + `permutation_importance` on test (~0.005 tiny → correlation-masking demo'd live).
+  - **§4 recap** ✅: robustness ladder (single tree → RF aggregate → permutation → coefficients); run §2 correlation filter first.
+  - Note: main worked example switched from my provisional Coimbra/RandomForest draft to the article's **Wisconsin/DecisionTree** — the draft cells were replaced.
 
 ## Q&A captured (in notebook `## Q & A` section)
 - `fit_transform`, `df.iloc`, `iloc` row×column combining, `LabelEncoder` vs fit_transform.
