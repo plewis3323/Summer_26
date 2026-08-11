@@ -7,7 +7,7 @@ Tick boxes as you complete items. Keep honest — an unchecked box is informatio
 ## Month 1 — Foundations
 
 ### Week 01 — Python scientific stack & reproducibility
-- [] Read: Bishop Ch. 1 §1.1–1.3; VanderPlas *PDSH* Ch. 2–3 (skim)
+- [ ] Read: Bishop Ch. 1 §1.1–1.3; VanderPlas *PDSH* Ch. 2–3 (skim)
 - [X] Videos: 3Blue1Brown NN series (all 4)
 - [X] Codecademy: "Build a Machine Learning Model" — modules 1–2
 - [ ] Exercises 1–8 complete
