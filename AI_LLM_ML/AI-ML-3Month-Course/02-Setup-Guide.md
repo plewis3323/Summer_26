@@ -1,9 +1,27 @@
 # 02 — Setup Guide
 
-Environment: WSL2 Ubuntu under Windows, Edge as browser, Jupyter configured to launch
-Edge (`~/.jupyter/jupyter_server_config.py`, `use_redirect_file = False`). Set up once
-in Week 01; later phases add pieces when first needed — don't pre-install Phase 3
-tooling in Month 1.
+Reference environment: WSL2 Ubuntu under Windows, Edge as browser, Jupyter configured
+to launch Edge (`~/.jupyter/jupyter_server_config.py`, `use_redirect_file = False`).
+Native Linux or macOS work identically minus the WSL2 step. Set up once in Week 01;
+later phases add pieces when first needed — don't pre-install Phase 3 tooling in
+Month 1.
+
+## Day 0 — if you have never used a terminal
+
+The terminal (also called the shell or command line) is a window where you type
+commands instead of clicking. Every tool in this course is driven from it. Week 01's
+lesson walks through this slowly; the short version:
+
+- **Windows:** install WSL2 (search "Install WSL" in Microsoft's docs; it is one
+  command: `wsl --install` in an administrator PowerShell, then reboot). This gives
+  you Ubuntu Linux inside Windows — the standard scientific-computing setup.
+- **macOS / Linux:** open the built-in Terminal app; you're done.
+- Learn five commands first: `pwd` (where am I), `ls` (what's here), `cd` (go
+  somewhere), `mkdir` (make a folder), and pressing **Tab** to autocomplete.
+  Week 01's `lesson.md` covers each with exercises.
+
+Nothing you type in this course can break your computer as long as you stay inside
+your home folder and never run a command you don't understand with `sudo`.
 
 ## Week 01 — base environment
 

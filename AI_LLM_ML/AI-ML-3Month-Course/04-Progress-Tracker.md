@@ -7,15 +7,15 @@ exercise notebook checks pass, review block done, notes written.
 
 ## Phase 1 — Foundations
 
-- [ ] W01 Python + NumPy
-- [ ] W02 pandas + visualization
-- [ ] W03 Software engineering I
-- [ ] W04 Reproducibility + dimuon mini-project
+- [ ] W01 Your first programs
+- [ ] W02 Control flow, functions, and data
+- [ ] W03 The scientific stack (NumPy, matplotlib, pandas)
+- [ ] W04 Working like a professional + dimuon mini-project
 - [ ] **Month 01 sign-off** (tag, retro.md, open question)
-- [ ] W05 Linear algebra I
-- [ ] W06 Linear algebra II (SVD/PCA derived)
-- [ ] W07 Probability & statistics
-- [ ] W08 Optimization + optimizer-race mini-project
+- [ ] W05 Calculus for ML (derivatives → gradient descent)
+- [ ] W06 Linear algebra I
+- [ ] W07 Linear algebra II (SVD/PCA derived)
+- [ ] W08 Probability & statistics + optimizer-race mini-project
 - [ ] **Month 02 sign-off**
 - [ ] W09 ML frame + linear regression
 - [ ] W10 Classification

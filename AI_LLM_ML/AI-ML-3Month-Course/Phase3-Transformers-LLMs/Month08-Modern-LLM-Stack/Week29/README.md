@@ -1,8 +1,9 @@
 # Week 29 — The HuggingFace Ecosystem
 
-You built the instrument; now learn the shared facility everyone actually runs — and
-note that sampling from an LLM is drawing from a Boltzmann distribution whose
-temperature knob you control directly.
+You built the instrument in Month 07; now learn the shared facility everyone actually
+runs — and note that sampling from an LLM is drawing from a Boltzmann distribution
+whose temperature knob you control directly. The lesson derives that connection in
+full.
 
 ## Objectives
 
@@ -17,15 +18,18 @@ temperature knob you control directly.
 
 ## Core material (~3 hrs)
 
-- HuggingFace NLP course: the chapters on the `transformers` pipeline/models/tokenizers
-  and on `datasets`.
+- `lesson.md` (this folder) — the primary text: Hub/loading/memory arithmetic, the
+  full sampling derivations with worked numbers, `datasets`, chat templates,
+  perplexity.
+- HuggingFace LLM course: the chapters on the `transformers`
+  pipeline/models/tokenizers and on `datasets`.
 - HF docs: *Generation strategies* (`generate`, `GenerationConfig`) and *Chat
   templates* (`apply_chat_template`).
 - Holtzman et al., *The Curious Case of Neural Text Degeneration* (nucleus sampling
   paper) — §§1, 3.
 - Skim a model card end to end (e.g. Llama 3.2 1B): license, chat format, intended use.
 
-## Derivations (paper first)
+## Derivations (paper first; `lesson.md` §3 walks each through)
 
 - Temperature: p_i(T) = softmax(z/T)_i ∝ e^{z_i/T}. Show the T → 0 and T → ∞ limits and
   compute d(entropy)/dT sign — this is literally a Boltzmann distribution over tokens.
@@ -33,35 +37,24 @@ temperature knob you control directly.
   greedy = top-k(1) = T → 0, and why top-p adapts to the entropy of the context where
   top-k cannot.
 
-## Exercises (built when the week starts)
+## Exercises
 
-1. Load a ~1B instruct model locally; generate from a fixed prompt at three dtypes or
-   quantization settings. Accept when: peak memory and tokens/sec reported in a table.
-2. Own sampler from raw logits (temperature + top-k + top-p, composable). Accept when:
-   with the same seed and settings, output token ids match HF `generate` exactly.
-3. Temperature sweep T ∈ {0.1, 0.7, 1.0, 1.5} on one physics prompt; measure mean
-   token-level entropy. Accept when: entropy rises monotonically with T and samples
-   are saved side by side.
-4. Chat-template footgun: same question sent (a) raw, (b) via `apply_chat_template`,
-   (c) with a wrong/missing system slot. Accept when: outputs differ and both footguns
-   are named in one line each.
-5. `datasets` pipeline: load your Week 27 abstracts as a `Dataset`, tokenize with
-   `.map(batched=True)`, filter by length, stream. Accept when: pipeline runs and
-   row counts at each stage are printed.
-6. Perplexity of the base model on 100 held-out heavy-ion abstracts vs 100 generic
-   news paragraphs. Accept when: both numbers reported with the sliding-window method
-   stated.
+See `exercises.md` (notebook built from it when the week starts). Six exercises:
+memory-vs-dtype measurement, your own composable sampler verified token-for-token
+against HF `generate`, a temperature/entropy sweep, chat-template footguns
+demonstrated live, a `datasets` pipeline over the Week 27 corpus, and a
+physics-vs-news perplexity comparison.
 
 ## Deliverable
 
-Derivation scans; `Week29_Exercises.ipynb` with checks PASS; a `sampling.py` you'll
-reuse in Weeks 30–32; the perplexity table.
+Derivation scans; `Week29_Exercises.ipynb` with checks PASS; a `src/sampling.py`
+you'll reuse in Weeks 30–32; the perplexity table.
 
 ## Review
 
 - Week 25: what is the softmax Jacobian, and where did the temperature-like 1/√d_k
   appear inside the transformer itself?
-- Week 7: perplexity = exp(cross-entropy). Write cross-entropy H(p, q) and state its
+- Week 8: perplexity = exp(cross-entropy). Write cross-entropy H(p, q) and state its
   relation to KL divergence and entropy.
 - Week 27: give two tokenizer pitfalls you demonstrated, and predict which one hurts
   the perplexity comparison on physics text.

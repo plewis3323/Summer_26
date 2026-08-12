@@ -1,9 +1,10 @@
 # 01 — Reading List
 
-Sources by phase. **Spine** = the primary thread for the phase; read/watch in order.
-**Reference** = consult by chapter when a week points at it. **Papers** = read
-critically, with the Week 45 workflow once you have it. Titles only — search by name;
-URLs rot.
+Sources by phase — **all supplementary**: the primary teaching text for every week is
+its `lesson.md` in this repo. **Spine** = the external thread that pairs best with the
+lessons; read/watch in order. **Reference** = consult by chapter when a week points at
+it. **Papers** = read critically, with the Week 45 workflow once you have it. Titles
+only — search by name; URLs rot. Everything in the spine is free.
 
 Books already in `references/`: Bishop, *Pattern Recognition and Machine Learning*;
 Russell & Norvig, *AIMA* (background only, not scheduled).
@@ -11,12 +12,20 @@ Russell & Norvig, *AIMA* (background only, not scheduled).
 ## Phase 1 — Foundations (Months 01–03)
 
 **Spine**
-- VanderPlas, *Python Data Science Handbook* (free online) — Weeks 01–02.
-- Pro Git book (free online), chs. 1–3 + branching — Week 03.
-- 3Blue1Brown, *Essence of Linear Algebra* (all) — Weeks 05–06.
-- Strang, MIT 18.06 lectures (select: subspaces, eigen, SVD) — Weeks 05–06.
-- Parr & Howard, *The Matrix Calculus You Need For Deep Learning* — Week 06.
-- StatQuest (Bayes, MLE, regularization, trees, boosting playlists) — Weeks 07–11.
+- Severance, *Python for Everybody* (free online book + videos) — Weeks 01–02;
+  written for people who have never programmed.
+- The official Python Tutorial, sections 1–5 — Weeks 01–02, second pass.
+- VanderPlas, *Python Data Science Handbook* (free online), chs. 1–4 — Weeks 03–04.
+- Pro Git book (free online), chs. 1–3 — Week 04.
+- 3Blue1Brown, *Essence of Calculus* (all) — Week 05.
+- 3Blue1Brown, *Essence of Linear Algebra* (all) — Weeks 06–07.
+- Strang, MIT 18.06 lectures (select: subspaces, eigen, SVD) — Weeks 06–07.
+- Parr & Howard, *The Matrix Calculus You Need For Deep Learning* — Week 07.
+- StatQuest (Bayes, MLE, regularization, trees, boosting playlists) — Weeks 08–11.
+
+**Remedial / catch-up (use as needed, not scheduled)**
+- Khan Academy: Algebra II and Precalculus units — if Week 05's first sections feel
+  fast, spend a weekend here first; it is normal and costs nothing but time.
 
 **Reference**
 - Bishop PRML chs. 1–4 (probability, linear models); Murphy, *Probabilistic Machine

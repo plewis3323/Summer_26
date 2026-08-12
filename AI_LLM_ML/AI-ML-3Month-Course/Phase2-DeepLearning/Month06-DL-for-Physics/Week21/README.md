@@ -2,7 +2,8 @@
 
 An event is not an image: tracks, hits, and jet constituents are variable-length,
 unordered sets with relational structure — the physics does not change when you permute
-the particle list, so the architecture shouldn't either.
+the particle list, so the architecture shouldn't either. (`lesson.md` explains jets and
+tracking from scratch before any of this is used.)
 
 ## Objectives
 
@@ -17,6 +18,8 @@ the particle list, so the architecture shouldn't either.
 
 ## Core material (~3 hrs)
 
+- `lesson.md` (this folder) — the primary text: permutation invariance, message
+  passing derived and proved, EdgeConv, PyG, and the HEP-ML literature map.
 - distill.pub, "A Gentle Introduction to Graph Neural Networks" and "Understanding
   Convolutions on Graphs".
 - *Understanding Deep Learning* (Prince), Ch. 13 (Graph neural networks).
@@ -36,24 +39,12 @@ the particle list, so the architecture shouldn't either.
 - Show a 1D convolution is message passing on a line graph with position-dependent
   messages — CNNs as a special case.
 
-## Exercises (built when the week starts)
+## Exercises
 
-1. Permutation test: Deep Sets-style sum-pooled MLP vs flattened-input MLP on a toy
-   set-classification task, inputs shuffled at test time. Accept when: the set model's
-   accuracy is permutation-independent and the MLP's degrades (both printed).
-2. Message passing in plain PyTorch on the 3-node paper example. Accept when: output
-   matches your hand computation to 1e-6.
-3. Same layer as a PyG `MessagePassing` subclass. Accept when: matches Exercise 2 and
-   runs on a PyG mini-batch of graphs.
-4. kNN graph construction on Week-20 clusters converted to point clouds (tower hits as
-   nodes: E, η, φ). Accept when: a drawn event display shows sensible edges for k = 4, 8.
-5. GNN classifier on the Week-20 photon/π⁰ point clouds. Accept when: test AUC is
-   within a stated margin of (or above) the Week-20 CNN under the same split.
-6. Depth/oversmoothing probe: node-embedding pairwise variance vs number of message-
-   passing rounds. Accept when: the variance collapse (or its absence) is plotted with a
-   one-line reading.
-7. Paper-reading note (~half page each) on ParticleNet and Particle Transformer: claim,
-   representation, baseline, one criticism. Accept when: both notes are in the folder.
+See `exercises.md` (notebook generated from it when the week starts, per
+`NOTEBOOK_RULES.md`). E1–E3 build message passing from a permutation stress test up
+through a hand-verified PyG layer; E4–E6 convert the Week-20 clusters to point clouds
+and pit a GNN against your CNN; E7 is two paper notes.
 
 ## Deliverable
 

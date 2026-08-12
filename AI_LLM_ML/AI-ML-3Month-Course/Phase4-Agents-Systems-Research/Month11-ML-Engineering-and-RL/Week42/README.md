@@ -12,24 +12,19 @@ Beam time and GPU time are the same resource: scarce, scheduled, and wasted by t
 
 ## Core material (~3 hrs)
 
+- `lesson.md` (this folder) — the primary text: GPU architecture from "what is a core" up, the roofline model with worked numbers, profiling method, mixed precision (fp16/bf16 bit layouts), `torch.compile`, DDP concepts, and KV-cache arithmetic.
 - PyTorch documentation: performance tuning guide, profiler recipe, and the automatic mixed precision (AMP) docs.
 - PyTorch docs: `torch.compile` introduction and the DDP overview/notes page (concepts, not launcher details).
-- A GPU-architecture explainer of your choice — e.g. the "Making Deep Learning Go Brrrr From First Principles" essay (Horace He) for the memory-vs-compute framing, plus any roofline-model introduction.
+- Horace He, "Making Deep Learning Go Brrrr From First Principles" — the memory-vs-compute framing; plus any roofline-model introduction.
 - Skim: a KV-cache explainer and the vLLM paper's continuous-batching idea (PagedAttention) at abstract level, by title.
 
-## Exercises (built when the week starts)
+## Exercises
 
-1. Arithmetic intensity on paper-then-notebook: compute FLOPs and bytes for a d×d matmul and for elementwise add; predict which is memory-bound on your GPU's specs. Accept when: benchmark timings agree with the prediction's ordering and a one-line roofline argument is written.
-2. Profile: run the PyTorch profiler on your Week-41 training loop; produce a trace and a top-10 ops table. Accept when: written answer names the single largest time sink and whether the GPU is idle waiting on data.
-3. Fix the input pipeline: tune `num_workers` / `pin_memory` / batch size guided by the profile. Accept when: measured samples/sec improves ≥20% over exercise 2's baseline or a measurement shows the pipeline was already saturated.
-4. Mixed precision: train with bf16 (or fp16+GradScaler); compare speed, memory, and final val metric. Accept when: table shows throughput and peak memory for fp32 vs. mixed, with val metric within noise.
-5. `torch.compile`: compile the model, measure steady-state step time (excluding warmup). Accept when: table reports compiled vs. eager step time and notes compilation overhead.
-6. KV-cache by hand: for your Week-27 nanoGPT-class model, generate 200 tokens with and without caching K/V; verify identical outputs. Accept when: outputs match token-for-token and measured per-token time is roughly flat with cache vs. growing without.
-7. Quantize: dynamic-quantize (or int8-load) one model and measure size and CPU inference latency vs. accuracy. Accept when: table reports size, latency, metric for fp32 vs. quantized.
+See `exercises.md` (notebook generated from it when the week starts, per `NOTEBOOK_RULES.md`). Seven exercises: roofline prediction vs. benchmark, profiling the Week-41 loop, input-pipeline tuning, mixed precision, `torch.compile`, a hand-built KV cache for the Week-27 model, and quantization — each producing a before/after table for `PERF.md`.
 
 ## Deliverable
 
-`week42/PERF.md` — the before/after tables for exercises 2–7 with one paragraph per optimization saying why it did or didn't help, plus saved profiler traces.
+`week42/PERF.md` — the before/after tables for the profiling and optimization exercises, with one paragraph per optimization saying why it did or didn't help, plus saved profiler traces.
 
 ## Review
 

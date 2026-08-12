@@ -1,7 +1,8 @@
 # Week 13 — MLPs + Backprop on Paper
 
 Backprop is the chain rule organized as matrix products — the same bookkeeping as error
-propagation through a multi-stage detector calibration, run in reverse.
+propagation through a multi-stage detector calibration, run in reverse. This is the
+flagship derivation of the course; `lesson.md` walks it scalar-first, then in matrix form.
 
 ## Objectives
 
@@ -18,13 +19,16 @@ propagation through a multi-stage detector calibration, run in reverse.
 
 ## Core material (~3 hrs)
 
+- `lesson.md` (this folder) — the primary text: neuron → layer → MLP, universal
+  approximation and its fine print, the full softmax/cross-entropy and 2-layer backprop
+  derivations, and a runnable NumPy worked example with finite-difference checks.
 - *Understanding Deep Learning* (Prince, free PDF), Ch. 3 (Shallow neural networks) and
   Ch. 4 (Deep neural networks); skim Ch. 5 (Loss functions) for cross-entropy from MLE —
-  this should feel like Week 07 again.
-- 3Blue1Brown, *Neural networks* series, chapters 1–4 (you have notes on these; re-watch
-  chapter 4 with the paper derivation in hand).
-- Goodfellow et al., *Deep Learning*, Ch. 6 (Deep Feedforward Networks) — read §6.5 on
-  back-propagation closely; treat the rest as reference.
+  this should feel like Week 08 again.
+- 3Blue1Brown, *Neural networks* series, chapters 1–4 (re-watch chapter 4 with the paper
+  derivation in hand).
+- Goodfellow et al., *Deep Learning*, Ch. 6 — read §6.5 on back-propagation closely;
+  treat the rest as reference.
 - CS231n course notes, "Backpropagation, Intuitions" module.
 
 ## Derivations (paper first)
@@ -38,21 +42,12 @@ propagation through a multi-stage detector calibration, run in reverse.
 - Why gradients of matrix-valued layers batch cleanly: derive the batched forms
   `∂L/∂W = δ xᵀ` summed over the batch.
 
-## Exercises (built when the week starts)
+## Exercises
 
-1. Forward pass of a 2-layer MLP in NumPy with explicit shape asserts at each layer.
-   Accept when: output shape is `(batch, classes)` and rows of softmax sum to 1 within 1e-6.
-2. Softmax/cross-entropy gradient implemented from your derivation. Accept when: matches
-   central finite differences to relative error < 1e-5 on random inputs.
-3. Full backward pass for the 2-layer net. Accept when: all four parameter gradients
-   match finite differences to relative error < 1e-4.
-4. Train the net with your Week-08 SGD on a 2D two-moons-style toy set. Accept when:
-   decision boundary plot shows > 95% train accuracy.
-5. Universal approximation demo: fit a 1-hidden-layer net to a Breit–Wigner curve at
-   widths 2, 8, 64. Accept when: plot shows fit quality improving with width and a
-   one-line note on what width does not fix.
-6. Break it: replace ReLU with identity and re-train. Accept when: check confirms the
-   deep net collapses to the accuracy of plain logistic regression.
+See `exercises.md` (notebook generated from it when the week starts). Six exercises:
+forward pass with shape asserts → gradient implementations checked against finite
+differences → training on two moons → a universal-approximation demo on a Breit–Wigner
+curve → a break-it experiment removing the nonlinearity.
 
 ## Deliverable
 
@@ -62,7 +57,7 @@ passes all finite-difference checks and trains on a toy problem.
 ## Review
 
 - (Week 06) Write the SVD of a weight matrix. What does a rank-1 `W` do to every input?
-- (Week 07) Derive cross-entropy from maximum likelihood for a categorical model — the
+- (Week 08) Derive cross-entropy from maximum likelihood for a categorical model — the
   same three lines as this week's loss.
 - (Week 08) Why does SGD noise help escape saddle points where full-batch GD stalls?
 - (Week 10) Logistic regression's gradient was also `(p − y)x`. Why is that not a
