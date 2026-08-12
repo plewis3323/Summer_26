@@ -17,6 +17,10 @@ a stack of opaque layers.
 
 ## Core material (~3 hrs)
 
+- `lesson.md` (this folder) — the primary text: embeddings and position encodings, the
+  residual stream and pre-norm gradient argument, and the two flagship derivations
+  (exact parameter count of a decoder block / GPT-2 small, and the shape-flow of a
+  batch through the whole model).
 - Karpathy, *Let's build GPT* — second half (blocks, LayerNorm, residuals, full model).
 - Vaswani et al., *Attention Is All You Need* (arXiv 1706.03762) — full read; note it is
   encoder–decoder, unlike what you are building.
@@ -37,22 +41,12 @@ a stack of opaque layers.
 - Parameter count of GPT-2 small (12 layers, d=768, h=12, vocab 50257, ctx 1024) with
   and without weight tying; reconcile with the quoted 124M.
 
-## Exercises (built when the week starts)
+## Exercises
 
-1. Full GPT module (config-driven: n_layer, n_head, d_model, vocab, ctx). Accept when:
-   forward pass on a random batch returns logits of shape (B, T, vocab) and loss is
-   ≈ ln(vocab) at init.
-2. Parameter-count check. Accept when: hand-derived count matches
-   `sum(p.numel())` exactly for GPT-2-small config.
-3. Load HuggingFace GPT-2 weights into your model. Accept when: your logits match HF's
-   within 1e-4 on a fixed prompt.
-4. Sinusoidal shift property, numerically. Accept when: a single learned/fitted matrix
-   maps PE(pos) → PE(pos+k) with max error < 1e-6 for several k.
-5. Pre-norm vs post-norm: train two 4-layer models on tiny Shakespeare for a fixed
-   budget. Accept when: loss curves plotted and gradient norms per layer compared, with
-   a one-line conclusion.
-6. Weight tying ablation on the same setup. Accept when: parameter counts and final
-   losses reported for tied vs untied.
+See `exercises.md` (notebook generated from it when the week starts). Six exercises,
+E1–E6: a config-driven GPT in `model.py`, the exact 124,439,808 parameter count, loading
+real GPT-2 weights and matching logits to 1e-4, the sinusoidal shift property
+numerically, a pre-norm vs post-norm training comparison, and a weight-tying ablation.
 
 ## Deliverable
 

@@ -9,7 +9,7 @@ tested (`pytest -q`), reproducible (`uv sync` + one command), honest writeup
 
 | Week | Project | Baseline to beat / criterion |
 |------|---------|------------------------------|
-| 04 | **Dimuon spectrum** — rebuild a ROOT-style J/ψ→μμ mass-peak analysis (CERN Open Data) as a tested Python package | Peak mass within PDG value ± fit σ; one command → plot |
+| 04 | **Dimuon spectrum** — a real particle-physics analysis (CERN Open Data J/ψ→μμ mass peak) as a guided, tested Python package; the project spec explains all the physics | Peak mass within PDG value ± fit σ; one command → plot |
 | 08 | **Optimizer race** — hand-rolled GD/momentum/RMSProp/Adam fitting physics models on pathological loss surfaces | All four converge where they should; Rosenbrock trajectory plot |
 | 16 | **MLP vs BDT** — PyTorch MLP on the Capstone-1 tabular data | Match or beat the BDT AUC, or explain why tabular ≠ deep-learning home turf |
 | 20 | **EMCal cluster CNN** — single-photon vs merged-π⁰ on simulated calorimeter images | Beat the tabular-features baseline on the same events |
@@ -41,8 +41,10 @@ distributions vs the simulator's.
 
 ## Capstone 3 (Week 36) — choose one
 
-**(a) Physics-literature assistant.** RAG over sPHENIX TDR + your Zotero library,
-answer synthesis with citations, your Week-32 extractor for structured lookups.
+**(a) Physics-literature assistant.** RAG over a physics document library you
+assemble (arXiv PDFs from the Week 27/32 corpora; add your own papers — e.g. a
+detector TDR or reference-manager library — if you have them), answer synthesis
+with citations, your Week-32 extractor for structured lookups.
 Evaluated on a held-out Q&A set you write in Week 34 (≥30 questions): retrieval
 recall@5, answer faithfulness, hallucination rate vs no-RAG baseline.
 

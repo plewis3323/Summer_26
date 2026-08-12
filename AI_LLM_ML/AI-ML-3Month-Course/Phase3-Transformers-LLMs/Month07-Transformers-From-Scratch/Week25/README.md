@@ -14,6 +14,9 @@ temperature.
 
 ## Core material (~3 hrs)
 
+- `lesson.md` (this folder) — the primary text: attention built from dictionary lookup
+  up, with the full 1/√d_k derivation (variance argument + softmax saturation), causal
+  masking, and multi-head. This is the course's third flagship derivation.
 - Karpathy, *Let's build GPT: from scratch, in code, spelled out* — first half, through
   the self-attention block (the rest is Week 26).
 - 3Blue1Brown, deep learning series: *But what is a GPT?* and *Attention in
@@ -31,20 +34,12 @@ temperature.
   when scores are large (connect to the previous item).
 - Multi-head parameter count for d_model, h heads, d_k = d_model/h, including W_O.
 
-## Exercises (built when the week starts)
+## Exercises
 
-1. Scaled dot-product attention in NumPy. Accept when: matches
-   `torch.nn.functional.scaled_dot_product_attention` within 1e-5 on random inputs.
-2. Variance experiment: measure Var(q·k) vs d_k ∈ {4…1024}. Accept when: log-log slope
-   ≈ 1 unscaled, and scaled scores have variance ≈ 1 at every d_k.
-3. Saturation experiment: mean gradient norm through the softmax vs score scale. Accept
-   when: plot shows gradient collapse without the 1/√d_k factor and O(1) gradients with it.
-4. Causal mask: perturb a future token, measure output change at earlier positions.
-   Accept when: max |Δout| at position t is exactly 0 for perturbations at positions > t.
-5. Multi-head attention as a PyTorch module. Accept when: with copied weights, output
-   matches `nn.MultiheadAttention` within 1e-5.
-6. Attention heatmaps on a toy repeated-token sequence. Accept when: at least one head's
-   pattern is identified and described in one sentence per head.
+See `exercises.md` (notebook generated from it when the week starts). Six exercises,
+E1–E6: NumPy attention verified against PyTorch, the variance and saturation experiments
+behind the √d_k, a no-leakage proof of the causal mask, a `MultiHeadAttention` module
+that Week 26 imports, and an attention-heatmap read.
 
 ## Deliverable
 

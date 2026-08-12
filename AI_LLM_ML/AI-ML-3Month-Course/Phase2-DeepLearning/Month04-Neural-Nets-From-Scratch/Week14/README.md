@@ -2,10 +2,13 @@
 
 Last week you ran the chain rule by hand; this week you make the computer do the
 bookkeeping — a computational graph is just a DAG of operations with the chain rule
-walked in reverse topological order.
+walked in reverse topological order. This is also the week the course first needs a
+Python class; `lesson.md` teaches classes from zero before using them.
 
 ## Objectives
 
+- Read and write a minimal Python class: `__init__`, attributes, methods, `self`, and
+  operator methods (`__add__`, `__mul__`).
 - Build a scalar `Value` object that records its inputs and local derivatives, forming a
   computational graph as expressions are evaluated.
 - Implement reverse-mode autodiff: topological sort + backward accumulation, including
@@ -18,6 +21,9 @@ walked in reverse topological order.
 
 ## Core material (~3 hrs)
 
+- `lesson.md` (this folder) — the primary text: computational graphs, Python classes
+  from zero, the complete `Value` engine with `if/elif` backward dispatch, reverse vs
+  forward mode, and a worked example training an MLP on XOR.
 - Karpathy, *Neural Networks: Zero to Hero* — "The spelled-out intro to neural networks
   and backpropagation: building micrograd" (the spine; ~2.5 hrs; build alongside, don't
   just watch).
@@ -35,22 +41,12 @@ walked in reverse topological order.
 - Hand-trace backprop through `L = (a*b + c).tanh()` on paper; you will check the engine
   against these numbers.
 
-## Exercises (built when the week starts)
+## Exercises
 
-1. `Value` class with `+`, `*`, `tanh`, and `backward()`. Accept when: gradients on the
-   hand-traced expression above match your paper numbers to 1e-6.
-2. Gradient accumulation bug hunt: evaluate `b = a + a; b.backward()`. Accept when:
-   `a.grad == 2` and a one-line note says which line of code makes it so.
-3. Finite-difference harness: check every op's gradient at random points. Accept when:
-   all relative errors < 1e-4 with h = 1e-5.
-4. `Neuron`/`Layer`/`MLP` on top of `Value`; train on the Week-13 toy 2D dataset with
-   plain SGD. Accept when: loss curve decreases monotonically over the last 50 steps
-   smoothed, and train accuracy > 90%.
-5. Graph visualization: print the DAG (topological order, op names, grads) for a small
-   expression. Accept when: node count and ordering match a hand count.
-6. Timing reality check: compare your scalar engine vs the Week-13 vectorized NumPy net
-   on the same problem. Accept when: measured slowdown is reported and one sentence names
-   the reason (Python-object overhead vs BLAS).
+See `exercises.md` (notebook generated from it when the week starts). Six exercises:
+the `Value` class checked against the paper trace → the gradient-accumulation bug hunt
+→ a finite-difference harness for every op → an MLP trained on the Week 13 toy data →
+graph printing → a timing comparison against the NumPy net.
 
 ## Deliverable
 
@@ -64,7 +60,7 @@ fancier; flag this in the notebook's first cell.)*
 ## Review
 
 - (Week 13) Re-derive `∂L/∂z = p − y` for softmax/cross-entropy cold — no notes.
-- (Week 06) Reverse-mode autodiff computes vector–Jacobian products. For `f: Rⁿ → R`,
+- (Week 06/07) Reverse-mode autodiff computes vector–Jacobian products. For `f: Rⁿ → R`,
   what is the Jacobian's shape and why does reverse mode need only one pass?
 - (Week 08) Your engine + which Week-08 optimizer gives you Adam? List the state each
   parameter would need to carry.

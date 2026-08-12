@@ -1,23 +1,34 @@
 # 00 — Syllabus
 
-**Course title:** From Nuclear Physics to AI Scientist — a 12-Month Curriculum
+**Course title:** From Zero to AI Scientist — a 12-Month Ground-Up Curriculum
 **Duration:** 48 weeks (4 phases × 3 months), ~10 hrs/week, ~500 hrs total
-**Student:** Parker Lewis (4th-year nuclear physics PhD, sPHENIX)
-**Format:** Self-study in Jupyter notebooks. Each week: readings + derivations + a built
-exercise notebook (per `NOTEBOOK_RULES.md`) + spaced-review questions. Each month ends
-with a mini-project or capstone. Each phase ends with a shipped, tested capstone repo.
+**Student:** anyone starting from zero — written for a reader with **no coding
+background** and only high-school math. (The resident student is Parker Lewis,
+4th-year nuclear physics PhD, sPHENIX — physics shows up everywhere as the
+*application*, but it is always explained, never assumed.)
+**Format:** Self-study. Each week folder contains the materials themselves:
+`lesson.md` (the teaching text), `exercises.md` (the exercise page), and `project.md`
+on project weeks. Exercise notebooks are generated from `exercises.md` when the week
+starts (per `NOTEBOOK_RULES.md`).
 
-**Design goals** (from the tailoring interview, 2026-08-12):
+**Design goals** (rebuilt 2026-08-12):
 
-- **Keep all doors open.** Balance three threads throughout: *theory & research skills*
-  (AI research scientist path), *AI-for-science* (national-lab path, keeps nuclear
+- **Assume nothing.** Every concept — including "what is a program," "what is a
+  derivative," "what is a matrix" — is taught from the ground up the first time it is
+  used. A motivated beginner with no coding background can start at Week 01 and finish
+  as a working AI scientist. A reader who already knows a week's material skims its
+  lesson and goes straight to the exercises.
+- **Materials included.** The teaching text, exercises, and project specs live in this
+  repo. External readings (all free) supplement; they are never the only path.
+- **Keep all doors open.** Three threads run throughout: *theory & research skills*
+  (AI research scientist path), *AI-for-science* (national-lab path, keeps the nuclear
   physics ties), and *engineering* (applied AI/ML path).
-- **No assumed knowledge.** Everything is (re)built from the ground up — including the
-  math — but at physicist speed: review moves fast where your PhD already covers it.
 - **Full derivations.** Backprop, attention, the VAE ELBO, diffusion, and policy
-  gradients are derived on paper before they are typed into a notebook.
-- **Teachable.** Notes and notebooks should be handable to the next physics student
-  learning ML. Prose stays short; the *why* lives in teacher explainers.
+  gradients are derived on paper before they are typed into a notebook — and the
+  lessons build up every piece of math those derivations need, starting from algebra.
+- **Teachable.** Notes and notebooks should be handable to the next person learning
+  ML from scratch. Prose stays short; the *why* lives in the lessons and teacher
+  explainers.
 
 ---
 
@@ -25,27 +36,29 @@ with a mini-project or capstone. Each phase ends with a shipped, tested capstone
 
 By the end of 48 weeks you will be able to:
 
-1. **Own the math.** Derive and use: SVD and PCA, MLE/MAP, KL divergence and entropy,
+1. **Program.** Go from never having written code to fluent scientific Python:
+   the language itself, NumPy, pandas, matplotlib, git, tests, and environments.
+2. **Own the math.** Starting from high-school algebra, build and then derive:
+   derivatives and gradients, SVD and PCA, MLE/MAP, KL divergence and entropy,
    gradient descent variants, backpropagation, self-attention, the VAE ELBO, DDPM
    diffusion, and the policy gradient theorem — on paper, without notes.
-2. **Ship classical ML correctly.** Linear/logistic regression, trees, forests, boosted
-   trees on tabular physics data with honest validation (nested CV, calibration,
-   leakage checks).
-3. **Build neural networks from scratch and in PyTorch.** Scalar autograd engine,
+3. **Ship classical ML correctly.** Linear/logistic regression, trees, forests, boosted
+   trees on tabular data with honest validation (nested CV, calibration, leakage checks).
+4. **Build neural networks from scratch and in PyTorch.** Scalar autograd engine,
    MLPs, CNNs, GNNs; diagnose real training failures; use modern training practice
    (init, normalization, schedules, augmentation, transfer learning).
-4. **Build and train transformers.** Implement a decoder-only transformer and a BPE
+5. **Build and train transformers.** Implement a decoder-only transformer and a BPE
    tokenizer from scratch; train nanoGPT on a domain corpus; explain scaling laws and
    basic interpretability findings.
-5. **Operate the modern LLM stack.** Fine-tune open-weight models with LoRA/QLoRA,
+6. **Operate the modern LLM stack.** Fine-tune open-weight models with LoRA/QLoRA,
    design SFT datasets, explain RLHF/DPO, evaluate rigorously (including hallucination
    measurement), and build RAG systems with retrieval evals.
-6. **Build agents.** Tool use, ReAct loops, MCP servers, multi-agent orchestration,
+7. **Build agents.** Tool use, ReAct loops, MCP servers, multi-agent orchestration,
    and agent evaluation — culminating in a physics-analysis copilot.
-7. **Engineer like it's production.** Testing, experiment tracking, GPU profiling,
+8. **Engineer like it's production.** Testing, experiment tracking, GPU profiling,
    mixed precision, distributed-training concepts, quantized inference, deployment,
    and monitoring.
-8. **Do research.** Read, critique, and reproduce ML papers (including HEP-ML:
+9. **Do research.** Read, critique, and reproduce ML papers (including HEP-ML:
    ParticleNet, Particle Transformer, Exa.TrkX, CaloChallenge); write clearly; propose
    and execute an original capstone.
 
@@ -53,7 +66,7 @@ By the end of 48 weeks you will be able to:
 
 | Phase | Months | Theme | Capstone |
 |-------|--------|-------|----------|
-| 1 — Foundations | 01–03 | Scientific Python, software engineering, math for ML, classical ML | Tabular particle-ID classifier, full tested pipeline |
+| 1 — Foundations | 01–03 | Programming from zero, the scientific stack, math for ML from algebra up, classical ML | Tabular particle-ID classifier, full tested pipeline |
 | 2 — Deep Learning | 04–06 | NNs from scratch, PyTorch, CNNs, sequences, GNNs, VAEs/flows | EMCal shower classifier **or** VAE fast-sim |
 | 3 — Transformers & LLMs | 07–09 | Transformers from scratch, fine-tuning, alignment, RAG, diffusion | Physics-literature assistant **or** conditional diffusion calo generator |
 | 4 — Agents, Systems, Research | 10–12 | Agents/MCP, ML engineering at scale, RL, research skills | Final capstone (choose a track) |
@@ -62,46 +75,53 @@ By the end of 48 weeks you will be able to:
 
 | Activity | Hrs |
 |----------|-----|
-| Reading + videos | 3 |
+| `lesson.md` + external readings/videos | 3 |
 | Paper-and-pencil derivations (where scheduled) | 1–2 |
-| Exercise notebook (built per `NOTEBOOK_RULES.md` when the week starts) | 3–4 |
-| Spaced review (retrieval questions from prior weeks) | 0.5 |
+| Exercise notebook (generated from `exercises.md` per `NOTEBOOK_RULES.md`) | 3–4 |
+| Spaced review (retrieval questions at the end of `exercises.md`) | 0.5 |
 | Notes + reflection | 0.5 |
 
 Mini-project/capstone weeks shift the balance toward building. If a week runs over,
-let it — the calendar has slack (see §6). Never skip the review block.
+let it — the calendar has slack (see §6). Never skip the review block. If you already
+know a week's material, prove it: do the exercises cold; skip the lesson, not the checks.
 
 ## 4. Week-by-week plan
 
 ### Phase 1 — Foundations (Months 01–03)
 
-**Month 01 — Scientific Python & Software Engineering**
+**Month 01 — Programming from Zero to the Scientific Stack**
 
-- **Week 01 — Python + NumPy.** Python idioms for scientists; NumPy arrays, broadcasting,
-  vectorization; leaving the ROOT/C++ event-loop mindset behind.
-- **Week 02 — pandas + visualization.** DataFrames, groupby/merge, tidy data;
-  matplotlib from first principles; making plots you'd put in a paper.
-- **Week 03 — Software engineering I.** git fluency (branches, rebase, PRs), `uv`
-  environments, `ruff`, `pytest`, project layout, debugging with `pdb`; why tests are
-  the physicist's systematic-uncertainty analysis for code.
-- **Week 04 — Reproducibility + mini-project.** Seeds, pinned deps, data provenance,
-  one-command runs. Project: rebuild a small ROOT-style analysis (CERN Open Data
-  dimuon spectrum) as a clean, tested Python package.
+- **Week 01 — Your first programs.** What a computer actually does; what a program is;
+  the terminal; installing Python; variables, numbers, strings; `print` and `input`;
+  running scripts and notebooks; reading error messages without fear.
+- **Week 02 — Control flow, functions, and data.** `if/else`, `for` and `while` loops,
+  writing your own functions, lists and dictionaries, reading and writing files;
+  your first real program built from parts.
+- **Week 03 — The scientific stack.** Why scientists use arrays: NumPy from scratch
+  (arrays, indexing, masks, broadcasting), first plots with matplotlib, first
+  DataFrames with pandas.
+- **Week 04 — Working like a professional + mini-project.** git and GitHub from zero,
+  tests with `pytest`, environments with `uv`, seeds and reproducibility, one-command
+  runs. Project: a real particle-physics analysis (CERN Open Data dimuon spectrum)
+  as a clean, tested Python package — fully guided.
 
-**Month 02 — Math for ML** (ground-up, physicist-fast)
+**Month 02 — Math for ML** (from high-school algebra up)
 
-- **Week 05 — Linear algebra I.** Vectors, matrices as linear maps, the four
-  fundamental subspaces, rank, eigendecomposition; everything computed in NumPy
-  alongside the theory.
-- **Week 06 — Linear algebra II.** SVD derived and applied (compression, pseudoinverse,
-  PCA derived from variance maximization *and* reconstruction error); matrix calculus
-  conventions you'll need for backprop.
-- **Week 07 — Probability & statistics.** Random variables, common distributions,
-  Bayes' theorem, MLE and MAP (derive least squares from Gaussian likelihood),
-  information theory: entropy, cross-entropy, KL divergence.
-- **Week 08 — Optimization + mini-project.** Convexity, gradient descent, SGD,
-  momentum, RMSProp, Adam — each derived and implemented from scratch. Project: fit
-  physics models with hand-rolled optimizers; race them on pathological surfaces.
+- **Week 05 — Calculus for ML.** Functions and their graphs; slope → derivative,
+  built from first principles; partial derivatives and the gradient; the chain rule;
+  finding minima; your first gradient descent — every idea computed in Python
+  alongside the paper math.
+- **Week 06 — Linear algebra I.** Vectors, matrices as linear maps, matrix
+  multiplication from three viewpoints, solving systems, the four fundamental
+  subspaces, rank — everything computed in NumPy alongside the theory.
+- **Week 07 — Linear algebra II.** Eigenvalues and eigenvectors; SVD derived and
+  applied (compression, pseudoinverse); PCA derived from variance maximization *and*
+  reconstruction error; the matrix-calculus conventions you'll need for backprop.
+- **Week 08 — Probability & statistics + mini-project.** Random variables, common
+  distributions, Bayes' theorem, MLE and MAP (derive least squares from a Gaussian
+  likelihood), entropy, cross-entropy, KL divergence. Project: optimizer race —
+  derive and hand-roll GD, momentum, RMSProp, Adam; race them on pathological
+  loss surfaces.
 
 **Month 03 — Classical ML**
 
@@ -110,13 +130,13 @@ let it — the calendar has slack (see §6). Never skip the review block.
   cross-validation; linear regression via normal equations *and* GD.
 - **Week 10 — Classification.** Logistic regression with gradient derived by hand;
   softmax; decision thresholds; ROC/PR, confusion matrices, calibration; class
-  imbalance (the HEP trigger analogy).
+  imbalance (the rare-event problem, with a particle-trigger story).
 - **Week 11 — Trees & ensembles.** Decision trees, bagging, random forests, gradient
   boosting derived as functional GD; XGBoost/LightGBM; feature importance and its
-  lies; why HEP loved BDTs.
+  lies; why particle physics loved BDTs.
 - **Week 12 — Unsupervised + Capstone 1.** k-means, GMMs with EM derived, PCA in
   practice, UMAP. **Capstone 1:** tabular particle-ID classifier (MAGIC gamma/hadron
-  or similar HEP open data) — full pipeline, nested CV, calibration, tests, writeup.
+  open data) — full pipeline, nested CV, calibration, tests, writeup.
 
 ### Phase 2 — Deep Learning (Months 04–06)
 
@@ -132,7 +152,7 @@ let it — the calendar has slack (see §6). Never skip the review block.
 - **Week 16 — Training dynamics + mini-project.** Initialization (Xavier/He derived),
   activation statistics, batchnorm/layernorm, dead ReLUs, LR schedules, gradient
   clipping; a "diagnose the broken training run" exercise set. Project: MLP on
-  physics tabular data, beating your Capstone-1 BDT or explaining why not.
+  tabular physics data, beating your Capstone-1 BDT or explaining why not.
 
 **Month 05 — CNNs & Sequences**
 
@@ -146,13 +166,14 @@ let it — the calendar has slack (see §6). Never skip the review block.
   Phase 3).
 - **Week 20 — Mini-project.** EMCal cluster classifier: single-photon vs merged-π⁰
   on simulated calorimeter images; compare CNN vs your Phase-1 tabular approach.
+  (The lesson explains what a calorimeter is and why the two look alike.)
 
 **Month 06 — Deep Learning for Physics + Generative Models I**
 
 - **Week 21 — Graph neural networks.** Message passing derived; permutation
   invariance; point clouds; ParticleNet and Particle Transformer; Exa.TrkX tracking.
 - **Week 22 — Autoencoders & VAEs.** Latent variables; derive the ELBO line by line;
-  reparameterization trick; posterior collapse; anomaly detection in HEP.
+  reparameterization trick; posterior collapse; anomaly detection in physics.
 - **Week 23 — Normalizing flows + fast simulation.** Change of variables, coupling
   layers; the CaloChallenge and why colliders need learned simulators.
 - **Week 24 — Capstone 2.** Choose: (a) GNN jet/cluster classifier benchmarked
@@ -192,7 +213,7 @@ let it — the calendar has slack (see §6). Never skip the review block.
 - **Week 33 — Embeddings.** Contrastive training, sentence-transformers, similarity
   metrics, chunking strategies; build and probe an embedding index.
 - **Week 34 — RAG.** Retrieval, hybrid search, reranking, answer synthesis; retrieval
-  evals (recall@k, faithfulness); build RAG over the sPHENIX TDR + your Zotero library.
+  evals (recall@k, faithfulness); build RAG over a physics document library.
 - **Week 35 — Diffusion models.** Full DDPM derivation (forward noising, reverse
   process, the simplified loss); classifier-free guidance; conditional generation;
   diffusion vs flows vs VAEs for calorimeters.
@@ -235,7 +256,7 @@ let it — the calendar has slack (see §6). Never skip the review block.
 - **Week 46 — Research writing + proposal.** Writing clearly for ML venues; draft
   your capstone proposal (problem, baselines, evaluation plan, risks).
 - **Weeks 47–48 — Final capstone.** Choose ONE track:
-  - (a) **HEP analysis copilot** — agent + MCP + RAG over your actual sPHENIX
+  - (a) **HEP analysis copilot** — agent + MCP + RAG over a real physics
     workflow, end-to-end demo.
   - (b) **Generative fast-sim** — diffusion/flow calo generator with rigorous
     physics validation, aimed at a CaloChallenge-style writeup.
@@ -258,13 +279,15 @@ stochastic noise.
 ## 6. Calendar policy
 
 48 content-weeks ≈ 11 months at one week per calendar week. The spare month is
-deliberate slack for conference season, beam time, and thesis crunch. Slip weeks, not
-content. If you must cut, cut from: Week 23 (flows), Week 28 (interpretability depth),
-Week 43 (RL depth) — in that order, and note it in the tracker.
+deliberate slack for life, work, conference season, beam time, and thesis crunch.
+A true beginner should also expect Months 01–02 to run hot — budget extra hours there
+before touching the slack. Slip weeks, not content. If you must cut, cut from:
+Week 23 (flows), Week 28 (interpretability depth), Week 43 (RL depth) — in that
+order, and note it in the tracker.
 
 ## 7. Spaced review
 
-Every week's exercise notebook ends with 3–5 retrieval questions drawn from earlier
+Every week's `exercises.md` ends with 3–5 retrieval questions drawn from earlier
 weeks (answers in the solutions notebook). Monthly: re-derive one flagship result cold
 (rotating: PCA → backprop → ELBO → attention → DDPM loss → policy gradient).
 
@@ -272,14 +295,17 @@ weeks (answers in the solutions notebook). Monthly: re-derive one flagship resul
 
 - **Derivations are on paper first.** Scan or photograph them into the week folder.
   Typing LaTeX is optional; understanding is not.
-- **Copyright.** Summarize and cite Bishop/Goodfellow/Murphy/Prince; no long verbatim
-  passages in notes.
+- **No assumed knowledge, ever.** If a lesson uses a term it hasn't defined, that is a
+  bug — file it and fix it. Physics examples come with their own explanations.
+- **Copyright.** Lessons are original text. External books (Bishop, Goodfellow,
+  Murphy, Prince) are summarized and cited; no long verbatim passages.
 - **Honesty.** Negative results go in the writeup. This is not a LinkedIn post.
 - **Tooling drift.** Pin versions in `pyproject.toml`; expect to read changelogs.
-- **Hardware.** CPU + modest local GPU for most weeks. Colab/Kaggle/cloud for
-  Weeks 20, 27, 32, 35–36, 47–48.
-- **Notebooks.** Exercise/solution notebooks follow `NOTEBOOK_RULES.md` and are built
-  when the week starts, not in advance. Lesson notes follow the `lesson-notes` format.
+- **Hardware.** Any laptop works through Week 14. CPU + modest local GPU for most
+  weeks after. Colab/Kaggle/cloud for Weeks 20, 27, 32, 35–36, 47–48.
+- **Notebooks.** Exercise/solution notebooks follow `NOTEBOOK_RULES.md` and are
+  generated from `exercises.md` when the week starts, not in advance — libraries and
+  models drift too fast. Lesson notes follow the `lesson-notes` format.
 
 ## 9. Sign-off protocol
 
@@ -289,6 +315,7 @@ After each month:
 3. Open an issue for the single biggest thing you don't understand; close it next month.
 
 ---
-*Syllabus rendered 2026-08-12. Sources in `01-Reading-List.md`; project specs in
-`03-Project-Roadmap.md`; environment in `02-Setup-Guide.md`; progress in
-`04-Progress-Tracker.md`. Previous 12-week course archived in `archive/2026-spring-12week/`.*
+*Syllabus rebuilt 2026-08-12 (ground-up edition: no assumed knowledge, materials
+included). Sources in `01-Reading-List.md`; project specs in `03-Project-Roadmap.md`;
+environment in `02-Setup-Guide.md`; progress in `04-Progress-Tracker.md`. Previous
+courses archived in `archive/`.*

@@ -4,7 +4,7 @@ An untracked training run is an unlogged detector run: whatever it measured, it 
 
 ## Objectives
 
-- Instrument a training script with an experiment tracker (Weights & Biases or MLflow): metrics, configs, artifacts, and system stats per run.
+- Instrument a training script with an experiment tracker (MLflow in the lesson; Weights & Biases is the hosted equivalent): metrics, configs, artifacts, and code identity per run.
 - Separate configuration from code (YAML + argparse, or hydra) so any run is reproducible from its config file alone.
 - Launch and interpret a hyperparameter sweep; read parallel-coordinates/importance views instead of eyeballing loss curves.
 - Register model versions with lineage (which config, which data, which commit) in a model registry.
@@ -12,19 +12,15 @@ An untracked training run is an unlogged detector run: whatever it measured, it 
 
 ## Core material (~3 hrs)
 
-- W&B documentation: Experiments quickstart, sweeps guide, and artifacts/model-registry pages — or the MLflow equivalents (tracking, MLflow Projects, model registry) if you prefer self-hosted.
+- `lesson.md` (this folder) — the primary text: tracking vocabulary, MLflow end to end, config extraction, sweeps, the registry, and the retrofit procedure, with a runnable worked example.
+- MLflow documentation: tracking quickstart and model registry pages — or the W&B equivalents (Experiments quickstart, sweeps guide, model registry) if you prefer hosted.
 - Chip Huyen, *Designing Machine Learning Systems*, the chapter on experiment tracking and versioning within model development.
 - hydra documentation basics (config composition, overrides) — read enough to decide YAML+argparse vs. hydra deliberately; either is acceptable.
 - Your own Capstone-2 or Capstone-3 training script — reread it as the retrofit target and list its hardcoded choices.
 
-## Exercises (built when the week starts)
+## Exercises
 
-1. Config extraction: move every magic number in the chosen Phase-2/3 training script into one YAML config; run from config only. Accept when: two different configs produce two different runs with zero source edits.
-2. Tracking: log train/val loss, LR, gradient norm, and the config to the tracker each run. Accept when: the tracker UI shows ≥2 complete runs with metrics, config, and git commit attached.
-3. Artifacts: log the best checkpoint and the exact input-data hash as artifacts. Accept when: a fresh script can pull the artifact by name and reproduce the logged val metric within noise.
-4. Sweep: define a search over LR, batch size, and one architecture knob (≥12 trials, random or Bayesian). Accept when: sweep report names the best config and one hyperparameter the objective is insensitive to.
-5. Registry: register the sweep's best model as `v1` with its lineage; promote it over the pre-week baseline. Accept when: registry entry records metric, config reference, and commit hash for `v1`.
-6. Regression guard: a `pytest` test loads the registered model and asserts val metric within tolerance of the logged value. Accept when: `pytest -q` green, and deliberately corrupting the checkpoint makes it fail.
+See `exercises.md` (notebook generated from it when the week starts, per `NOTEBOOK_RULES.md`). The six exercises retrofit your chosen Phase-2/3 repo in place: config extraction → tracking → artifacts + data hash → a 12-trial sweep with report → registry v1 → a pytest regression guard.
 
 ## Deliverable
 

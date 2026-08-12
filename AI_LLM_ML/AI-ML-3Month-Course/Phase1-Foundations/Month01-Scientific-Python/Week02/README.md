@@ -1,56 +1,43 @@
-# Week 02 — pandas + Visualization
+# Week 02 — Control flow, functions, and data
 
-An ntuple is just a DataFrame with worse ergonomics; this week you learn the DataFrame's
-ergonomics and how to make figures you would actually put in a paper.
+Week 01's programs ran every line exactly once. This week your programs
+decide, repeat, and organize — and by the end you assemble the pieces into a
+real tool: a word-frequency counter that chews through whole books.
 
 ## Objectives
 
-- Load, filter, and transform tabular event data in pandas without dropping to loops.
-- Use `groupby`/aggregate and `merge` to answer per-run and cross-table questions.
-- Reshape between wide and tidy ("long") layouts and say why tidy wins for analysis.
-- Build a matplotlib figure from the object API (`fig, ax`) — no `plt.plot` autopilot.
-- Produce one publication-quality figure: labeled axes with units, legible fonts, vector output.
+- Branch with `if`/`elif`/`else` and combine conditions with `and`/`or`/`not`.
+- Loop with `for` (over lists, `range`) and `while`; know which fits when.
+- Define functions with parameters and `return`; explain local variables and `None`.
+- Use lists (indexing, slicing, `append`) and dictionaries (the counting pattern).
+- Read and write text files line by line, handling `"\n"` and type conversions.
 
 ## Core material (~3 hrs)
 
-- VanderPlas, *Python Data Science Handbook*, Chapter 3 (pandas) — prioritize indexing,
-  `groupby`, and `merge`; skim the rest.
-- VanderPlas, Chapter 4 (matplotlib) — through subplots, ticks, and legends.
-- Hadley Wickham's "Tidy Data" paper (skim §2–3): the vocabulary for why one layout is
-  easier to compute on than another.
-- Matplotlib docs: the "Anatomy of a figure" page. Keep it open while plotting.
+- `lesson.md` (this folder) — the primary text; type every example.
+- Severance, *Python for Everybody*, chapters 3–9 — many more worked examples
+  of exactly this week's topics; skim fast, slow down where needed.
+- The official Python Tutorial, sections 4–5 — control flow and data
+  structures, second pass.
 
-## Exercises (built when the week starts)
+## Exercises
 
-1. **CSV → DataFrame.** Load a provided dimuon event CSV; inspect dtypes, missing values,
-   memory use; fix any mis-parsed columns.
-   Accept when: `df.dtypes` matches the stated schema and reported row count is exact.
-2. **Cut flow table.** Reproduce Week 01's mask-based cuts in pandas and produce a
-   cut-flow DataFrame (cut name, events surviving, efficiency).
-   Accept when: survivor counts match the Week 01 NumPy result exactly.
-3. **Per-run aggregates.** `groupby` run number: events, mean pT, mass-window yield per run.
-   Accept when: the aggregate table matches a provided reference row for one spot-check run.
-4. **Run-quality merge.** Merge a run-quality table and drop bad runs; count what an
-   inner vs left join each would have kept.
-   Accept when: post-merge event count matches the reference and the join-type difference is stated in one line.
-5. **Wide → tidy.** `melt` a wide table of per-run yields in three mass windows into tidy
-   form and aggregate it both ways.
-   Accept when: tidy table has exactly 3× the rows and identical totals.
-6. **Paper figure.** Dimuon mass spectrum: log-y histogram, labeled resonances, axis units,
-   ATLAS/STAR-style clean styling, saved as PDF.
-   Accept when: `results/dimuon_spectrum.pdf` exists, axes carry units, and every text element is ≥8 pt at final size.
+See `exercises.md` (notebook generated when the week starts, per
+`NOTEBOOK_RULES.md`). Seven exercises building from single functions and loops
+through dictionary counting and file parsing, ending with a word-frequency
+counter that writes a ranked report file.
 
 ## Deliverable
 
-Completed exercise notebook plus `results/dimuon_spectrum.pdf` — a figure you would not
-be embarrassed to show your working group.
+Completed exercise notebook (all checks PASS) plus `wordcount2.py` producing a
+correct `report.txt` from a real book-length text file.
 
 ## Review
 
-1. (Wk 01) Predict the broadcast result shape of `(N,1) * (3,)` — and what pandas
-   operation does the same alignment by *label* instead of position?
-2. (Wk 01) When does slicing a DataFrame give a view vs a copy, and why is the answer
-   messier than NumPy's? (The `SettingWithCopyWarning` question.)
-3. (Wk 01) Write the one-line vectorized invariant-mass expression from memory.
-4. (Physics) A per-run `groupby` is the software twin of what standard detector-operations
-   practice?
+1. (Week 01) Reconstruct the `uv` commands that create a project folder and
+   run a script inside it.
+2. (Week 01) Why does `input` + arithmetic always need `int(...)` or
+   `float(...)` in between?
+3. (Week 01) Which error types did Week 01 name, and what does each mean in
+   one phrase?
+4. (Week 01) Write the f-string that prints a float `m` as `m = 3.10 GeV`.

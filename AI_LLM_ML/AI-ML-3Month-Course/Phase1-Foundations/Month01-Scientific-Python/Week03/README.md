@@ -1,57 +1,51 @@
-# Week 03 — Software Engineering I
+# Week 03 — The scientific stack
 
-Tests are to code what systematic checks are to a measurement: the difference between a
-number and a result you can defend.
+Loops over lists got you through Week 02; science needs millions of numbers at
+once. This week you learn the three packages that make Python a scientific
+language — NumPy for arrays, matplotlib for figures, pandas for tables — and
+end by finding a hidden peak in a synthetic dataset, the dry run for Week 04's
+real one.
 
 ## Objectives
 
-- Work in feature branches; rebase onto main; resolve a merge conflict without panic.
-- Create and pin a project environment with `uv`; explain lockfile vs `pyproject.toml`.
-- Lay out a real package (`src/` layout) instead of a folder of scripts.
-- Write `pytest` tests including parametrized cases and a numerical-tolerance test.
-- Drive `pdb` (breakpoints, stepping, inspecting frames) instead of print-debugging.
+- Explain why vectorized array code beats loops (speed and clarity) and
+  demonstrate it with a timing.
+- Create and index arrays; predict shapes; explain views vs copies.
+- Select data with boolean masks and combine conditions with `&`/`|`.
+- Use broadcasting deliberately — predict output shapes before running.
+- Make labeled line, scatter, and histogram plots and save them to PDF.
+- Load a CSV into a DataFrame; filter rows with masks; compute per-group
+  summaries with `groupby`.
 
 ## Core material (~3 hrs)
 
-- *Pro Git* (Chacon & Straub), Chapter 2 (Git Basics) and Chapter 3 (Branching) —
-  Chapter 3 is the one that changes how you work; do the branching examples by hand.
-- `uv` official docs: projects, `uv sync`, lockfiles. Short read.
-- `pytest` docs: "Get started" plus the pages on assertions and `@pytest.mark.parametrize`.
-- `ruff` docs: skim configuration; you will set it up once and mostly obey it.
-- Python docs: the `pdb` module page — learn `b`, `n`, `s`, `c`, `p`, `up`/`down`, `q`.
+- `lesson.md` (this folder) — the primary text; work in a notebook alongside it.
+- VanderPlas, *Python Data Science Handbook* (free online), chapter 2 (NumPy)
+  — the deep pass on arrays, masks, broadcasting.
+- VanderPlas, chapter 4 (matplotlib) through histograms and legends, and
+  chapter 3 (pandas) through aggregation/grouping.
+- NumPy user guide, "Broadcasting" page — short; read it twice.
 
-## Exercises (built when the week starts)
+## Exercises
 
-1. **Branch/rebase kata.** Scripted sequence: branch, commit, diverge main, rebase,
-   resolve the induced conflict, fast-forward merge.
-   Accept when: `git log --oneline --graph` shows a linear history with all commits present.
-2. **Environment from scratch.** New `uv` project for the course package; add numpy,
-   pandas, matplotlib, pytest; sync.
-   Accept when: fresh `uv sync` + `uv run python -c "import week03"` succeeds and `uv.lock` is committed.
-3. **Package a function.** Move Week 01's invariant-mass code into
-   `src/week03/kinematics.py` with a plain function interface.
-   Accept when: it imports from the notebook and from pytest without `sys.path` hacks.
-4. **Test suite.** Tests for the mass function: a known-value case (Z→μμ four-vectors),
-   a parametrized set, and a floating-point tolerance case using `pytest.approx`.
-   Accept when: `pytest -q` reports ≥5 tests, all green.
-5. **Bug hunt with pdb.** A provided module computes a wrong pseudorapidity for one input
-   class; find it with `pdb` only (no added prints).
-   Accept when: the bug is fixed, a regression test covering it passes, and the pdb session steps are listed in ≤5 bullet points.
-6. **Lint gate.** Run `ruff check` on the package, fix everything it flags, and commit a
-   `ruff` config in `pyproject.toml`.
-   Accept when: `ruff check .` exits clean.
+See `exercises.md` (notebook generated when the week starts, per
+`NOTEBOOK_RULES.md`). Seven exercises: a loop-vs-array timing, shape
+prediction, mask-based cuts, a broadcast centering, the three plot types, a
+first DataFrame, and a bump hunt that synthesizes the week.
 
 ## Deliverable
 
-A repo (or subfolder) with `src/` layout, `pyproject.toml` + `uv.lock`, green
-`pytest -q`, clean `ruff check`, and a branch history showing the rebase kata.
+Completed exercise notebook (all checks PASS) plus `decay_hist.pdf` and
+`bump.pdf` — every axis labeled, with units.
 
 ## Review
 
-1. (Wk 01) Boolean-mask cuts: does `a[mask]` return a view or a copy? Consequence for
-   memory when you chain five cuts on a 10⁷-event array?
-2. (Wk 02) Sketch from memory the `groupby → agg` call that produced the per-run yield
-   table.
-3. (Wk 02) Why does tidy layout make the three-mass-window comparison a one-liner?
-4. (Physics) Map each onto your analysis practice: unit test, regression test, lockfile.
-   (Closure test, frozen cuts, …?)
+1. (Week 02) Rebuild the counting-dictionary pattern from memory; which
+   pandas call does the same job?
+2. (Week 02) A function that should return a list prints it instead — what
+   does the caller get, and what is the fix?
+3. (Week 01) Read this traceback bottom line and diagnose:
+   `TypeError: can only concatenate str (not "float") to str` in a line
+   building a report string.
+4. (Week 02) What does `xs[2:5]` contain, and does modifying it change `xs`
+   when `xs` is a list? (Contrast with this week's arrays.)
