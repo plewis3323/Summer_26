@@ -7,8 +7,8 @@ in notebook scrollback. Week 42 is performance engineering: GPU architecture and
 intuition, profiling, mixed precision, `torch.compile`, DDP concepts, and inference
 optimization. Week 43 is reinforcement learning done properly — MDPs through the policy
 gradient theorem (derived on paper) to PPO — closing the loop with Week 31's RLHF and
-pointing at accelerator/detector control. Week 44 ships: one earlier model wrapped in a
-tested FastAPI service in a container, with health checks, monitoring, and CI.
+pointing at control tasks (accelerator/detector *or* a standard control problem). Week 44 ships: one earlier model wrapped in a
+tested FastAPI service in a container (spiral from Week 23), with health checks, monitoring, and CI that builds the image.
 
 **Month-end deliverable:** a deployed (locally containerized) model service with green CI,
 a tracked-and-swept retraining run behind it, and a cold re-derivation of the policy

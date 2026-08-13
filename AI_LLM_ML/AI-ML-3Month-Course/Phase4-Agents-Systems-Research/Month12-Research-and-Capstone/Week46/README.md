@@ -13,7 +13,7 @@ write the capstone proposal that will govern your final two weeks.
   for one-idea-per-sentence clarity.
 - Design figures that carry the argument: one message per figure, honest axes,
   uncertainty shown.
-- Produce a complete capstone proposal: problem statement, baselines, evaluation plan
+- Produce a complete capstone proposal: **role sentence**, problem statement, baselines, evaluation plan
   with pre-committed metrics, risk register, and compute budget.
 - Scope two weeks of work into day-level milestones with explicit cut lines.
 

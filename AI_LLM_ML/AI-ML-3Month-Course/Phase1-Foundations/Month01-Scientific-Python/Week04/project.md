@@ -336,12 +336,65 @@ by-hand steps left to run in the wrong order.
 *Accept when: two runs produce identical fit parameters and identical
 cut-flow tables.*
 
+**Stage 7 — sqlite results + CI.** Two small professional habits, spent at
+once.
+
+In `src/dimuon/store.py`, write `save_results(flow, popt, perr, path="data/results.db")`
+that creates (or replaces) two tables:
+
+```python
+import sqlite3
+
+def save_results(flow, popt, perr, path="data/results.db"):
+    conn = sqlite3.connect(path)
+    conn.execute("CREATE TABLE IF NOT EXISTS cutflow (step TEXT, n INTEGER)")
+    conn.execute("CREATE TABLE IF NOT EXISTS fit (name TEXT, value REAL, error REAL)")
+    conn.execute("DELETE FROM cutflow")
+    conn.execute("DELETE FROM fit")
+    conn.executemany("INSERT INTO cutflow VALUES (?, ?)", flow)
+    conn.execute(
+        "INSERT INTO fit VALUES (?, ?, ?)",
+        ("mass_gev", float(popt[1]), float(perr[1])),
+    )
+    conn.commit()
+    conn.close()
+```
+
+Call it from `run.py` after the fit. `tests/test_store.py`: pass a two-row
+fake `flow` and dummy `popt`/`perr`, then `SELECT` back and assert the
+counts. Add `data/*.db` to `.gitignore`.
+
+Then copy this file to `.github/workflows/test.yml` (create the folders):
+
+```yaml
+name: test
+on: [push, pull_request]
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync --frozen
+      - run: uv run pytest -q
+```
+
+Commit, push, open the Actions tab. Tests that download CERN data will run on
+GitHub's machine too — that is intended (the URL is public). If the runner
+cannot reach CERN, mark the download tests to skip when `os.environ.get("CI")`
+is set and keep a tiny fixture CSV in `tests/fixtures/` for CI; say so in the
+README in one line.
+*Accept when: `SELECT n FROM cutflow` matches the printed table, and the
+Actions run on `main` is green.*
+
 ## Acceptance gate (from `03-Project-Roadmap.md`)
 
 **Peak mass within PDG value ± fit σ; one command → plot.** Concretely:
 
 - Fresh clone + `uv sync` + `uv run pytest -q` green +
   `uv run python run.py` prints the fitted mass and writes both PDFs.
+- CI (GitHub Actions) green on `main`.
+- `data/results.db` rebuilds from `run.py`; cut-flow in sqlite matches the printout.
 - |fitted μ − 3.0969 GeV| < fitted σ — with the reference numbers, 3.8 MeV
   against σ ≈ 31 MeV — and within the Stage 3 criterion of 30 MeV.
 - Cut-flow table matches the Stage 2 reference; `data/PROVENANCE.md`

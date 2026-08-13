@@ -5,7 +5,9 @@
 Build the month's deliverable: a prototype **analysis copilot** — one installed
 command, `copilot "question"`, that takes a physics question in plain language
 and drives your Week-39 MCP tools to a correct, quoted answer with no human in
-the middle. The gate (from `03-Project-Roadmap.md`): the copilot **completes 3
+the middle. Default domain: a physics calibration-check workflow (fully explained
+below). Allowed substitute: any tool suite from Week 39 with three scripted tasks
+and the same eval table. The gate (from `03-Project-Roadmap.md`): the copilot **completes 3
 scripted analysis tasks end-to-end unattended**. Alongside the prototype you
 ship what makes it credible: a task-suite evaluation (`EVAL.md`), a reviewed
 failure analysis (`failures.md`), and a short recorded demo. This is the

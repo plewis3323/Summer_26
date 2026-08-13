@@ -18,7 +18,7 @@ the distribution $p(x)$ of the data itself — and can we draw new samples from 
 
 Why would a physicist want that?
 
-- **Fast simulation** (Week 23's topic in full): if a model has learned the
+- **Fast simulation** (Capstone 2b / Week 35): if a model has learned the
   distribution of calorimeter showers, sampling it can replace expensive
   simulation.
 - **Anomaly detection**: a model that knows what ordinary events look like can
@@ -509,3 +509,6 @@ terms are logged separately because §8 said collapse hides inside the total.
   the original paper; after this lesson it should read as familiar.
 - One LHC Olympics / HEP autoencoder anomaly-detection paper of your choice — read
   for how §9's idea is used and evaluated on real physics.
+- Normalizing flows (exact likelihood, invertible maps): optional full lesson in
+  Week 23's `optional-flows.md`. Week 35 compares flows vs VAEs vs diffusion
+  either way.

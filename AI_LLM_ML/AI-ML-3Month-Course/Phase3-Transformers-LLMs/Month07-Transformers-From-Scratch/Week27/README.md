@@ -9,8 +9,8 @@ failures.
 - Implement byte-pair encoding (train, encode, decode) from scratch on raw bytes.
 - Predict and demonstrate tokenizer pitfalls: whitespace sensitivity, digits, non-ASCII
   symbols (π⁰, √s_NN), and why "how many r's in strawberry" is hard.
-- Scrape and clean a heavy-ion abstracts corpus from the arXiv API (nucl-ex, nucl-th,
-  hep-ex) and/or INSPIRE-HEP.
+- Scrape and clean a domain abstracts corpus from the arXiv API (default: nucl-ex,
+  nucl-th, hep-ex; any other category is allowed — name it) and/or INSPIRE-HEP.
 - Train a nanoGPT-class model end to end on that corpus on a free GPU (Colab/Kaggle),
   with checkpointing and a loss curve you can defend.
 - Compare against a bigram baseline so "it learned something" is a number, not a vibe.

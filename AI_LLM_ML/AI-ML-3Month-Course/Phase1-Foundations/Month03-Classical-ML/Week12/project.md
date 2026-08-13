@@ -6,11 +6,16 @@ Ship a tested, calibrated, honestly-validated particle-ID classifier on the
 MAGIC gamma/hadron table — ingest → nested CV (logistic vs random forest vs
 XGBoost) → calibration → working points — as a clean Python package. This is
 the Phase 1 gate (`00-Syllabus.md` §5 and `03-Project-Roadmap.md`):
-`pytest -q` green, nested-CV results, ROC + calibration plots checked in, a
+`pytest -q` green, CI green, nested-CV results, ROC + calibration plots checked in, a
 writeup that includes what failed first and a leakage audit. You already
 have a tuned MAGIC BDT from Week 11; this week you put it inside the right
 *protocol*. Quoting last week's AUC is the sin: different split, budget,
 possibly preprocessing. Retrain everything here.
+
+**General option.** A public tabular rare-event set (fraud, medical screening,
+credit) with the same nested-CV / calibration / leakage-audit protocol is
+allowed. Keep MAGIC if you want the physics thread; switch if you want a
+non-HEP portfolio piece. Say which in the README.
 
 ## Background — all the physics, from scratch
 

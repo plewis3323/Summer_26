@@ -1,8 +1,9 @@
 # Week 36 — Capstone 3 (GPU week)
 
-Ship one system end to end: either the physics-literature assistant (language track) or
-the conditional diffusion shower generator (simulation track) — a defended result with
-an eval, not a demo.
+Ship one system end to end: either a domain-literature assistant (language track;
+physics papers by default) or a conditional diffusion generator (simulation track;
+calorimeter showers by default) — a defended result with an eval, not a demo.
+A general document library or public image set with the same protocol is allowed.
 
 ## Objectives
 
@@ -20,7 +21,7 @@ into building.
 
 ## Exercises (built when the week starts)
 
-Milestones, not exercises. Track (a) — physics-literature assistant:
+Milestones, not exercises. Track (a) — domain-literature assistant (physics default):
 
 1. Architecture: Week 34 RAG + Week 32 extractor behind one interface; answers cite
    sources; metadata queries route to the extractor. Accept when: one script answers

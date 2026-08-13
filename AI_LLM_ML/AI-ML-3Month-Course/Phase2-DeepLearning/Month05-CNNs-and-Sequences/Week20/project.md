@@ -10,6 +10,10 @@ features baseline on the same events** — or understand precisely why not, in
 writing. This is Month 05's deliverable and the dataset Capstone 2 option (a)
 reuses as a point cloud.
 
+**General option.** A public image classification task with a tabular/features
+baseline on the same examples, same splits, same rejection-at-fixed-efficiency
+(or accuracy, if classes are balanced) protocol. Name the dataset Monday.
+
 ## Background — the physics, from scratch
 
 **A calorimeter is a camera for energy.** A collider detector is nested

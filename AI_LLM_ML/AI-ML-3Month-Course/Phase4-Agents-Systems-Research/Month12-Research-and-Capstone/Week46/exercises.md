@@ -43,27 +43,30 @@ in its first sentence.
 
 ## E4 — Track selection
 
-For each of the four capstone tracks (see Week 47 `project.md` for the full
-guidance), write a five-line feasibility sketch: data in hand? compute within
-budget? riskiest step? what it signals to the employers/labs you care about?
-what you would reuse from earlier capstones? Then choose one track and document
-the runner-up with the tiebreaker reason.
+For each of the five capstone tracks in `03-Project-Roadmap.md` (copilot,
+generative validation, paper-to-pipeline, reproduce-and-extend, evaluated LLM
+service), write a five-line feasibility sketch: data in hand? compute within
+budget? riskiest step? what it signals (AI Engineer vs AI Scientist)?
+what you would reuse from earlier capstones? Then choose one track, write the
+role sentence from `05-Two-Year-Path.md`, and document the runner-up with the
+tiebreaker reason.
 Hint: the honest tiebreakers are "which feeds my thesis or job target" and
 "which riskiest step do I already know how to de-risk" — not "which sounds
 most impressive."
-Accept when: `tracks.md` has four sketches with all five questions answered,
-one chosen track, and a named runner-up with a one-sentence tiebreaker.
+Accept when: `tracks.md` has five sketches with all five questions answered,
+one chosen track, a role sentence, and a named runner-up with a one-sentence
+tiebreaker.
 
 ## E5 — The proposal
 
 Write `PROPOSAL.md` for the chosen track, following lesson §5's template
-exactly: problem statement, track and prior work, baselines, evaluation plan
+exactly: role sentence, problem statement, track and prior work, baselines, evaluation plan
 with pre-committed metrics and thresholds, risk register (≥3 risks with
 probability, impact, mitigation, trigger), compute budget with shown
 arithmetic, and day-level milestones for Weeks 47–48 with cut lines.
 Hint: write the evaluation plan and budget first — they constrain everything
 else, and writing the problem statement last keeps it honest about scope.
-Accept when: `PROPOSAL.md` is ≤4 pages, every metric has a numeric success
+Accept when: `PROPOSAL.md` is ≤4 pages, the role sentence is unhedged, every metric has a numeric success
 threshold committed before any code runs, every risk has a trigger, and every
 milestone has a date and a cut line where applicable.
 

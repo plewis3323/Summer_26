@@ -1,6 +1,7 @@
 # 04 — Progress Tracker
 
 Start date: __________  ·  Target finish: start + 12 months (48 content-weeks + slack)
+Role I am aiming at by month 24 (fill in at Week 46, not before): ______________
 
 Mark a week done only when: readings done, derivations filed (if scheduled),
 exercise notebook checks pass, review block done, notes written.
@@ -10,7 +11,7 @@ exercise notebook checks pass, review block done, notes written.
 - [ ] W01 Your first programs
 - [ ] W02 Control flow, functions, and data
 - [ ] W03 The scientific stack (NumPy, matplotlib, pandas)
-- [ ] W04 Working like a professional + dimuon mini-project
+- [ ] W04 Working like a professional (git, tests, CI, sqlite) + dimuon mini-project
 - [ ] **Month 01 sign-off** (tag, retro.md, open question)
 - [ ] W05 Calculus for ML (derivatives → gradient descent)
 - [ ] W06 Linear algebra I
@@ -20,7 +21,7 @@ exercise notebook checks pass, review block done, notes written.
 - [ ] W09 ML frame + linear regression
 - [ ] W10 Classification
 - [ ] W11 Trees & ensembles
-- [ ] W12 Unsupervised + **Capstone 1**
+- [ ] W12 Unsupervised + **Capstone 1** (dataset: ______)
 - [ ] **Month 03 sign-off + Phase 1 gate** (date: ______)
 
 ## Phase 2 — Deep Learning
@@ -33,11 +34,12 @@ exercise notebook checks pass, review block done, notes written.
 - [ ] W17 Convolutions
 - [ ] W18 Modern vision training
 - [ ] W19 Sequences
-- [ ] W20 EMCal CNN mini-project
+- [ ] W20 Image-classifier mini-project (track: ______)
 - [ ] **Month 05 sign-off**
 - [ ] W21 Graph neural networks
 - [ ] W22 Autoencoders & VAEs (ELBO derived)
-- [ ] W23 Flows + fast simulation
+- [ ] W23 Software engineering II (SQL, HTTP, FastAPI, Docker)
+- [ ] W23 optional: normalizing flows (`optional-flows.md`) — only if generative track
 - [ ] W24 **Capstone 2** (track chosen: ______)
 - [ ] **Month 06 sign-off + Phase 2 gate** (date: ______)
 
@@ -45,10 +47,10 @@ exercise notebook checks pass, review block done, notes written.
 
 - [ ] W25 Attention derived
 - [ ] W26 Full transformer
-- [ ] W27 Tokenization + nanoGPT (GPU week)
+- [ ] W27 Tokenization + nanoGPT (GPU week; corpus: ______)
 - [ ] W28 Scaling & interpretability
 - [ ] **Month 07 sign-off**
-- [ ] W29 HuggingFace ecosystem
+- [ ] W29 Prompting + HuggingFace ecosystem
 - [ ] W30 Fine-tuning (LoRA derived)
 - [ ] W31 Alignment (DPO derived)
 - [ ] W32 Evaluation + extractor mini-project
@@ -61,7 +63,7 @@ exercise notebook checks pass, review block done, notes written.
 
 ## Phase 4 — Agents, Systems, Research
 
-- [ ] W37 Tool use from first principles
+- [ ] W37 Tool use + prompt injection / tool authorization
 - [ ] W38 Agent patterns
 - [ ] W39 MCP server
 - [ ] W40 Multi-agent + copilot mini-project
@@ -72,7 +74,7 @@ exercise notebook checks pass, review block done, notes written.
 - [ ] W44 Deployment + service mini-project
 - [ ] **Month 11 sign-off**
 - [ ] W45 Reading & reproducing
-- [ ] W46 Research writing + capstone proposal
+- [ ] W46 Research writing + capstone proposal (role: ______)
 - [ ] W47 Final capstone — build (track: ______)
 - [ ] W48 Final capstone — validate + writeup + demo
 - [ ] **Month 12 sign-off + Phase 4 gate** (date: ______)
@@ -91,7 +93,8 @@ exercise notebook checks pass, review block done, notes written.
 ## Slack ledger
 
 Weeks slipped and why (conference, beam time, thesis): the calendar carries ~4 weeks
-of slack — track it so you notice when it's spent.
+of slack — track it so you notice when it's spent. Do not spend slack by cutting
+Weeks 04, 23, 29, or 37.
 
 | Date | Weeks slipped | Reason |
 |------|---------------|--------|

@@ -65,6 +65,20 @@ Accept when: both perplexities are reported with the window/stride stated, plus 
 sentence on which corpus surprises the model more and a guess at why (think Week 27
 tokenizer autopsy).
 
+## E7 — Prompt eval, three variants
+
+Write 20 items for a tiny extraction or short-answer task on your Week 27 corpus
+(or any domain text you own): input, gold field(s). Freeze the file. Score three
+prompts — (a) one-line instruction, (b) instruction + JSON schema, (c) schema +
+two few-shot examples — with T=0, exact-match or field-level exact match.
+Commit the prompts under `prompts/`. Include at least two items whose correct
+answer is "not in the text."
+Hint: do not tune on the 20; if you want to iterate, split 10/10. Week 32 will
+reuse this set as the prompt-only baseline.
+Accept when: a table of 3×(score) exists, the winner is named, and the two
+unanswerable items are not silently filled in by the winning prompt (or you
+document that they were, which is a finding).
+
 ## Review
 
 1. (Week 25) The temperature in sampling rescales logits. Where did a $1/\sqrt{d_k}$
@@ -75,3 +89,5 @@ tokenizer autopsy).
    distorts the physics-vs-news perplexity comparison in E6.
 4. (Weeks 03–04) You are pulling multi-GB checkpoints this week. Which environment
    and disk-hygiene practices apply (cache location, pinned deps, provenance)?
+5. Why must Week 32's LoRA extractor beat this week's winning prompt, not only
+   a vague "zero-shot"?

@@ -1,8 +1,10 @@
-# Week 20 — Mini-Project: EMCal Cluster Classifier
+# Week 20 — Mini-Project: Image Classifier vs Tabular Baseline
 
-The physics problem you already know from sPHENIX: at high pT the two photons from a π⁰
-merge into one EMCal cluster, faking a direct photon — this week you build the CNN that
-separates them, and check whether it actually beats shower-shape variables.
+Default physics problem (fully explained in `project.md`): at high pT the two
+photons from a π⁰ merge into one EMCal cluster, faking a direct photon — this
+week you build the CNN that separates them, and check whether it actually beats
+shower-shape variables. Allowed substitute: a public image task with a
+hand-crafted-features baseline and the same eval protocol.
 
 ## Objectives
 

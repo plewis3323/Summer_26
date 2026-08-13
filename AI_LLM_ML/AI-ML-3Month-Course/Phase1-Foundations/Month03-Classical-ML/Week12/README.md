@@ -8,7 +8,8 @@ structure is in this detector data?"; then Capstone 1 ships everything Phase 1 b
 - Implement k-means and state what objective it descends (and where it gets stuck).
 - Derive EM for Gaussian mixtures — responsibilities, then the M-step updates.
 - Use PCA and UMAP for exploration, knowing what each preserves and distorts.
-- Ship Capstone 1: a tested, calibrated, honestly-validated particle-ID classifier.
+- Ship Capstone 1: a tested, calibrated, honestly-validated tabular classifier
+  (MAGIC gamma/hadron by default; any comparable rare-event table is allowed).
 
 ## Core material (~3 hrs)
 
@@ -44,7 +45,8 @@ structure is in this detector data?"; then Capstone 1 ships everything Phase 1 b
    note in ≤3 lines what each embedding shows and what it cannot show.
    Accept when: both embeddings render with a shared legend and the caption states one distortion of each method.
 
-**Capstone 1 — tabular particle-ID classifier** (MAGIC gamma/hadron, UCI):
+**Capstone 1 — tabular classifier** (MAGIC gamma/hadron, UCI, default; or any
+public rare-event table with the same protocol — name it in the repo README):
 
 4. **Pipeline.** sklearn `Pipeline` from raw CSV to prediction: split, preprocess,
    model (logistic baseline + tuned XGBoost from Week 11), all seeded.

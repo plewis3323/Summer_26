@@ -2,15 +2,14 @@
 
 ## Objective
 
-LoRA-fine-tune a 1–3B open-weight model to read a nuclear physics abstract and emit
-its metadata as schema-valid JSON, and *measure* the result honestly: fine-tuned vs
-zero-shot vs few-shot prompting, on a held-out test split, reported as per-field
-precision/recall/F1 plus JSON validity and hallucination rate. This is the month's
-deliverable (see the Month 08 README) and a named component of Capstone 3 option (a),
-the physics-literature assistant: an assistant that can answer "which STAR papers
-measured v2 in Au+Au at 200 GeV?" needs exactly this extractor behind it. It is also
-your first complete LLM *experiment* — dataset, baselines, intervention, controlled
-measurement — the shape every later evaluation in the course reuses.
+LoRA-fine-tune a 1–3B open-weight model to read domain text and emit
+metadata as schema-valid JSON, and *measure* the result honestly: fine-tuned vs
+your **Week-29 winning prompt** vs naive zero-shot, on a held-out test split,
+reported as per-field precision/recall/F1 plus JSON validity and hallucination
+rate. Default domain: nuclear physics abstracts (schema below, fully explained).
+Allowed substitute: any domain schema you froze in Week 30, with the same
+protocol. This is the month's deliverable and a named component of Capstone 3
+option (a).
 
 ## Background — the task, concretely
 

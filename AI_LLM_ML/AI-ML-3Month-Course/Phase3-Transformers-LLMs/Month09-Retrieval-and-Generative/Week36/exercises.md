@@ -3,8 +3,8 @@
 This week is Capstone 3; the exercises are milestones, not conventional
 exercises — finishing them *is* finishing the capstone. Read `project.md`
 before Monday. Choose **one** track by day 1, in writing, with one sentence
-on why, and stay on it: (a) physics-literature assistant, or (b) conditional
-diffusion calo generator. Do E1–E4 for your track, then E5–E6 (both tracks).
+on why, and stay on it: (a) domain-literature assistant (physics default), or (b)
+conditional diffusion generator (calo default; public images allowed). Do E1–E4 for your track, then E5–E6 (both tracks).
 Most work lives in the capstone repo, not the notebook, per
 `NOTEBOOK_RULES.md` §6; the notebook hosts acceptance checks and displays
 the benchmark table. One scheduled week, two weeks' worth of building —
@@ -17,7 +17,7 @@ scheduled for a *fresh* morning and scanned into this folder — it is in
 also wants 2-layer backprop; do it the same morning if the attention pass is
 clean.
 
-## Track (a) — physics-literature assistant
+## Track (a) — domain-literature assistant
 
 ### E1 — Architecture
 

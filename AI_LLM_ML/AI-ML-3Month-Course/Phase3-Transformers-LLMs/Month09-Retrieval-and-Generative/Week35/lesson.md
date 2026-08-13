@@ -4,8 +4,9 @@
 able to: manipulate Gaussian densities and compute $\mathrm{Var}(aX + bY)$ for
 independent $X, Y$ (Weeks 07–08); state the definition and key properties of KL
 divergence and derive a Gaussian–Gaussian KL (Weeks 08, 22); derive the VAE ELBO
-by both routes (Week 22); state what normalizing flows require of their networks
-(Week 23); and train a conditional model in PyTorch (Weeks 15–16, 22).
+by both routes (Week 22); know that a normalizing flow is an invertible map with
+exact likelihood (`optional-flows.md` if you did it; otherwise the survey in §10
+is enough); and train a conditional model in PyTorch (Weeks 15–16, 22).
 
 This week contains the course's fifth flagship derivation (after backprop, the
 ELBO, attention, and LoRA's low-rank argument): the **DDPM training objective**,
@@ -18,9 +19,9 @@ calorimeter warm-up (E5) wants a cloud GPU — Colab or Kaggle per the setup gui
 
 ## 1. Destroying data is easy; learn to run it backwards
 
-Week 22 ended with a diagnosis and Week 23 with a trade. The VAE got tractability
+Week 22 ended with a diagnosis: the VAE got tractability
 from a *bound* — you never optimize the true likelihood, and sample quality shows
-it (blurry showers, posterior collapse). The flow got *exact* likelihoods, but
+it (blurry showers, posterior collapse). A flow (optional Week 23 reading) got *exact* likelihoods, but
 paid with a straitjacket: every layer invertible, every Jacobian determinant
 tractable, which rules out most architectures you would like to use.
 
@@ -666,7 +667,10 @@ transfers to simulation.
 
 ## 10. Diffusion vs flows vs VAEs, for calorimeters
 
-You have now built all three deep generative families. (A **calorimeter**, for
+You have now built the two deep generative families this course requires (VAE
+and DDPM). A **normalizing flow** — an invertible map with exact likelihood —
+is the third family; the full derivation is optional (`optional-flows.md` in
+the Week 23 folder). (A **calorimeter**, for
 any reader who skipped Phase 2: a detector layer that measures particle
 energies by absorbing them — the incoming particle cascades into a **shower**
 of secondaries across a grid of cells, and simulating those showers with
@@ -675,7 +679,7 @@ budgets. Hence "fast simulation": learn the map from incident particle to
 deposited-energy image, and sample it cheaply.) The honest comparison, on the
 axes that matter for that job:
 
-| | VAE (W22) | Flow (W23) | DDPM (this week) |
+| | VAE (W22) | Flow (`optional-flows.md`) | DDPM (this week) |
 |---|---|---|---|
 | trains on | ELBO (bound) | exact NLL | reweighted bound ($L_{\text{simple}}$) |
 | likelihood access | bound only | exact, cheap | bound only (exact needs ODE tricks) |

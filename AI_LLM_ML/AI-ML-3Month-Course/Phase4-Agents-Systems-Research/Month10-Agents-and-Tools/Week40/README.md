@@ -1,13 +1,14 @@
 # Week 40 — Multi-Agent Orchestration, Agent Evals, and the Copilot Prototype
 
-You would never quote a physics result without a systematic-uncertainty analysis; this week you learn the equivalent discipline for agents — measure them — and then ship a first analysis copilot.
+You would never quote a result without a systematic-uncertainty analysis; this week you learn the equivalent discipline for agents — measure them — and then ship a first copilot (science analysis by default; any tool suite you own is allowed).
 
 ## Objectives
 
 - Implement orchestrator–worker delegation with explicit handoffs: task briefs out, structured reports back, no shared conversation state assumed.
 - Explain the cost model of multi-agent systems (context re-establishment, report round-trips) and when a single loop is cheaper.
 - Evaluate an agent quantitatively: task success rate on a fixed task suite, cost per task, latency, plus qualitative trajectory review.
-- Build an analysis-copilot prototype: one agent loop driving the Week-39 MCP tools against real (or realistic) run files.
+- Build a copilot prototype: one agent loop driving the Week-39 MCP tools against
+  real (or realistic) files.
 - Write an honest failure analysis from reviewed trajectories.
 
 ## Core material (~3 hrs)

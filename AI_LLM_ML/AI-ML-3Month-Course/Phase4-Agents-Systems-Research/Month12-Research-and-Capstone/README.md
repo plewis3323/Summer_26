@@ -1,14 +1,14 @@
 # Month 12 — Research Skills & Final Capstone
 
-The closing month turns 47 weeks of skills into research output. Week 45 installs a
-systematic paper-reading workflow, produces a written critique of one HEP-ML paper, and
-reproduces a small published result from scratch — the fastest way to find out what a
-paper actually claims. Week 46 covers research writing (structure, clarity, figures) and
-ends with the capstone proposal: problem, baselines, evaluation plan, risks, and compute
-budget, reviewed before any code is written. Weeks 47–48 are the capstone itself on ONE
-track — HEP analysis copilot, generative fast-sim, paper-to-pipeline agent, or
-reproduce-and-extend. Week 47 builds against the proposal's milestones; Week 48 validates,
-writes up, records the demo and the mock research talk, and states limitations honestly.
+The closing month turns 47 weeks of skills into a result aimed at a role. Week 45
+installs a systematic paper-reading workflow, produces a written critique of one
+paper (HEP-ML *or* a paper in your target role's literature), and reproduces a
+small published result. Week 46 covers writing and ends with the capstone
+proposal — including the role sentence from `05-Two-Year-Path.md` (AI Engineer
+or AI Scientist). Weeks 47–48 are the capstone on ONE track: engineer-shaped
+(copilot/service) or scientist-shaped (generative validation or
+reproduce-and-extend). Week 47 builds; Week 48 validates, writes up, records the
+demo and the mock talk.
 
 **Month-end deliverable:** the capstone repo (reproducible: fresh clone + `uv sync` + one
 command), writeup with architecture diagram and limitations section, recorded demo, and

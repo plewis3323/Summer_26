@@ -14,7 +14,8 @@ course's second flagship derivation and part of the Phase 2 gate.
   through sampling fails.
 - Recognize posterior collapse (KL → 0, decoder ignores z) and apply mitigations
   (KL warm-up, β weighting).
-- Build a HEP-style anomaly detector from reconstruction error; know its failure modes.
+- Build a reconstruction-error anomaly detector; know its failure modes
+  (HEP-style rare-event search is the default story; any one-class setting works).
 
 ## Core material (~3 hrs)
 
@@ -26,7 +27,9 @@ course's second flagship derivation and part of the Phase 2 gate.
   math in a second notation.
 - Kingma & Welling, "Auto-Encoding Variational Bayes" (arXiv:1312.6114) — read §1–3
   after your own derivation; it should read as familiar by then.
-- Skim one HEP autoencoder anomaly-detection paper (LHC Olympics context) for usage.
+- Skim one autoencoder anomaly-detection paper (LHC Olympics context, or one in
+  your domain) for usage.
+- Optional next: normalizing flows, `optional-flows.md` in the Week 23 folder.
 
 ## Derivations (paper first)
 

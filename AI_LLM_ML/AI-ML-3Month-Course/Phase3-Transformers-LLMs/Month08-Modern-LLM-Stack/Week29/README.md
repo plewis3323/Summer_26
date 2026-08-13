@@ -1,9 +1,8 @@
-# Week 29 — The HuggingFace Ecosystem
+# Week 29 — Prompting + the HuggingFace Ecosystem
 
 You built the instrument in Month 07; now learn the shared facility everyone actually
-runs — and note that sampling from an LLM is drawing from a Boltzmann distribution
-whose temperature knob you control directly. The lesson derives that connection in
-full.
+runs — and treat prompting as a program with tests, not as vibes. The lesson derives
+sampling in full and then puts three prompt variants on a frozen eval set.
 
 ## Objectives
 
@@ -15,6 +14,8 @@ full.
   everything in RAM.
 - Apply chat templates correctly and demonstrate two concrete template footguns.
 - Compute perplexity of a model on a corpus and say what it does and does not measure.
+- Write, version, and **evaluate** prompts (instructions, few-shot, failure cases)
+  on a frozen item set.
 
 ## Core material (~3 hrs)
 
@@ -28,6 +29,8 @@ full.
 - Holtzman et al., *The Curious Case of Neural Text Degeneration* (nucleus sampling
   paper) — §§1, 3.
 - Skim a model card end to end (e.g. Llama 3.2 1B): license, chat format, intended use.
+- Current Anthropic or OpenAI prompting guide — read as a recipe list to test, not
+  as a specification.
 
 ## Derivations (paper first; `lesson.md` §3 walks each through)
 
@@ -39,16 +42,17 @@ full.
 
 ## Exercises
 
-See `exercises.md` (notebook built from it when the week starts). Six exercises:
+See `exercises.md` (notebook built from it when the week starts). Seven exercises:
 memory-vs-dtype measurement, your own composable sampler verified token-for-token
 against HF `generate`, a temperature/entropy sweep, chat-template footguns
-demonstrated live, a `datasets` pipeline over the Week 27 corpus, and a
-physics-vs-news perplexity comparison.
+demonstrated live, a `datasets` pipeline over the Week 27 corpus, a
+domain-vs-news perplexity comparison, and a prompt eval on three variants.
 
 ## Deliverable
 
 Derivation scans; `Week29_Exercises.ipynb` with checks PASS; a `src/sampling.py`
-you'll reuse in Weeks 30–32; the perplexity table.
+you'll reuse in Weeks 30–32; the perplexity table; `prompts/` with three versions
+and an eval table.
 
 ## Review
 

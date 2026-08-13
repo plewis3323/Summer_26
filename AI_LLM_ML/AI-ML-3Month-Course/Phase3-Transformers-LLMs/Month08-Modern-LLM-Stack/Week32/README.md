@@ -11,7 +11,8 @@ number the way you treat an uncalibrated detector.
   validate the judge against your own labels.
 - Define and measure hallucination for a structured-output task.
 - Ship the mini-project: LoRA fine-tune a 1–3B open model to extract structured
-  metadata from nuclear physics abstracts, scored against a zero-shot baseline.
+  metadata from domain text (physics abstracts by default), scored against your
+  **Week-29 winning prompt** and against naive zero-shot.
 - Report results with field-level metrics and honest error analysis, not one headline
   number.
 
@@ -32,12 +33,14 @@ This week is mostly the project; exercises are its milestones.
    collision system, √s_NN, observable(s), centrality, detector/experiment, physics
    topic. Accept when: all validate against the JSON schema; 60/20/20 split with zero
    abstract overlap (dedup check passes).
-2. Zero-shot + few-shot baseline with the base instruct model and constrained prompting.
-   Accept when: field-level precision/recall/F1 per field on the test split, in a table.
+2. Prompt baseline: rerun your Week-29 winning prompt (and a naive zero-shot) on
+   this week's test split. Accept when: field-level precision/recall/F1 per field
+   for both, in a table — this is the number LoRA has to beat.
 3. LoRA fine-tune (Week 30 recipe) on the train split. Accept when: training runs to
    completion with val-loss curve saved and the adapter checkpoint committed or linked.
-4. Head-to-head: fine-tuned vs zero-shot vs few-shot on the held-out test split. Accept
-   when: one table, per-field and aggregate F1, plus JSON-validity rate for each.
+4. Head-to-head: fine-tuned vs Week-29 best prompt vs naive zero-shot on the held-out
+   test split. Accept when: one table, per-field and aggregate F1, plus JSON-validity
+   rate for each.
 5. Hallucination measurement: fraction of extracted values not present in (or entailed
    by) the source abstract, by field. Accept when: rate reported per system and the
    worst field identified.

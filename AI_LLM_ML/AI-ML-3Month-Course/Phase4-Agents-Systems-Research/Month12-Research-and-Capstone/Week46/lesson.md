@@ -156,6 +156,15 @@ exactly this document. Yours governs Weeks 47–48 and will be graded — by you
 in Week 48 — against its own success criteria. The template, section by
 section (this is the required structure of `PROPOSAL.md`):
 
+**0. Role sentence** (one sentence, no hedging). From `05-Two-Year-Path.md`:
+
+> After this capstone I am aiming at **[AI Engineer / AI Scientist]**,
+> because **[one artifact I will have in month 24]**.
+
+Engineer-shaped tracks: (a), (c), (e). Scientist-shaped: (b), (d). If you
+want both careers eventually, pick the artifact this capstone will actually
+produce — not both.
+
 **1. Problem statement** (2–3 paragraphs). What you will build/show, for whom,
 and why it matters — with the physics or systems context explained the way
 this course's lessons explain things: from the ground up. If a reader from
@@ -163,9 +172,11 @@ outside your subfield cannot tell what the deliverable is, rewrite. Ends with
 the deliverable in one sentence.
 
 **2. Track and prior work.** Which capstone track (Week 47's `project.md`
-covers choosing), and what you are building on: your own earlier capstones and
-the 2–4 external works closest to this (Week 45 reading log entries earn their
-keep here).
+covers choosing — five tracks: copilot, generative validation, paper-to-pipeline,
+reproduce-and-extend, evaluated LLM service), and what you are building on: your
+own earlier capstones and the 2–4 external works closest to this (Week 45 reading
+log entries earn their keep here). Science-domain and general-domain data are
+both allowed; say which.
 
 **3. Baselines.** Every comparison the final report will make, named now. A
 system without a baseline cannot claim improvement over anything — at minimum:

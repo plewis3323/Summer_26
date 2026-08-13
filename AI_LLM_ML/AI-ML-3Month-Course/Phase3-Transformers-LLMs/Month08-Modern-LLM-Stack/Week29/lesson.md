@@ -1,4 +1,4 @@
-# Week 29 — The HuggingFace Ecosystem
+# Week 29 — Prompting + the HuggingFace Ecosystem
 
 ~10 hrs. Before starting you should be able to: train a decoder-only transformer and
 explain every tensor in its forward pass (Weeks 25–27); build a BPE tokenizer and
@@ -12,7 +12,9 @@ payoff for having built your own model is that nothing here is a black box — a
 "checkpoint on the Hub" is exactly the `state_dict` you saved in Week 27, and
 `generate()` is exactly your sampling loop with more options. The one genuinely new
 piece of theory this week is sampling: temperature, top-k, and top-p, derived from the
-softmax you already know.
+softmax you already know. The other new craft is **prompting**: treat the
+context prefix as a versioned program and evaluate it on a frozen set before
+you fine-tune anything (Week 30). Section 8 is that craft; E7 is the test.
 
 ## 1. The Hub, checkpoints, and model cards
 
@@ -422,6 +424,59 @@ autoregression. `model.generate(...)` is this loop plus batching, KV caching, an
 stopping criteria. You have now seen both sides of the abstraction — which is the
 whole point of having built the instrument before using the facility.
 
+## 8. Prompting as a tested program
+
+A **prompt** is the tokens you put in the context window before generation. For an
+instruct model that is: the chat template, a **system** message (standing
+instructions), the **user** message (this turn's request), and any few-shot
+turns you stuffed in between. The model is still next-token prediction (Week
+27). "Prompt engineering" is the craft of writing that prefix so the
+*distribution* of completions does the job — and then **measuring** that it
+does, the same way Week 10 measured a classifier.
+
+Treat a prompt like code:
+
+- **Version it.** `prompts/v3_extract.txt` in git, not a cell you edited
+  until it "looked good."
+- **Evaluate it.** A frozen set of ≥20 items with a pre-committed metric
+  (exact match, field-level F1, a rubric). Change one thing, rerun the set,
+  record the number. A prompt that was not eval'd is a hypothesis.
+- **Do not confuse a lucky sample with a method.** Temperature > 0 means
+  two runs differ. Report mean ± spread, or set T → 0 for extraction tasks.
+
+Patterns that actually move the number, in the order to try them:
+
+1. **Clear instruction + schema.** "Return JSON with keys `energy_gev` and
+   `system`. If a field is missing, use null. No other text." Beats a vague
+   "extract the metadata."
+2. **Few-shot.** Two or three input/output pairs in the same format as the
+   real task. Helps format more than it helps knowledge. If the model must
+   *know* something it was not trained on, few-shot will not invent it —
+   that is RAG (Week 34) or fine-tuning (Week 30).
+3. **Chain-of-thought** ("think step by step"). Helps multi-step arithmetic
+   and some reasoning; often hurts extraction (the model narrates instead of
+   emitting JSON). Measure; do not assume.
+4. **Structured output** (schema-constrained decoding, Week 37) when the
+   downstream code must parse the result. Prompting for JSON is a suggestion;
+   a schema is a guarantee.
+
+Failure modes to put on the eval set on purpose:
+
+- **Hallucination** — a fluent answer to a question whose answer is not in
+  the context. The fix is not a sterner system prompt alone; it is "answer
+  only from the provided text or say you don't know," *plus* a test item
+  that has no answer.
+- **Prompt sensitivity** — swapping two synonyms tanks the score. If it
+  does, the prompt is brittle; few-shot or a schema usually helps more than
+  more adjectives.
+- **Sycophancy** — the model agrees with a false premise in the user turn.
+  Include one adversarial item.
+
+This week's E7 is a 20-item eval on three prompt variants. Week 32's
+extractor must beat *your best prompt*, not only zero-shot. That is the
+point of teaching prompting before fine-tuning: otherwise you cannot tell
+whether LoRA earned its keep.
+
 ## Check yourself
 
 1. A 3B-parameter model in bfloat16: roughly how much memory for the weights alone?
@@ -436,6 +491,8 @@ whole point of having built the instrument before using the facility.
 7. Why can't you compare per-token perplexities between two models with different
    tokenizers?
 8. Perplexity 15 on a corpus — say in one sentence what that means operationally.
+9. Why is a prompt without a frozen eval set a hypothesis rather than a method?
+10. Name one task where chain-of-thought is likely to *hurt*, and why.
 
 ## Answers
 
@@ -460,6 +517,10 @@ whole point of having built the instrument before using the facility.
    denominators and are not comparable.
 8. On average the model's next-token uncertainty is equivalent to a uniform choice
    among 15 tokens.
+9. You have no number that would go down if the prompt got worse, so you cannot
+   tell a real improvement from a lucky sample.
+10. Structured extraction / JSON emission — the model spends tokens narrating
+    instead of emitting the schema, and the parser breaks.
 
 ## New terms
 
@@ -482,6 +543,9 @@ whole point of having built the instrument before using the facility.
 - **perplexity** — $e^{\text{cross-entropy}}$; effective branching factor per token.
 - **sliding window (perplexity)** — scoring long text in overlapping context windows.
 - **KV cache** — stored keys/values from previous positions, reused each decode step.
+- **prompt / system message / few-shot** — the context prefix; standing instructions;
+  example turns stuffed into that prefix.
+- **prompt eval** — a frozen item set + a pre-committed metric, rerun on every change.
 
 ## Going deeper
 
@@ -493,3 +557,5 @@ whole point of having built the instrument before using the facility.
   §§1 and 3 — the paper that diagnosed the tail problem and proposed nucleus sampling.
 - One model card read end to end (e.g. Llama 3.2 1B or Qwen2.5-0.5B-Instruct) — the
   habit matters more than the specific card.
+- The current Anthropic or OpenAI prompting guide — recipes to *test* in E7, not to
+  believe.

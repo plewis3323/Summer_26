@@ -1,13 +1,17 @@
-# Week 04 — Reproducibility + Mini-Project
+# Week 04 — Reproducibility + Mini-Project (SWE I)
 
 "Works on my machine" is the software version of an unrepeatable measurement; this week
-you ship an analysis that reruns from a fresh clone with one command.
+you ship an analysis that reruns from a fresh clone with one command — and that a
+machine, not just you, can check.
 
 ## Objectives
 
 - State what full reproducibility requires: pinned deps, seeds, data provenance, one entry point.
 - Control every random seed in a pipeline and demonstrate bit-identical reruns.
 - Record data provenance: where the file came from, its checksum, when it was fetched.
+- Open a pull request, and put `pytest` in GitHub Actions so every push is checked.
+- Store a results table in sqlite (a database that is one file) so later weeks can query it.
+- Use Big-O as vocabulary: say why a nested loop over 10⁵ rows is a problem and a vectorized mask is not.
 - Ship the mini-project: a tested Python package rebuilding a ROOT-style dimuon analysis.
 
 ## Core material (~3 hrs)
@@ -19,6 +23,8 @@ you ship an analysis that reruns from a fresh clone with one command.
 - NumPy docs: "Random sampling" — specifically `np.random.default_rng` and why the
   legacy global seed is deprecated practice.
 - Revisit *Pro Git* tagging (Chapter 2) for the month sign-off.
+- GitHub Actions quickstart — enough to recognize the workflow file you will copy.
+- SQLite as an application file format (official page, short) — why a `.db` file beats a pile of CSVs for results you will query later.
 
 ## Exercises (built when the week starts)
 
@@ -40,12 +46,17 @@ Mini-project week: the exercises are the project stages.
    Accept when: fresh clone + `uv sync` + `uv run python run.py` completes and prints the fitted mass.
 6. **Determinism check.** Run the pipeline twice; diff all numerical outputs.
    Accept when: two runs produce identical fit parameters and identical cut-flow tables.
+7. **CI + sqlite results.** Write the cut-flow and fit into a sqlite file; add a
+   GitHub Actions workflow that runs `uv sync` + `pytest` on every push.
+   Accept when: the workflow badge is green on `main`, and `SELECT` from the db
+   returns the same cut-flow counts as the printed table.
 
 ## Deliverable
 
 The Month 01 deliverable: `dimuon/` package with pinned env, provenance file, tests
-green, and a one-command reproduction of the spectrum and fit. Then do the month
-sign-off (tag `month-01-complete`, `retro.md`, one open-question issue).
+green, CI green, a sqlite results table, and a one-command reproduction of the
+spectrum and fit. Then do the month sign-off (tag `month-01-complete`, `retro.md`,
+one open-question issue).
 
 ## Review
 
@@ -58,3 +69,4 @@ sign-off (tag `month-01-complete`, `retro.md`, one open-question issue).
    memory?
 5. (Physics) The provenance file plays the role of what in a collaboration analysis
    (think: dataset bookkeeping / good-run lists)?
+6. Why does CI catch a broken test that `git push` alone does not?

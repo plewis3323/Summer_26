@@ -24,16 +24,17 @@ with null detector.
 Accept when: all validate against the JSON schema; 60/20/20 split with zero abstract
 overlap (dedup check passes).
 
-## E2 — Baselines first: zero-shot and few-shot
+## E2 — Baselines first: Week-29 prompt, zero-shot, few-shot
 
-Prompt the base instruct model for the extraction task zero-shot (instructions +
-schema in the prompt) and few-shot (same, plus 3–5 worked examples from the *train*
-split), greedy decoding, on the test split — through `eval.py`, the same harness every
-later system uses. Tune prompt wording on the validation split only.
+Run three prompt-only systems on the test split, through `eval.py` (the same
+harness every later system uses), greedy decoding: (a) your **Week-29 winning
+prompt**, unchanged; (b) a naive zero-shot (instructions + schema); (c) few-shot
+(schema plus 3–5 worked examples from the *train* split). Tune any *new* wording
+on the validation split only — do not retune the Week-29 winner on this test set.
 Hint: freeze `canon()` and the schema before running anything on test (lesson §5.3);
 few-shot examples come from train, never test. Parse failures score zero on all
 fields — that is data, not a bug to hide.
-Accept when: field-level precision/recall/F1 per field on the test split, in a table.
+Accept when: field-level precision/recall/F1 per field for all three, in a table.
 
 ## E3 — LoRA fine-tune
 
@@ -50,10 +51,11 @@ checkpoint committed or linked.
 ## E4 — Head-to-head on the held-out test split
 
 Run the fine-tuned model through the same harness and produce the benchmark table:
-fine-tuned vs zero-shot vs few-shot.
-Hint: identical decoding settings and identical `eval.py` for all three — any
+fine-tuned vs Week-29 winning prompt vs naive zero-shot vs few-shot.
+Hint: identical decoding settings and identical `eval.py` for all rows — any
 difference in apparatus contaminates the comparison. Macro-F1 is the headline;
-the per-field rows are the result.
+the per-field rows are the result. LoRA has to beat the Week-29 prompt, not only
+zero-shot, or the writeup explains why not.
 Accept when: one table, per-field and aggregate F1, plus JSON-validity rate for each.
 
 ## E5 — Hallucination measurement

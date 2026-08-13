@@ -14,10 +14,11 @@ This is the build week: execute the proposal like an approved beam-time request 
 
 Reading this week is track-specific reference, not new study:
 
-- Track (a) HEP analysis copilot: your Week-39/40 code and MCP + *Building Effective Agents* notes; the sPHENIX workflow docs you're wrapping.
-- Track (b) Generative fast-sim: your Week-35 DDPM derivation and Capstone-2/3 validation suites; the CaloChallenge dataset/metrics documentation.
-- Track (c) Paper-to-pipeline agent: your Week-38 pattern code; Fun4All macro structure references; the target paper read at pass-3 depth.
+- Track (a) Domain copilot: your Week-39/40 code and MCP + *Building Effective Agents* notes; the workflow docs you're wrapping.
+- Track (b) Generative model: your Week-35 DDPM derivation and Capstone-2/3 validation suites; CaloChallenge docs if on the physics track.
+- Track (c) Paper-to-pipeline agent: your Week-38 pattern code; the target paper read at pass-3 depth.
 - Track (d) Reproduce-and-extend: the target paper at pass-3 depth (Week 45 method); its public code/data documentation.
+- Track (e) Evaluated LLM service: your Week-44 service, Week-32/34/40 evals, Week-37 injection tests.
 
 ## Exercises (built when the week starts)
 
@@ -26,7 +27,7 @@ Milestones, not exercises — instantiated from `PROPOSAL.md` when the week star
 1. Day-1 skeleton: end-to-end pipeline runs on toy input (trivial model / canned response / 100-event sample). Accept when: one command produces a (bad) end-to-end output on day 1.
 2. Data/environment locked: real inputs staged, versioned, and loading under test. Accept when: a data-integrity check (counts, hashes, schema) passes in CI.
 3. Baselines first: every baseline in the evaluation plan runs and logs its metric. Accept when: the results table exists with all baseline rows filled before the main system is tuned.
-4. Core system at proposal spec: the track's central component (agent loop + tools / generative model / extraction agent / reproduced method) meets its mid-week milestone. Accept when: the milestone's pre-committed metric or capability check from `PROPOSAL.md` passes.
+4. Core system at proposal spec: the track's central component (agent loop + tools / generative model / extraction agent / reproduced method / evaluated service) meets its mid-week milestone. Accept when: the milestone's pre-committed metric or capability check from `PROPOSAL.md` passes.
 5. First full evaluation: the complete evaluation plan runs once on the real system, however unflattering. Accept when: `results/` contains machine-readable metrics for system and baselines from the same harness.
 6. Scope ledger: every deviation from the proposal recorded (what, why, cost). Accept when: `BUILDLOG.md` has daily entries and the ledger — an empty ledger with missed milestones is a fail.
 

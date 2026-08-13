@@ -13,7 +13,7 @@ The analysis note week: in physics a result doesn't exist until it survives revi
 ## Core material (~3 hrs)
 
 - Re-read `PROPOSAL.md` and Week 46's writing notes — the writeup is graded against the proposal's own success criteria.
-- Track-specific validation reference: (a) your Week-40 agent-eval harness; (b) CaloChallenge metric definitions (shower shapes, energy response, classifier-based scores); (c) your Week-40 trajectory-review method; (d) the target paper's own evaluation protocol.
+- Track-specific validation reference: (a) your Week-40 agent-eval harness; (b) CaloChallenge or your pre-committed distributional metrics; (c) your Week-40 trajectory-review method; (d) the target paper's own evaluation protocol; (e) CI evals + latency/cost + injection tests.
 - One talk-craft resource by title (e.g. the "How to give a great research talk" companion to Week 46's writing guide) — structure, one-point-per-slide, ending with limitations.
 
 ## Exercises (built when the week starts)
@@ -23,7 +23,7 @@ The analysis note week: in physics a result doesn't exist until it survives revi
 3. Ablation: remove or degrade one core component and re-run the headline metric. Accept when: the ablation row is in the results table and one sentence states what it shows the component contributes.
 4. Writeup: 6–10 page report — intro, architecture diagram, method, results vs. baselines, limitations, future work. Accept when: every claim cites a table/figure, and the limitations section names ≥3 real weaknesses a referee would find anyway.
 5. Demo: recorded screen capture, ≤10 minutes, fresh clone → `uv sync` → one command → the headline capability, narrated. Accept when: the recording shows the clean-clone run, not a warm environment.
-6. Mock talk: 15–20 minutes, slides, recorded; imagine a mixed HEP/ML audience. Accept when: the recording exists and includes at least one slide of honest limitations and one of "what I'd do next."
+6. Mock talk: 15–20 minutes, slides, recorded; imagine a mixed science/ML audience (or the audience for the role in your Week-46 sentence). Accept when: the recording exists and includes at least one slide of honest limitations and one of "what I'd do next".
 7. Gate check: verify the End-Phase-4 gate — demoed end-to-end, architecture diagram, limitations, talk recorded — and the course-wide reproducibility bar. Accept when: `GATE.md` checks every item with links, and one flagship derivation (your choice from the rotation) is re-done cold and scanned in.
 
 ## Deliverable

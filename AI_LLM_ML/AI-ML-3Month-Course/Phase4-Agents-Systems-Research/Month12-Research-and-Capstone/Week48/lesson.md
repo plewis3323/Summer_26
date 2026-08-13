@@ -268,20 +268,14 @@ redo — and open the final issue: the question this course leaves you wanting
 to answer. That issue is deliberate. A course can end; the habit of always
 having one named open question is the part that should not.
 
-**What comes next.** The course ends with artifacts; the three-year goal
-needs a *record* (`03-Project-Roadmap.md`, "After the course"). The sketch:
-year 2 — publish one or two ML-for-physics results (thesis-adjacent),
-contribute to an open ML tool, apply the skills visibly inside sPHENIX;
-year 3 — target role conversion (lab AI hire, or industry research/
-engineering) carrying the portfolio this course built: four capstone repos, a
-fine-tuned model, an MCP server, a publication or workshop paper, and a
-thesis that uses ML for real. The single strongest immediate move, if you aim
-at research roles, is spending the post-course slack month polishing the
-capstone — track (d) especially — into a workshop submission: it converts a
-course artifact into a community artifact, which is the currency that counts.
-And keep two habits at maintenance dose: the reading log (papers keep
-coming), and the weekly rhythm of building something measured. The course
-installed the system; the record comes from running it.
+**What comes next.** The course ends with artifacts; the two-year path is
+`05-Two-Year-Path.md`. Year 2 is where the title happens: a system a colleague
+uses (AI Engineer) or a paper under review (AI Scientist). The portfolio this
+course built — capstone repos, a fine-tuned model, an MCP server, a service —
+is the foundation, not the credential. Pick the slack month's project
+deliberately from that document. And keep two habits at maintenance dose: the
+reading log (papers keep coming), and the weekly rhythm of building something
+measured. The course installed the system; the record comes from running it.
 
 ## Check yourself
 
@@ -378,6 +372,5 @@ installed the system; the record comes from running it.
 - Pineau et al., *Improving Reproducibility in Machine Learning Research*
   (Week 45's Going deeper) — reread the checklist now that you are the
   authors; it is this week's gate from the field's point of view.
-- `03-Project-Roadmap.md`, "After the course" — the months 13–36 sketch;
-  read it once more before writing the retro, and pick the slack month's
-  project deliberately.
+- `05-Two-Year-Path.md` — months 13–24 for each role; read it once more before
+  writing the retro, and pick the slack month's project deliberately.

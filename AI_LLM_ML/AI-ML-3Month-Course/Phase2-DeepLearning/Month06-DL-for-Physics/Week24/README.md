@@ -1,7 +1,9 @@
 # Week 24 — Capstone 2
 
 One scheduled week, two weeks' worth of building (syllabus §6's slack exists for this):
-ship a tested repo that beats your CNN or simulates showers a physicist would sign off on.
+ship a tested repo that beats your CNN or generates samples a physicist (or a
+careful ML reviewer) would sign off on. Science data is the default; a public
+graph or image set with the same protocol is allowed.
 
 ## Objectives
 
@@ -15,7 +17,8 @@ ship a tested repo that beats your CNN or simulates showers a physicist would si
 ## Core material (~0 hrs new)
 
 No new reading. Your Week-17/18 notes (track a: CNN recipe), Week-21 notes (track a:
-GNN), Week-22/23 notes (track b: generative), and the Week-20 repo are the references.
+GNN), Week-22 notes (track b: VAE), Week-23 notes (the data API — not flows), and the
+Week-20 repo are the references. Flows: `optional-flows.md` if you want them.
 
 ## Choose ONE track
 

@@ -1,71 +1,54 @@
-# Week 23 — Normalizing Flows + Fast Simulation
+# Week 23 — Software Engineering II: Data and Services
 
-A flow is a learned change of variables — the Jacobian bookkeeping from every phase-space
-integral you've done, run through an invertible network so the model gives exact
-likelihoods, not a bound.
+A model that only lives in a notebook is a measurement that only exists on one
+laptop. This week you learn the four things every AI Engineer (and every
+scientist who ships a tool) actually uses: **SQL** to ask questions of tables,
+**HTTP/JSON** to talk between programs, **FastAPI** to wrap a table or a model
+in a small service, and **Docker** so the service runs the same on another
+machine. No web-development background is assumed.
+
+Normalizing flows (the previous occupant of this week) live in `optional-flows.md`
+in this folder — do them if your Capstone 2/3 is a generative-sim track; otherwise
+Week 35's survey is enough.
 
 ## Objectives
 
-- Derive the change-of-variables formula and the flow log-likelihood with log |det J|.
-- Explain the design problem — expressive, invertible, tractable Jacobian determinant —
-  and how affine coupling layers (RealNVP-style) solve it with a triangular Jacobian.
-- Implement a coupling-layer flow, train by exact maximum likelihood, sample by running
-  it in reverse.
-- Compare flows vs VAEs for fast-sim: likelihood exactness, sampling speed, scaling.
-- Explain the CaloChallenge: why colliders need learned simulators and how submissions
-  are judged on physics observables.
+- Write SQL `SELECT` / `WHERE` / `JOIN` / `GROUP BY` against sqlite, and say
+  why a JOIN can go O(n²) without an index.
+- Explain HTTP methods, status codes, and JSON as the language programs use
+  over the network.
+- Wrap a sqlite table in a FastAPI service with typed request/response and tests.
+- Containerize that service with a Dockerfile and run it with one command.
+- Keep secrets in environment variables; log requests without logging secrets.
 
 ## Core material (~3 hrs)
 
-- Lilian Weng, "Flow-based Deep Generative Models" (blog) — the spine.
-- *Understanding Deep Learning* (Prince), Ch. 16 (Normalizing flows).
-- Dinh, Sohl-Dickstein & Bengio, "Density estimation using Real NVP"
-  (arXiv:1605.08803) — the coupling-layer construction; skim multiscale details.
-- CaloChallenge: the "Fast Calorimeter Simulation Challenge 2022" description and the
-  CaloFlow paper (Krause & Shih) — skim for framing and evaluation observables.
+- `lesson.md` (this folder) — the primary text, from zero.
+- SQLite docs: *SELECT*, *JOIN*, *GROUP BY* (the language, not the C API).
+- FastAPI tutorial: first steps, path parameters, request body, TestClient.
+- Docker getting-started: images vs containers, a minimal Dockerfile.
+- Week 04's sqlite results file is the default table; any tidy table you own is
+  an allowed substitute (say so in the repo README).
 
-## Derivations (paper first)
+## Exercises
 
-- Change of variables in 1D from conservation of probability mass, then the general
-  |det J| case; write the log-likelihood for a K-layer composition.
-- Affine coupling layer: forward map, triangular Jacobian whose log-det is a plain sum
-  (no determinant computed), and the analytic inverse.
-- Show alternating masks let a stack of coupling layers mix all dimensions, and why a
-  single layer provably cannot touch its pass-through half.
-
-## Exercises (built when the week starts)
-
-1. 1D warm-up: fit a flow (chain of parametrized monotone maps) to a Breit–Wigner from
-   samples; overlay learned density on the analytic curve. Accept when: KS-style
-   comparison passes at the stated tolerance.
-2. Coupling layer forward/inverse in PyTorch. Accept when: `inverse(forward(x))`
-   round-trips to 1e-5 and the log-det matches `torch.autograd.functional.jacobian`
-   on small inputs.
-3. RealNVP-style flow (≥ 6 layers, alternating masks) on two-moons. Accept when:
-   samples overlay the data convincingly and held-out log-likelihood beats a Week-12
-   GMM baseline.
-4. Mask ablation: same flow without alternation. Accept when: the untouched dimensions
-   are visible in the sample plot and explained in one line.
-5. Flow fast-sim on Week-20 single-photon showers (flattened tower energies, or
-   per-cluster features if dimensionality bites). Accept when: samples pass an eyeball
-   test and per-tower marginals roughly match — full physics validation is Week 24's job.
-6. Head-to-head vs the Week-22 VAE: wall-clock for 10k samples, plus exact NLL (flow)
-   vs ELBO (VAE) on held-out data. Accept when: the table exists with a one-line caveat
-   on comparing NLL to a bound.
+See `exercises.md`. Six exercises: SQL queries on a known table, a JOIN with and
+without an index, a FastAPI read API with tests, an env-var secret that must not
+appear in logs, a Dockerfile, and a one-command run from a clean image. The
+exercises *are* the mini-project; `project.md` is the spec.
 
 ## Deliverable
 
-Paper derivations + a trained coupling flow on toy and shower data, with the flow-vs-VAE
-table informing your Week-24 choice. (Syllabus §6 lists this week first-cut if the
-calendar slips; minimum viable = derivations + Exercises 1–3.)
+`week23/service/` — sqlite db (rebuilt from a script), FastAPI app, tests green,
+Dockerfile, `SERVICE.md` with the three commands to run it. This is the skill
+Week 44 will spiral on.
 
 ## Review
 
-- (Week 08) Why does maximum likelihood on a flow need no ELBO — what made p(x)
-  intractable for the VAE and tractable here?
-- (Week 06) Log-det of a triangular Jacobian = sum of log-diagonals. Connect to
-  Week 06 on determinants, volumes, and eigenvalues.
-- (Week 22) Point to the line in your ELBO derivation where the bound becomes tight.
-  What would q need to equal?
-- (Week 16) Which training pathologies should you watch for in the coupling scale-net
-  outputs, and what does the usual tanh-clamp on s(x) prevent?
+- (Week 04) What does CI do that `git push` alone does not? This week's container
+  is the same idea for *running* the service, not just testing it.
+- (Week 04) Why were `?` placeholders required in sqlite inserts?
+- (Week 03) A pandas merge is a JOIN. Which join type drops rows silently, and
+  what is the SQL name for it?
+- (Week 16) If this service wrapped your MLP, what would you put in `/health`
+  that a `/predict` test would not catch?

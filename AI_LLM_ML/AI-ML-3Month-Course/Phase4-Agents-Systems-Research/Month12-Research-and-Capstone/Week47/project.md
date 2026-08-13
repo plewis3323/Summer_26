@@ -14,8 +14,9 @@ in the scope ledger.
 ## Background — choosing your track (decided in Week 46, confirmed here)
 
 You chose a track in Week 46's E4; this section is the fuller guidance that choice
-was based on, kept here because it is also the frame for the build. All four tracks
-are legitimate; they differ in what they *signal* (see `03-Project-Roadmap.md`).
+was based on, kept here because it is also the frame for the build. All five tracks
+are legitimate; they differ in what they *signal* (see `03-Project-Roadmap.md` and
+`05-Two-Year-Path.md`). Science-domain and general-domain data are both allowed.
 
 **(a) HEP analysis copilot** — an agent (Weeks 37–40) driving your Week-39 MCP
 tools, with RAG (Week 34) over analysis documentation, that carries out real
@@ -30,7 +31,8 @@ AI-for-science — the strongest track for lab "AI engineer" roles and for makin
 yourself visibly useful to your collaboration. *Riskiest step:* the real workflow's
 mess (auth, file layouts, undocumented conventions) eating the week.
 
-**(b) Generative fast-sim** — a diffusion or flow model (Weeks 23, 35) generating
+**(b) Generative fast-sim** — a diffusion or VAE model (Weeks 22, 35; flows
+optional) generating
 calorimeter showers (the energy cascades particles produce in an energy-measuring
 detector layer), conditioned on incident energy/angle, validated the way physics
 demands: energy response linearity, resolution vs √E, shower-shape distributions
@@ -62,8 +64,16 @@ strongest single move. *Riskiest step:* the reproduction stalling and starving t
 extension; the cut line here is "reproduce within tolerance by day 3 or narrow the
 extension."
 
+**(e) Evaluated LLM service** — one model, RAG system, or agent behind the
+Week-44 FastAPI+Docker pattern, with evals in CI, a cost and latency envelope,
+and the Week-37 injection tests green. Science or general domain. *Ships:*
+service repo a stranger can `docker run`, `SERVICE.md`, eval table. *Signals:*
+AI Engineer — the strongest track if the job you want is "ship LLM systems."
+*Riskiest step:* pretending a notebook demo is a service; the cut line is
+"TestClient + container + one CI eval job by day 3."
+
 Pick the track that feeds your thesis or your first AI-job application — ideally
-both.
+both. Write the role sentence in Week 46 and do not hedge it.
 
 ## Data
 
@@ -78,6 +88,8 @@ Named in your `PROPOSAL.md`; typical per track — all public and free:
   GitHub) as scaffold references.
 - (d) Whatever the target paper used — public availability was a Week 46 selection
   criterion; verify the download *on day 1*, not day 3.
+- (e) The model checkpoint and eval set from Weeks 32/34/40; synthetic injection
+  strings in `tests/test_security.py`.
 
 ## Build steps (daily milestones)
 

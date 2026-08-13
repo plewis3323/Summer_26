@@ -57,6 +57,12 @@ systematic-uncertainty study the arXiv note needs anyway. Ablation: the twist
 removed is by construction the reproduction itself; report the twist's
 measured gain against its cost in compute and complexity.
 
+**(e) Evaluated LLM service.** Re-run the proposal's eval harness in CI on the
+frozen image: quality metrics, p95 latency, cost per request, and the Week-37
+injection tests. Stress: malformed JSON, oversized payloads, a prompt-injection
+turn, a model-timeout. Ablation: the eval suite removed from CI — what would
+you not know?
+
 ## Deliverables
 
 - **Results table** — every pre-committed metric with mean ± spread across
@@ -69,7 +75,8 @@ measured gain against its cost in compute and complexity.
   with the architecture diagram.
 - **Demo recording** — ≤10 minutes, fresh clone → `uv sync` → one command →
   the headline capability, narrated; the clean-clone run on camera.
-- **Talk recording** — 15–20 minutes, slides, mixed HEP/ML audience; includes
+- **Talk recording** — 15–20 minutes, slides, mixed science/ML audience (or the
+  audience named in the role sentence); includes
   the limitations slide and the "what I'd do next" slide.
 - **`GATE.md`** — the gate checklist, every item linked to its evidence, plus
   the scanned cold flagship derivation.
@@ -112,15 +119,11 @@ measured gain against its cost in compute and complexity.
 
 ## After the course
 
-- The post-course slack month is real budget (`00-Syllabus.md` §6). The
-  strongest single use, especially for track (d): polish the capstone into a
-  workshop submission (`03-Project-Roadmap.md`) — it converts a course
-  artifact into a community artifact.
-- The months 13–36 sketch (`03-Project-Roadmap.md`, "After the course"):
-  year 2 — publish 1–2 ML-for-physics results, contribute to an open ML tool,
-  apply the skills visibly inside sPHENIX; year 3 — role conversion with the
-  portfolio: four capstone repos, a fine-tuned model, an MCP server, a
-  publication or workshop paper, and a thesis that uses ML for real.
+- The post-course slack month is real budget (`00-Syllabus.md` §6). Strongest
+  uses: track (d) → workshop/arXiv note; track (a) or (e) → a colleague actually
+  running the system (`05-Two-Year-Path.md`).
+- Year 2 is specified in `05-Two-Year-Path.md`, not sketched here: months 13–18
+  shared portfolio + real work; months 19–24 the role conversion.
 - Keep the reading log and the weekly build-and-measure rhythm at maintenance
   dose; keep one named open question at all times — that is what the final
   issue is for.

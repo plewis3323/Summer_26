@@ -22,8 +22,9 @@ reproduce a small published result to see how much a paper leaves unsaid.
   HEP-ML additions, how to pick and run a reproduction, the reading log; worked example
   on ParticleNet.
 - S. Keshav, *How to Read a Paper* — the three-pass method; adopt it verbatim this week.
-- One HEP-ML paper for deep critique — pick from the Week 45 pool in
-  `01-Reading-List.md`, or a Phase-2 classic you have NOT already read closely
+- One paper for deep critique — pick from the Week 45 pool in
+  `01-Reading-List.md` for your target role (HEP-ML *or* a systems/evals paper),
+  or a Phase-2 classic you have NOT already read closely
   (ParticleNet, Particle Transformer, an Exa.TrkX tracking paper, the CaloChallenge
   summary paper).
 - Skim *ML Reproducibility Challenge* reports (any year, by title) — note the recurring

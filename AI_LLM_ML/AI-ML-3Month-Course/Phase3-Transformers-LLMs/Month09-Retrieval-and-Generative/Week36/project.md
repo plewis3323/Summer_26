@@ -2,12 +2,13 @@
 
 ## Objective
 
-Ship one Phase-3 system end to end: either (a) a physics-literature assistant
+Ship one Phase-3 system end to end: either (a) a domain-literature assistant
 (RAG over a document library you assembled, with the Week-32 extractor for
 structured lookups, evaluated on a held-out Q&A set) or (b) a conditional
 diffusion calorimeter generator (DDPM conditioned on energy/angle, physics-
-validated, head-to-head vs your Capstone-2 VAE). Choose **one** track. The
-gate (from `03-Project-Roadmap.md` and syllabus §5): **one script runs the
+validated, head-to-head vs your Capstone-2 VAE). Choose **one** track. Science-domain data is the default; a general document
+library or image set with the same eval discipline is allowed (say so Monday).
+The gate (from `03-Project-Roadmap.md` and syllabus §5): **one script runs the
 system; benchmark table vs the stated baseline** (zero-shot / no-RAG for
 (a); VAE for (b)), and **scaled dot-product attention is re-derived cold**
 and filed. This closes Phase 3.

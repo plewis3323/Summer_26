@@ -1,4 +1,4 @@
-# Week 34 — RAG over a Physics Document Library
+# Week 34 — RAG over a Document Library
 
 Retrieval-augmented generation bolts a literature search onto a language model; like
 any measurement chain, the system is only as good as its worst stage — and here that is
@@ -7,7 +7,7 @@ almost always retrieval, not generation.
 ## Objectives
 
 - Build an end-to-end RAG pipeline: query → retrieve → rerank → synthesize with
-  citations, over a physics document library you assemble (arXiv PDFs from your
+  citations, over a document library you assemble (default: arXiv PDFs from your
   Week 27/32 corpus topics, plus — as a variant — any personal library you have:
   a Zotero export, a technical design report, internal notes).
 - Implement hybrid search (BM25 + dense) with score fusion and show when each side wins.

@@ -26,11 +26,13 @@ urge to redesign mid-week as a signal to re-read the proposal, not the code.
 The single highest-value rule of a short build: **make the whole pipeline run,
 badly, on day 1** — then deepen. A **walking skeleton** is the thinnest
 end-to-end version of the system: toy input, trivial model or canned response,
-real output format, one command. For the four tracks that means, respectively:
+real output format, one command. For the five tracks that means, respectively:
 an agent that answers one hardcoded question through the real tool interface; a
-generator that emits noise in the correct shower format and runs the validation
+generator that emits noise in the correct output format and runs the validation
 suite on it; an extraction agent that turns one paragraph into one stub config;
-a training loop that runs the target paper's pipeline on 100 events.
+a training loop that runs the target paper's pipeline on 100 events; a FastAPI
+container that returns a canned prediction and already has `/health` plus one
+eval test in CI.
 
 Why this order wins:
 

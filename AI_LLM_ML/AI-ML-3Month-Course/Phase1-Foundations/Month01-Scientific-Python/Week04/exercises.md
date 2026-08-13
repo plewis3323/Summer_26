@@ -83,6 +83,22 @@ Hint: an empty `diff` is the pass; diff the printed numbers, not the PDF bytes
 Accept when: two runs produce identical fit parameters and identical cut-flow
 tables.
 
+## E7 — sqlite results + CI
+
+Write `src/dimuon/store.py`: given the cut-flow list and the fit `(popt, perr)`,
+write (or replace) a sqlite file `data/results.db` with two tables, `cutflow`
+(`step TEXT, n INTEGER`) and `fit` (`name TEXT, value REAL, error REAL`). Add
+`tests/test_store.py` that round-trips a tiny fake cut-flow. Then add
+`.github/workflows/test.yml` that on every push: checks out the repo, installs
+`uv`, runs `uv sync --frozen` (or `uv sync` if the lockfile is the source of
+truth on a fresh runner), and `uv run pytest -q`. Stage 7 of `project.md` has
+the YAML to copy.
+Hint: `import sqlite3`; `conn.execute("CREATE TABLE IF NOT EXISTS ...")`;
+`conn.commit()`. GitHub Actions is a file, not a GUI — commit it, push, wait
+for the orange dot on the repo to turn green.
+Accept when: `SELECT n FROM cutflow ORDER BY rowid` matches the printed
+cut-flow, and the Actions run on `main` is green.
+
 ## Review
 
 1. (Wk 01) The mass array for 10⁶ events at float64 occupies how much memory?
@@ -95,3 +111,5 @@ tables.
    down, from memory?
 5. (Physics) The provenance file plays the role of what in a collaboration
    analysis (think: dataset bookkeeping / good-run lists)?
+6. A nested Python `for` over 100,000 rows that does a second loop inside is
+   roughly how many operations? Why is a pandas mask preferred?

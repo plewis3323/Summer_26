@@ -50,6 +50,7 @@ capstone — decide in Week 03 and stick with it).
 | Week 12 | `umap-learn` | |
 | Week 15 | `torch` | CUDA build if local NVIDIA GPU; else CPU + Colab |
 | Week 21 | `torch_geometric` | follow its install matrix for your torch/CUDA combo |
+| Week 23 | `fastapi`, `uvicorn`, `httpx` | Docker Desktop (WSL2 backend) — first install; reused Week 44 |
 | Week 27 | Colab/Kaggle account warm | first serious GPU training week |
 | Week 29 | `transformers`, `datasets`, `accelerate` | HF account + token (`huggingface-cli login`) |
 | Week 30 | `peft`, `bitsandbytes`, `trl` | bitsandbytes needs CUDA; else Colab |
@@ -58,7 +59,7 @@ capstone — decide in Week 03 and stick with it).
 | Week 37 | `anthropic` | `ANTHROPIC_API_KEY` in `~/.bashrc`; set a spend cap in the console |
 | Week 39 | `mcp` (official Python SDK) | |
 | Week 41 | `wandb` or `mlflow` | pick one |
-| Week 44 | `fastapi`, `uvicorn`, Docker Desktop (WSL2 backend) | |
+| Week 44 | (FastAPI + Docker already from Week 23) | add load-test client if you want (`httpx` is enough) |
 
 ## GPU policy
 

@@ -421,6 +421,85 @@ a scratch folder, `uv sync`, `uv run pytest -q` — green on a "different
 machine". You have just done, in miniature, exactly what `project.md` asks
 for at full scale.
 
+## 8. Pull requests and CI: a machine that runs your tests
+
+Pushing to GitHub is a backup. A **pull request** (PR) is the professional
+loop: you make a branch, push it, and ask GitHub to merge it into `main` only
+after the tests pass and (later, in a team) after someone looks at the diff.
+For this course you are both author and reviewer — still open the PR, still
+read your own diff, still merge it on GitHub rather than with `git merge` on
+the laptop. The habit is the point.
+
+**CI** (continuous integration) is a machine that runs your tests on every
+push so "it worked on my laptop" stops being the last word. GitHub Actions
+does this with a YAML file in the repo. You do not need to learn YAML as a
+language this week; you need to copy this file to
+`.github/workflows/test.yml`, commit it, and watch the orange dot on GitHub
+turn green:
+
+```yaml
+name: test
+on: [push, pull_request]
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync --frozen
+      - run: uv run pytest -q
+```
+
+If `uv sync --frozen` fails because the runner has no lockfile yet, drop
+`--frozen` until `uv.lock` is committed. A red X is a gift: it is a test
+failure you would otherwise have discovered on a different day, on a
+different machine, in front of someone else.
+
+## 9. sqlite: a table that is a file
+
+CSV is how data *arrives*. A **database** is how results *live* when you want
+to ask questions later ("what was the cut-flow after the pt cut?") without
+re-parsing a text file. **sqlite** is a database that is a single file — no
+server to install, no password, the Python standard library talks to it
+(`import sqlite3`). Week 23 will teach SQL properly; this week you use it as
+a results notebook:
+
+```python
+import sqlite3
+
+conn = sqlite3.connect("data/results.db")
+conn.execute("CREATE TABLE IF NOT EXISTS cutflow (step TEXT, n INTEGER)")
+conn.execute("DELETE FROM cutflow")
+conn.execute("INSERT INTO cutflow VALUES (?, ?)", ("both global", 59485))
+conn.commit()
+rows = conn.execute("SELECT step, n FROM cutflow").fetchall()
+conn.close()
+```
+
+`?` placeholders are how you pass values in — never glue strings together to
+build a query (that is how SQL injection happens; Week 23/37 will say why).
+The file `data/results.db` is generated, like the PDFs: do not commit it;
+rebuild it from `run.py`.
+
+## 10. Why some code is too slow (Big-O as vocabulary)
+
+You do not need a computer-science course to say this out loud: **the number
+of steps a program takes, as a function of the size of the input, is the
+thing that kills you.** The shorthand is **Big-O**.
+
+- A single pass over `n` rows (a pandas mask, a NumPy operation) is
+  **O(n)** — double the events, double the time. Fine.
+- A loop over `n` rows that, for each row, loops over `n` rows again is
+  **O(n²)** — double the events, *four times* the time. At `n = 100,000`
+  that is ten billion inner steps. That is why Week 03 taught masks instead
+  of Python `for` over DataFrame rows.
+- Looking up a key in a dictionary is **O(1)** — the time does not grow with
+  how many keys you already stored. That is why dictionaries exist.
+
+You are not being asked to prove anything. You are being asked, when a
+pipeline is slow, to ask "am I doing n² work by accident?" before buying a
+bigger machine. Week 23 will make this concrete on a JOIN.
+
 ## Check yourself
 
 1. What is the difference between `git add` and `git commit`? Why two steps?
@@ -436,6 +515,9 @@ for at full scale.
    three usual suspects and the tool that eliminates each.
 7. What may `run.py` contain, and what must it not?
 8. State the course's reproducibility standard in one sentence.
+9. What does CI do that `git push` alone does not?
+10. A Python `for` over 10⁵ rows with another `for` inside is which Big-O, and
+    what is the pandas alternative?
 
 ## Answers
 
@@ -463,6 +545,9 @@ for at full scale.
    order. No formulas, no cuts, no logic that deserves a test of its own.
 8. Fresh clone + `uv sync` + one command reproduces the result (with
    `pytest -q` green).
+9. CI runs the test suite on a clean machine on every push, so a broken test
+   is visible before anyone else clones.
+10. O(n²); a vectorized boolean mask (one pass, O(n)).
 
 ## New terms
 
@@ -480,6 +565,10 @@ for at full scale.
 - **pseudorandom generator / seed** — deterministic "randomness"; the starting state that fixes the whole sequence.
 - **deterministic** — same inputs always produce same outputs.
 - **`run.py` / one-command run** — the thin entry point replaying the entire pipeline.
+- **pull request (PR)** — a request to merge a branch into `main`, with a visible diff.
+- **CI / GitHub Actions** — a machine that runs tests on every push; GitHub's CI product.
+- **sqlite** — a database that is one file; queried with SQL; no server.
+- **Big-O / O(n) / O(n²)** — how runtime grows with input size; one pass; nested passes.
 
 ## Going deeper
 
@@ -492,3 +581,6 @@ for at full scale.
 - Sandve et al., "Ten Simple Rules for Reproducible Computational Research"
   (PLOS Computational Biology, free) — this lesson's Sections 6–7 as ten
   memorable rules; read before starting `project.md`.
+- GitHub Actions "Understanding GitHub Actions" — what the YAML file is doing.
+- SQLite "SQLite as an Application File Format" — why a `.db` belongs next to
+  the code that produced it. Week 23 teaches the query language.

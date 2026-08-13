@@ -5,7 +5,9 @@ MCP is to agent tooling what a DAQ standard is to detectors: agree on the wire f
 ## Objectives
 
 - Explain the MCP architecture: hosts, clients, servers; the tools / resources / prompts primitives; stdio vs. streamable-HTTP transports.
-- Build an MCP server in Python exposing real physics-analysis tools with typed inputs and useful descriptions.
+- Build an MCP server in Python exposing tools you own (physics-analysis functions
+  by default) with typed inputs, useful descriptions, and path/allowlist checks
+  from Week 37.
 - Connect that server to an off-the-shelf client (Claude Code or another MCP host) and drive it conversationally.
 - Debug the protocol layer: inspect JSON-RPC messages, handle malformed tool inputs, log server-side errors without crashing the session.
 - Write server-side tests so tool behavior is verified independently of any model.

@@ -1,6 +1,6 @@
 # Week 44 — Deployment
 
-A model that only runs in your notebook is a detector that only works when you're in the counting house — this week one of your models becomes a service anyone (or any agent) can call.
+A model that only runs in your notebook is a detector that only works when you're in the counting house — this week one of your models becomes a service anyone (or any agent) can call. Week 23 already taught FastAPI, JSON schemas, TestClient, and Docker; this week puts a *model* behind that shape and adds monitoring, CI that builds the image, and a load test.
 
 ## Objectives
 
@@ -12,10 +12,10 @@ A model that only runs in your notebook is a detector that only works when you'r
 
 ## Core material (~3 hrs)
 
-- FastAPI documentation: first steps, request body/response model, and testing (TestClient) sections.
+- FastAPI documentation: first steps, request body/response model, and testing (TestClient) sections — second pass; you built this in Week 23.
 - Docker getting-started guide: images vs. containers, Dockerfile basics, layer caching; skim multi-stage builds.
 - Chip Huyen, *Designing Machine Learning Systems*: the deployment chapter and the data-distribution-shifts/monitoring chapter — focus on what drift is detectable in production and what isn't.
-- GitHub Actions quickstart docs — enough to run pytest and `docker build` in CI.
+- GitHub Actions quickstart docs — enough to run pytest and `docker build` in CI (Week 04 ran pytest; this week also builds the image).
 
 ## Exercises (built when the week starts)
 

@@ -6,7 +6,9 @@ Ship a tested deep-learning repo that either (a) classifies calorimeter
 clusters (or jets) with a GNN, benchmarked against your Week-20 CNN under an
 identical protocol, or (b) generates EMCal showers with an energy-conditioned
 VAE, validated on physics observables against the simulator. Choose **one**
-track. The gate (from `03-Project-Roadmap.md` and syllabus §5): **the model
+track. Science-domain data is the default worked example; a public non-physics
+set with the same protocol is an allowed substitute (say so on Monday). The gate
+(from `03-Project-Roadmap.md` and syllabus §5): **the model
 beats the stated baseline or the writeup explains why not**, and **backprop
 and the ELBO are re-derived cold** and filed. This closes Phase 2.
 
@@ -53,7 +55,8 @@ back, and training a bound on the likelihood (the **ELBO**). Conditioning on
 incident energy is what makes it a simulator rather than a shower collage:
 the physics needs "a shower *given* 12 GeV," not "some shower."
 
-Eyeballing sample grids proves nothing (Week 23 §9, restated in lesson §4).
+Eyeballing sample grids proves nothing (`optional-flows.md` §9 if you read it;
+restated in this lesson).
 A physicist signs off on a generator that matches **distributions an analysis
 would cut on**, conditionally on energy:
 
