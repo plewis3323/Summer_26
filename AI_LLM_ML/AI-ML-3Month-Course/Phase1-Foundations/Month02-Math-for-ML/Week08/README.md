@@ -1,74 +1,71 @@
-# Week 08 — Optimization + Mini-Project
+# Week 08 — Probability, Information, and the Optimizer Race
 
-MINUIT has been hiding this from you for years: this week you derive and build the
-optimizers yourself, then race them on surfaces designed to hurt.
+You already do MLE every time you fit a peak; this week makes the machinery
+explicit, adds the information-theoretic vocabulary ML losses are written in,
+and then derives the optimizer zoo and races it on surfaces designed to hurt.
+This is a packed week — the syllabus said Months 01–02 run hot; take the slack
+if the race spills a day.
 
 ## Objectives
 
-- Derive gradient descent from a local Taylor expansion and bound its step size on a quadratic.
-- Explain condition number as the thing that makes GD zig-zag, with the eigenvalue picture.
-- Derive and implement SGD, momentum, RMSProp, and Adam (with bias correction) from scratch.
-- Fit physics models with your own optimizers and diagnose failures from the loss curve.
-- Say when a problem is convex, and what that buys you.
+- Manipulate joint/marginal/conditional distributions and apply Bayes' theorem
+  cleanly.
+- Derive MLE and MAP estimators and articulate exactly how a prior changes the
+  answer; derive least squares from a Gaussian likelihood.
+- Compute entropy, cross-entropy, and KL divergence, and state the chain
+  minimizing cross-entropy ⇔ minimizing KL ⇔ maximizing likelihood.
+- Derive gradient descent's step-size bound on a quadratic, and implement SGD,
+  momentum, RMSProp, and Adam (with bias correction) from scratch.
+- Fit a physics model with your own Adam and diagnose failures from the loss
+  curve.
 
 ## Core material (~3 hrs)
 
-- Boyd & Vandenberghe, *Convex Optimization*: skim the early material on convex sets
-  and functions — light touch, definitions and pictures only.
-- Ruder, "An overview of gradient descent optimization algorithms" — the standard
-  survey; read momentum through Adam.
-- 3Blue1Brown: the gradient-descent video from the neural-network series (intuition
-  refresher, 20 min).
-- Optional: Goh, "Why Momentum Really Works" (Distill) — the condition-number picture,
-  interactive.
+- `lesson.md` (this folder) — probability through information theory, then the
+  optimizer derivations; `project.md` is the race spec.
+- Bishop, *PRML* (in `references/`): §1.2 (probability theory) and §2.1–2.3
+  (binary/multinomial variables, the Gaussian).
+- 3Blue1Brown: the Bayes' theorem video, and the gradient-descent video from
+  the neural-network series.
+- Ruder, "An overview of gradient descent optimization algorithms" — momentum
+  through Adam.
+- Optional: Goh, "Why Momentum Really Works" (Distill); Boyd & Vandenberghe
+  early pages on convex sets (pictures only).
 
 ## Derivations (paper first)
 
-- GD from first-order Taylor; on f(x) = ½xᵀAx, derive the stable range η < 2/λmax and
-  the per-mode convergence rates (this is where condition number enters).
-- SGD: show the minibatch gradient is an unbiased estimator of the full gradient; note
-  the variance/batch-size tradeoff.
-- Momentum: write the update as an exponentially-weighted moving average of gradients;
-  connect to a damped oscillator (this one is your home turf).
-- RMSProp: per-coordinate step normalization; why it helps anisotropic curvature.
-- Adam: combine the two moment estimates; derive the bias-correction factors
-  1/(1 − βᵗ) from the EMA initialization at zero.
+- Bayes' theorem from the product rule; one full example with a non-flat prior.
+- MLE for the mean and variance of a Gaussian (and show the variance MLE is
+  biased); least squares from a Gaussian likelihood; MAP with a Gaussian prior
+  → ridge.
+- KL$(p\|q)$ for two Gaussians (closed form); KL ≥ 0 via Jensen; cross-entropy
+  = entropy + KL.
+- GD from first-order Taylor; on $f(x)=\tfrac12 x^\top Ax$, the stable range
+  $\eta < 2/\lambda_{\max}$ and the per-mode rates (condition number).
+- SGD unbiasedness; momentum as an EMA of gradients; RMSProp per-coordinate
+  scaling; Adam's bias-correction factors $1/(1-\beta^t)$.
 
-## Exercises (built when the week starts)
+## Exercises
 
-1. **Optimizer module.** Implement `gd`, `sgd`, `momentum`, `rmsprop`, `adam` with a
-   common interface in `src/optim.py`, each ≤15 lines.
-   Accept when: each matches a hand-computed 3-step trace on a 2D quadratic to 1e-10.
-2. **Step-size threshold.** On an ill-conditioned quadratic (κ = 100), sweep η across
-   2/λmax and show convergence/divergence exactly where derived.
-   Accept when: empirical divergence threshold matches 2/λmax within 5%.
-3. **The race.** All five optimizers on: well-conditioned quadratic, κ = 10³ quadratic,
-   Rosenbrock. Trajectory plots over loss contours plus loss-vs-iteration curves.
-   Accept when: all trajectories are plotted, and momentum beats plain GD on the ill-conditioned quadratic by ≥5× fewer iterations to loss < 1e-6.
-4. **SGD noise.** Fit a line with minibatch SGD at batch sizes 1, 10, 100, full; plot
-   loss-curve noise and final-parameter scatter vs batch size.
-   Accept when: gradient-estimate variance scales ~1/batch size across the sweep.
-5. **Physics fit (mini-project core).** Fit a Breit–Wigner + polynomial background to a
-   pseudo-data mass spectrum using your Adam, minimizing the negative log-likelihood
-   from Week 07; compare to `scipy.optimize`.
-   Accept when: your Adam's fitted mass and width agree with scipy's within 1σ of the fit uncertainties.
-6. **Pathology report.** One surface where Adam underperforms plain momentum (e.g., a
-   ravine where adaptive scaling misleads); demonstrate and explain in ≤3 lines.
-   Accept when: the loss curves show the crossover and the explanation names the mechanism.
+See `exercises.md`. Probability block (E1–E4) in the notebook; optimizer block
+(E5–E8) is the mini-project in `src/optim.py` plus the race notebook, fully
+specified in `project.md`.
 
 ## Deliverable
 
-The Month 02 deliverable: `src/optim.py` with tests, the race notebook with trajectory
-figures, the physics-fit comparison, and scanned derivations. Then month sign-off
-(tag `month-02-complete`, `retro.md`, one issue).
+The Month 02 deliverable: scanned probability and optimizer derivations,
+`src/optim.py` with tests, the race notebook with trajectory figures, and the
+physics-fit comparison. Then month sign-off (tag `month-02-complete`,
+`retro.md`, one issue).
 
 ## Review
 
-1. (Wk 07) Why is minimizing negative log-likelihood for Gaussian noise the same as
-   least squares — and what changes in Exercise 5's Poisson-count case?
-2. (Wk 06) Condition number of AᵀA vs A: which did the normal equations suffer from,
-   and how does that connect to this week's κ story?
-3. (Wk 05) The GD convergence-per-mode analysis lives in which basis? Why is the
-   symmetric-matrix theorem from Week 05 what makes the analysis clean?
-4. (Wk 03) Your optimizer module needs tests. Name the two most valuable test cases
-   you'd write first.
+1. (Wk 07) Condition number of $A^\top A$ vs $A$: which did the normal
+   equations suffer from, and how does that connect to this week's $\kappa$
+   story?
+2. (Wk 07) Write $\nabla_x\|Ax-b\|^2$ from memory; which derivation this week
+   reused it?
+3. (Wk 06) The projection matrix $P$ and the least-squares/likelihood fit:
+   what is the geometric relationship?
+4. (Wk 04) Your pseudo-experiment loops need reproducible randomness — which
+   NumPy API, and why not the global seed?

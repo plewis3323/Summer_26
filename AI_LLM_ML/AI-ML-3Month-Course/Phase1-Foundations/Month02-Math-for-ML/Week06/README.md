@@ -1,72 +1,63 @@
-# Week 06 — Linear Algebra II: SVD, PCA, Matrix Calculus
+# Week 06 — Linear Algebra I
 
-The SVD is the spectral theorem for matrices that aren't square or symmetric — and it is
-quietly underneath half of ML.
+You've used lists of numbers since Week 03; this week they become geometry. A
+matrix is a machine that moves space around, and once you can see what it does,
+least squares, rank, and "the detector cannot tell these signals apart" stop
+being formulas and start being pictures.
 
 ## Objectives
 
-- Derive the SVD from the eigendecomposition of AᵀA and interpret U, Σ, V geometrically.
-- Derive PCA two ways — variance maximization and reconstruction error — and show they agree.
-- Use the SVD for low-rank approximation and the pseudoinverse for least squares.
-- Compute the core matrix-calculus derivatives (∂/∂x of aᵀx, xᵀAx, ‖Ax − b‖²) and check
-  any such derivative numerically.
+- Read any matrix as a linear map: what it does to a basis, what it kills, what
+  it reaches.
+- Compute and interpret the four fundamental subspaces and verify rank–nullity
+  numerically.
+- Multiply matrices three ways (row·column, columns of the right factor, sum of
+  outer products) and say what each view is for.
+- Derive the projection matrix onto a column space from orthogonality of the
+  residual, and show $P^2 = P$, $P^\top = P$.
+- Solve an overdetermined calibration by the normal equations and match
+  `np.linalg.lstsq`.
 
 ## Core material (~3 hrs)
 
-- Strang, MIT 18.06, Lecture 29 (singular value decomposition). Also revisit
-  Lectures 15–16 (projections and least squares) — they connect directly to the
-  pseudoinverse.
-- 3Blue1Brown, *Essence of Linear Algebra*: rewatch the eigenvector and change-of-basis
-  chapters with SVD in mind.
-- Parr & Howard, "The Matrix Calculus You Need For Deep Learning" — read through the
-  vector chain rule section. This is the reference you will reuse for backprop in
-  Phase 2; get the numerator/denominator layout conventions straight now.
-- Optional: Bishop, *PRML* §12.1 for PCA stated in the ML idiom (in `references/`).
+- `lesson.md` (this folder) — the primary text; compute along as you go.
+- 3Blue1Brown, *Essence of Linear Algebra*, chapters 1–9 and 13 (vectors
+  through dot products; change of basis). Watch fast; the point is the
+  geometry. (Chapter 14, eigenvectors, is next week.)
+- Strang, MIT 18.06: Lecture 6 (column space and nullspace), Lecture 9
+  (independence, basis, dimension), Lecture 10 (the four fundamental
+  subspaces), Lectures 15–16 (projections and least squares). Skim Lectures
+  1–3 only if elimination feels rusty.
 
 ## Derivations (paper first)
 
-- SVD: from the eigendecomposition of AᵀA (and AAᵀ), construct A = UΣVᵀ; show the
-  singular values are the square roots of the eigenvalues.
-- PCA #1: maximize wᵀSw subject to ‖w‖ = 1 with a Lagrange multiplier → top eigenvector
-  of the covariance.
-- PCA #2: minimize mean squared reconstruction error over rank-k projections → same
-  answer. Note where the two proofs use the same fact.
-- Pseudoinverse: show x = A⁺b = VΣ⁺Uᵀb solves min ‖Ax − b‖² (minimum-norm solution).
-- Matrix calculus: derive ∇ₓ(aᵀx), ∇ₓ(xᵀAx), ∇ₓ‖Ax − b‖², and the vector chain rule
-  for f(g(x)).
+- Projection matrix: derive $P = A(A^\top A)^{-1}A^\top$ from orthogonality of
+  the residual, and show $P^2 = P$, $P^\top = P$.
+- Rank–nullity: argue $\dim(C(A)) + \dim(N(A)) = n$ from the linear-map
+  picture.
+- Normal equations: from "closest point in the column space" to
+  $A^\top A\hat{x} = A^\top b$, in two sentences.
 
-## Exercises (built when the week starts)
+## Exercises
 
-1. **SVD by hand-then-NumPy.** For a small matrix, build the SVD from `eigh` of AᵀA;
-   compare with `np.linalg.svd`.
-   Accept when: reconstructed A matches to 1e-8 (up to sign conventions, handled explicitly).
-2. **Image compression.** Truncated-SVD compression of a grayscale detector-event image
-   at ranks 1, 5, 20, 50; plot error vs rank against the singular-value tail.
-   Accept when: measured reconstruction error matches the Eckart–Young prediction (σ tail) to 1e-8 at each rank.
-3. **PCA from scratch.** Center → covariance → `eigh` → project; run on correlated
-   synthetic kinematics data; compare components and explained variance with
-   scikit-learn's PCA.
-   Accept when: explained-variance ratios agree with sklearn to 1e-8 and components agree up to sign.
-4. **Both PCA derivations, numerically.** Show top-1 variance maximization (numerical
-   search over unit vectors) lands on the reconstruction-error minimizer.
-   Accept when: the two optima align with |cos| > 0.999.
-5. **Pseudoinverse fit.** Solve an overdetermined straight-line fit via A⁺; compare with
-   `lstsq` and with the normal equations on an ill-conditioned design.
-   Accept when: A⁺ and lstsq agree to 1e-8 while the normal equations visibly lose precision (relative error reported).
-6. **Gradient checker.** Write a finite-difference gradient check and use it to verify
-   every derivative from the derivation list.
-   Accept when: all analytic gradients match central differences to 1e-6.
+See `exercises.md` (notebook built from it when the week starts, per
+`NOTEBOOK_RULES.md`). Six exercises: a matrix as a map on the unit circle, the
+four subspaces of a rank-2 matrix, a rank-deficient detector-response matrix,
+projection vs `lstsq`, the six-point calibration solved exactly, and a
+deliberately singular system.
 
 ## Deliverable
 
-Completed notebook, scanned derivations (SVD, PCA ×2, pseudoinverse, matrix-calc
-identities), and the gradient checker kept as a reusable function — Phase 2 will use it.
+Completed exercise notebook (checks PASS) plus scanned paper derivations in
+this folder.
 
 ## Review
 
-1. (Wk 05) State the four fundamental subspaces of A and which SVD vectors span each.
-2. (Wk 05) Why did power iteration converge slowly when λ₂ ≈ λ₁?
-3. (Wk 04) The J/ψ fit: what quantity did `curve_fit` minimize, and how does this week's
-   ‖Ax − b‖² derivation relate to it?
-4. (Wk 02) You want a scatter matrix of the top-3 PCA components colored by mass window —
-   which pandas/matplotlib tools, in one sentence?
+1. (Wk 05) Why did the gradient-descent zig-zag in E6, in one geometric
+   sentence? (This week names the picture; next week names the eigenvalues.)
+2. (Wk 05) `np.polyfit` gave the exact least-squares line in E7. Which two
+   matrices did you just learn to build so you can write that fit yourself?
+3. (Wk 04) The J/ψ fit: what quantity did `curve_fit` minimize, and how does
+   this week's $\|Ax-b\|^2$ derivation relate to it?
+4. (Wk 03) You want a scatter of $(p_x, p_y)$ for selected muons — which
+   pandas/matplotlib tools, in one sentence?

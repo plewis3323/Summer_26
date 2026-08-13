@@ -66,5 +66,5 @@ GPU is too slow.)*
   defensible here, and what claim does it not license?
 - (Week 10) Why report rejection at fixed efficiency rather than accuracy, for a
   trigger-like physics use case?
-- (Week 07) The toy generator is a likelihood you wrote yourself. What does that mean
+- (Week 08) The toy generator is a likelihood you wrote yourself. What does that mean
   for how seriously to take the CNN's advantage on real data?

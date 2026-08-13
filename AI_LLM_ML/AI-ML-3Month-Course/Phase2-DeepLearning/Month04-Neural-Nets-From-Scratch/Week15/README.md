@@ -30,7 +30,7 @@ of the course.
 *(Light week on paper — the derivation muscle rests before Week 16.)*
 
 - Show that the bigram model's cross-entropy loss is minimized exactly by the empirical
-  conditional frequencies (MLE for a categorical distribution — Week 07 redux).
+  conditional frequencies (MLE for a categorical distribution — Week 08 redux).
 
 ## Exercises (built when the week starts)
 
@@ -58,7 +58,7 @@ with the micrograd parity check green.
 
 - (Week 14) In your engine, where do gradients accumulate and why must PyTorch users
   call `zero_grad()`?
-- (Week 07) The char model outputs a categorical distribution. Write its likelihood and
+- (Week 08) The char model outputs a categorical distribution. Write its likelihood and
   show minimizing cross-entropy = maximizing likelihood.
 - (Week 09) You split names into train/val. What specific failure would training on all
   names and reporting training loss hide?

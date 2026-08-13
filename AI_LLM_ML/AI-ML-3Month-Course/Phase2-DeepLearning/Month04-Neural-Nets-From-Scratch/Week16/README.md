@@ -65,6 +65,6 @@ write `retro.md`, open the open-question issue.
 ## Review
 
 - (Week 13) Re-derive the backward recursion δ^(l) — cold. This is the month's flagship.
-- (Week 07) Batchnorm standardizes to zero mean, unit variance. Which Week-07 moments
+- (Week 08) Batchnorm standardizes to zero mean, unit variance. Which Week-08 moments
   are estimated on-the-fly, and why does small batch size make them noisy?
 - (Week 11) Why do trees not care about feature scaling while your MLP badly does?

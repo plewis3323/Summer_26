@@ -1,69 +1,70 @@
-# Week 07 — Probability & Statistics
+# Week 07 — Linear Algebra II: SVD, PCA, Matrix Calculus
 
-You already do MLE every time you fit a peak; this week makes the machinery explicit and
-adds the information-theoretic vocabulary (entropy, cross-entropy, KL) that ML losses
-are written in.
+The SVD is the spectral theorem for matrices that aren't square or symmetric —
+and it is quietly underneath half of ML.
 
 ## Objectives
 
-- Manipulate joint/marginal/conditional distributions and apply Bayes' theorem cleanly.
-- Derive MLE and MAP estimators and articulate exactly how a prior changes the answer.
-- Derive least squares from a Gaussian likelihood (and name the assumption that breaks it).
-- Compute entropy, cross-entropy, and KL divergence, and state what each measures.
-- Connect: minimizing cross-entropy ⇔ minimizing KL ⇔ maximizing likelihood.
+- Derive the SVD from the eigendecomposition of $A^\top A$ and interpret $U$,
+  $\Sigma$, $V$ geometrically.
+- Derive PCA two ways — variance maximization and reconstruction error — and
+  show they agree.
+- Use the SVD for low-rank approximation and the pseudoinverse for least
+  squares.
+- Compute the core matrix-calculus derivatives ($\partial/\partial x$ of
+  $a^\top x$, $x^\top Ax$, $\|Ax-b\|^2$) and check any such derivative
+  numerically.
 
 ## Core material (~3 hrs)
 
-- Bishop, *PRML* (in `references/`): §1.2 (probability theory) and §2.1–2.3
-  (binary/multinomial variables, the Gaussian). Physicist-fast — much is review.
-- Murphy, *Probabilistic Machine Learning: An Introduction* (free PDF): the probability
-  and information-theory chapters as a second angle; skim, don't grind.
-- 3Blue1Brown: the Bayes' theorem video, for the geometric picture.
-- StatQuest: "Maximum Likelihood" and the entropy/cross-entropy videos if the
-  definitions don't stick from the texts alone.
+- `lesson.md` (this folder) — the primary text; compute along as you go.
+- Strang, MIT 18.06, Lecture 29 (singular value decomposition). Also revisit
+  Lectures 15–16 (projections and least squares) — they connect directly to the
+  pseudoinverse.
+- 3Blue1Brown, *Essence of Linear Algebra*: rewatch the eigenvector and
+  change-of-basis chapters with SVD in mind.
+- Parr & Howard, "The Matrix Calculus You Need For Deep Learning" — read
+  through the vector chain rule section. This is the reference you will reuse
+  for backprop in Phase 2; get the numerator/denominator layout conventions
+  straight now.
+- Optional: Bishop, *PRML* §12.1 for PCA stated in the ML idiom (in
+  `references/`).
 
 ## Derivations (paper first)
 
-- Bayes' theorem from the product rule; work one full example with a non-flat prior.
-- MLE for the mean and variance of a Gaussian (and show the variance MLE is biased).
-- Least squares from maximizing a Gaussian likelihood with iid noise; note where the
-  σ = const assumption enters.
-- MAP with a Gaussian prior on the parameters → L2-regularized least squares (ridge).
-- KL(p‖q) for two Gaussians (closed form); show KL ≥ 0 via Jensen; show
-  cross-entropy = entropy + KL.
+- SVD: from the eigendecomposition of $A^\top A$ (and $AA^\top$), construct
+  $A = U\Sigma V^\top$; show the singular values are the square roots of the
+  eigenvalues.
+- PCA #1: maximize $w^\top Sw$ subject to $\|w\| = 1$ with a Lagrange
+  multiplier → top eigenvector of the covariance.
+- PCA #2: minimize mean squared reconstruction error over rank-$k$ projections
+  → same answer. Note where the two proofs use the same fact.
+- Pseudoinverse: show $x = A^+ b = V\Sigma^+ U^\top b$ solves
+  $\min \|Ax-b\|^2$ (minimum-norm solution).
+- Matrix calculus: derive $\nabla_x(a^\top x)$, $\nabla_x(x^\top Ax)$,
+  $\nabla_x\|Ax-b\|^2$, and the vector chain rule for $f(g(x))$.
 
-## Exercises (built when the week starts)
+## Exercises
 
-1. **Bayesian coin.** Beta-Bernoulli updating on simulated flips; plot the posterior
-   evolving; compare MLE, MAP, posterior mean.
-   Accept when: posterior after N flips matches the closed-form Beta(α+h, β+t) and all three estimators are marked on the plot.
-2. **Detector Bayes.** Given particle-ID efficiency and fake rate plus a prior
-   abundance, compute P(true kaon | tagged kaon); scan vs prior.
-   Accept when: the curve matches the hand-derived formula and the low-prior regime is flagged in one line.
-3. **Least squares from likelihood.** Simulate straight-line data with Gaussian noise;
-   maximize the log-likelihood numerically; compare with the analytic least-squares fit.
-   Accept when: numerically-maximized parameters match the lstsq solution to 1e-6.
-4. **Heteroscedastic twist.** Repeat with σᵢ varying per point; show plain least squares
-   is now the wrong MLE and weighted least squares is right.
-   Accept when: weighted fit recovers true parameters within errors over 1000 pseudo-experiments while unweighted shows the predicted excess variance.
-5. **KL numerically.** Compute KL between two Gaussians by numerical integration and
-   from the closed form; then KL(data-histogram ‖ model) for a mis-modeled peak.
-   Accept when: numeric vs closed form agree to 1e-6 and KL correctly ranks two candidate models.
-6. **Entropy of distributions.** Entropy of uniform/Gaussian/peaked histograms from
-   samples; watch the binning dependence.
-   Accept when: sampled Gaussian entropy approaches ½log(2πeσ²) as N grows, deviation < 2% at N = 10⁶.
+See `exercises.md` (notebook built from it when the week starts, per
+`NOTEBOOK_RULES.md`). Six exercises: SVD from `eigh` of $A^\top A$, truncated-SVD
+image compression, PCA from scratch vs sklearn, both PCA derivations numerically,
+the pseudoinverse vs the normal equations on an ill-conditioned design, and a
+reusable finite-difference gradient checker.
 
 ## Deliverable
 
-Completed notebook plus scanned derivations. The MAP→ridge derivation gets referenced
-again in Week 09; file it where you can find it.
+Completed notebook, scanned derivations (SVD, PCA ×2, pseudoinverse,
+matrix-calc identities), and the gradient checker kept as a reusable function
+— Phase 2 will use it.
 
 ## Review
 
-1. (Wk 06) PCA maximizes variance — this week reframes covariance as a Gaussian's shape
-   parameter. What distribution is PCA implicitly fitting?
-2. (Wk 06) Write ∇ₓ‖Ax − b‖² from memory; which derivation this week reused it?
-3. (Wk 05) The projection matrix P and the least-squares/likelihood fit: what is the
-   geometric relationship?
-4. (Wk 04) Your pseudo-experiment loops need reproducible randomness — which NumPy API,
-   and why not the global seed?
+1. (Wk 06) State the four fundamental subspaces of $A$ and which SVD vectors
+   span each.
+2. (Wk 05) Why did power-iteration-style GD zig-zag when the two curvatures
+   differed by 10×?
+3. (Wk 04) The J/ψ fit: what quantity did `curve_fit` minimize, and how does
+   this week's $\|Ax-b\|^2$ / pseudoinverse derivation relate to it?
+4. (Wk 02) You want a scatter matrix of the top-3 PCA components colored by
+   mass window — which pandas/matplotlib tools, in one sentence?

@@ -73,7 +73,7 @@ calibration plot, writeup with negative results. Then the month sign-off (tag
 2. (Wk 10) Your capstone threshold choice repeats which Week 10 exercise, and on which
    data split must it happen?
 3. (Wk 09) What does nested CV estimate that plain CV-with-tuning does not?
-4. (Wk 07) EM's E-step computes responsibilities. Which theorem from Week 07 are they a
+4. (Wk 08) EM's E-step computes responsibilities. Which theorem from Week 08 are they a
    direct application of?
-5. (Wk 06) Re-derive, cold, PCA from variance maximization. (This is the month's
+5. (Wk 07) Re-derive, cold, PCA from variance maximization. (This is the month's
    rotating flagship derivation.)

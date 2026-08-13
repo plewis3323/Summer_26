@@ -62,7 +62,7 @@ scores, and superposition sweep; a half-page written position on emergence in `n
 - Week 25: re-derive the √d_k scaling cold (this is the Phase 3 gate derivation — first
   rehearsal).
 - Week 9: the scaling-law fit is a regression. What loss did you minimize, and why fit
-  in log space? Connect to Week 7's Gaussian-likelihood derivation of least squares.
+  in log space? Connect to Week 08's Gaussian-likelihood derivation of least squares.
 - Week 12: the superposition toy model compresses n features into m < n dimensions.
   How is this like and unlike PCA?
 - Week 22: posterior collapse was a Phase 2 failure mode of latent codes. State it in
