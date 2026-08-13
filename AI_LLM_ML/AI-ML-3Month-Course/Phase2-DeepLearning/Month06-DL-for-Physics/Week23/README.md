@@ -61,7 +61,7 @@ calendar slips; minimum viable = derivations + Exercises 1–3.)
 
 ## Review
 
-- (Week 07) Why does maximum likelihood on a flow need no ELBO — what made p(x)
+- (Week 08) Why does maximum likelihood on a flow need no ELBO — what made p(x)
   intractable for the VAE and tractable here?
 - (Week 06) Log-det of a triangular Jacobian = sum of log-diagonals. Connect to
   Week 06 on determinants, volumes, and eigenvalues.

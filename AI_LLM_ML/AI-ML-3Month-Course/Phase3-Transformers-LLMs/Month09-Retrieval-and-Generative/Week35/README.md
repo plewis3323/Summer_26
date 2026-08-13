@@ -75,7 +75,7 @@ warm-up checkpoints and sample grids — the direct on-ramp to Capstone 3 option
   bound is that ELBO with a fixed, non-learned encoder.
 - Week 23: flows require invertible maps with tractable Jacobians. Which constraint
   does diffusion drop, and what does it pay for that freedom at sampling time?
-- Week 7: composing Gaussians was the key trick today. Derive Var(aX + bY) for
+- Week 08: composing Gaussians was the key trick today. Derive Var(aX + bY) for
   independent X, Y and connect to the ᾱ_t closed form.
-- Week 8: SGD with noise resembles Langevin dynamics. In one paragraph: where does
+- Week 08: SGD with noise resembles Langevin dynamics. In one paragraph: where does
   noise appear in each, and what plays the role of temperature?
